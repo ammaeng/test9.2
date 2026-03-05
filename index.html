@@ -2492,84 +2492,41 @@ async function showFullReport(btn) {
 // --------------------------------------------------------------------------------
 // 1. หน้าต่าง Dashboard ทันสมัย (แสดงใน Modal)
 // --------------------------------------------------------------------------------
-function buildModernReportHTML(ctx){
+function buildModernReportHTML(ctx) {
   const k = ctx.kpi1127;
   const borOccText = ctx.isMonthClosed ? `${fmt2(ctx.borOcc)}%` : `<span class="text-danger" style="font-size:16px;">รอระบุเตียง</span>`;
   const borUtilText = ctx.isMonthClosed ? `${fmt2(ctx.borUtil)}%` : `<span class="text-danger" style="font-size:16px;">รอระบุเตียง</span>`;
 
-  const dxHtml = (ctx.topDx5 && ctx.topDx5.length) 
-    ? ctx.topDx5.map(([dx, c], i) => `
-        <div class="d-flex justify-content-between border-bottom py-2">
-          <span><b>${i+1}.</b> ${escapeHtml(dx)}</span>
-          <span class="badge bg-primary rounded-pill">${c}</span>
-        </div>`).join("") 
-    : `<div class="text-muted text-center mt-3">ยังไม่มีข้อมูล Dx</div>`;
-
   return `
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <div>
-      <h5 class="fw-black mb-1 text-primary">📊 แดชบอร์ดสรุปผล Ward 9/2 (${ctx.sheet})</h5>
-      <div class="subtle">จำนวนวัน: <b>${ctx.days}</b> วัน | เตียง: <b>${ctx.isMonthClosed ? ctx.ctx : '<span class="text-danger">ยังไม่ปิดยอด</span>'}</b></div>
-    </div>
-    <button class="btn btn-danger rounded-pill shadow-sm px-4 fw-bold" onclick="printOfficialReport()">
-      🖨️ พิมพ์แบบฟอร์มทางการ (PDF)
-    </button>
-  </div>
-
-  <!-- แถว 1: KPI Cards -->
   <div class="row g-2 mb-3">
-    <div class="col-6 col-md-3">
-      <div class="kpi-card text-center border-primary border-start border-4">
-        <div class="kpi-label">รับเข้าทั้งหมด (รวมยอดยกมา)</div>
-        <div class="kpi-value text-primary">${ctx.inAllG.T}</div>
-        <div class="kpi-sub">ราย</div>
+    <!-- Card รับเข้าแบบละเอียด -->
+    <div class="col-12 col-md-6">
+      <div class="card p-3 shadow-sm border-0 h-100">
+        <div class="card-title text-primary"><i class="bi bi-box-in"></i> สรุปการรับเข้าแยกเพศ (Admissions)</div>
+        <table class="table table-sm table-striped align-middle" style="font-size: 13px;">
+          <thead class="table-primary"><tr><th>ประเภท</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr></thead>
+          <tbody>
+            <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td><b>${ctx.carryG.T}</b></td></tr>
+            <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td><b>${ctx.inNewG.T}</b></td></tr>
+            <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td><b>${ctx.inTransferG.T}</b></td></tr>
+            <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td><b>${ctx.inReferG.T}</b></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="kpi-card text-center border-success border-start border-4">
-        <div class="kpi-label">จำหน่ายแล้ว (เคสปิด)</div>
-        <div class="kpi-value text-success">${ctx.outAllG.T}</div>
-        <div class="kpi-sub">ราย (รวมวันนอน: ${ctx.patientDays} วัน)</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="kpi-card text-center border-info border-start border-4">
-        <div class="kpi-label">อัตราครองเตียง (Official)</div>
-        <div class="kpi-value text-info">${borOccText}</div>
-        <div class="kpi-sub">ไม่รวมเคส < 6 ชม.</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="kpi-card text-center border-warning border-start border-4">
-        <div class="kpi-label">อัตราการใช้เตียง (Util)</div>
-        <div class="kpi-value text-warning">${borUtilText}</div>
-        <div class="kpi-sub">รวมเคส < 6 ชม.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- แถว 2: Charts & Top Dx -->
-  <div class="row g-2 mb-3">
-    <div class="col-12 col-md-4">
-      <div class="card p-3 h-100 shadow-sm border-0">
-        <div class="fw-bold mb-2 text-secondary">สัดส่วนการจำหน่าย (ราย)</div>
-        <div style="position: relative; height: 200px; width: 100%;">
-          <canvas id="chartOutcome"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div class="card p-3 h-100 shadow-sm border-0">
-        <div class="fw-bold mb-2 text-secondary">ผู้ป่วยแบ่งตามแผนก (ราย)</div>
-        <div style="position: relative; height: 200px; width: 100%;">
-          <canvas id="chartDept"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div class="card p-3 h-100 shadow-sm border-0">
-        <div class="fw-bold mb-2 text-secondary">สถิติ 5 โรคแรก (Top Dx)</div>
-        <div>${dxHtml}</div>
+    <!-- Card จำหน่ายแบบละเอียด -->
+    <div class="col-12 col-md-6">
+      <div class="card p-3 shadow-sm border-0 h-100">
+        <div class="card-title text-success"><i class="bi bi-box-out"></i> สรุปการจำหน่ายแยกเพศ (Discharges)</div>
+        <table class="table table-sm table-striped align-middle" style="font-size: 13px;">
+          <thead class="table-success"><tr><th>ประเภท</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr></thead>
+          <tbody>
+            <tr><td>กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td><b>${ctx.outDCG.T}</b></td></tr>
+            <tr><td>ย้ายแผนก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td><b>${ctx.outTOG.T}</b></td></tr>
+            <tr><td>Refer Out</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td><b>${ctx.outROG.T}</b></td></tr>
+            <tr><td>ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td><b>${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</b></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -2732,8 +2689,30 @@ function buildTabularReportHTML(ctx) {
       <div class="report-meta">ประจำเดือน <b>${escapeHtml(sheet)}</b> | ข้อมูล ณ วันที่ ${new Date().toLocaleDateString('th-TH')} | เตียงที่เปิดจริง: <b>${bedsText}</b></div>
     </div>
 
-    <div class="grid-container">
-      <!-- Card 1: สรุปภาพรวม -->
+<div class="grid-container">
+    <div class="card" style="width: 100%;">
+      <div class="card-title">สรุปสถิติผู้ป่วยจำแนกตามประเภทและเพศ</div>
+      <table style="width: 100%; border: 1px solid #ccc; font-size: 12px;">
+        <thead>
+          <tr style="background:#f8f9fa;">
+            <th>รายการ</th><th>หญิง</th><th>ชาย</th><th>รวม</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="4" style="background:#eee; font-weight:bold;">กลุ่มรับเข้า</td></tr>
+          <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td>${ctx.carryG.T}</td></tr>
+          <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td>${ctx.inNewG.T}</td></tr>
+          <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td>${ctx.inTransferG.T}</td></tr>
+          <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td>${ctx.inReferG.T}</td></tr>
+          <tr><td colspan="4" style="background:#eee; font-weight:bold;">กลุ่มจำหน่าย</td></tr>
+          <tr><td>กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td>${ctx.outDCG.T}</td></tr>
+          <tr><td>ย้ายแผนก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td>${ctx.outTOG.T}</td></tr>
+          <tr><td>Refer Out</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td>${ctx.outROG.T}</td></tr>
+          <tr><td>ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td>${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>      <!-- Card 1: สรุปภาพรวม -->
       <div class="card">
         <div class="card-title">1. สรุปรับเข้าและจำหน่าย (ราย)</div>
         <div class="data-row"><span>รับเข้าทั้งหมด</span> <span class="val">${inAllG.T}</span></div>
