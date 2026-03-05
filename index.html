@@ -2425,24 +2425,24 @@ function normalizeKpi11_27(raw){
 
 function buildOfficialMonthlyFormHTML(ctx){
   const {
-    sheet, days, beds,
+    sheet, days, beds, isMonthClosed,
     inAllG, carryG, inNewG, inTransferG, inReferG,
     outAllG, outDCG, outDeathG, outTOG, outROG, outAbsG, outRefuseG,
-    eomG,
-patientDays, patientDaysUtil, bedDays, borOcc, borUtil,    deptRows,
+    eomG, patientDays, patientDaysUtil, bedDays, borOcc, borUtil,   
+    deptRows,
     topDx5,
     kpi1127
   } = ctx;
 
   const td = (v, cls="") => `<td class="${cls}">${escapeHtml(v)}</td>`;
-  const tdn = (v, cls="text-end") => `<td class="${cls}">${escapeHtml(v)}</td>`;
+  const tdn = (v, cls="text-end") => `<td class="${cls}">${v}</td>`; // แก้ให้รับ HTML แท็กได้
 
-  const deptOrder = [
+  const deptOrder =[
     "อายุรศาสตร์","ศัลยศาสตร์","กุมารเวชศาสตร์","สูติศาสตร์","นรีเวชวิทยา",
     "จักษุ","โสต ศอ นาสิก","ศัลยกรรมกระดูกและข้อ"
   ];
   const extra = Object.keys(deptRows || {}).filter(k => !deptOrder.includes(k));
-  const deptList = [...deptOrder, ...extra.sort((a,b)=>a.localeCompare(b,'th'))];
+  const deptList =[...deptOrder, ...extra.sort((a,b)=>a.localeCompare(b,'th'))];
 
   const deptHtml = deptList.map(name=>{
     const row = deptRows[name] || {F:0,M:0,T:0,PD:0};
@@ -2459,14 +2459,19 @@ patientDays, patientDaysUtil, bedDays, borOcc, borUtil,    deptRows,
     ? topDx5.map(([dx,c],i)=>`<div>${i+1}. ${escapeHtml(dx)} <b class="ms-1">${c}</b></div>`).join("")
     : `<div class="text-muted">- ยังไม่มีข้อมูล Dx -</div>`;
 
-  const k = kpi1127; // shorthand (ผ่าน normalize แล้ว)
+  const k = kpi1127; 
+
+  // ✅ เพิ่มเงื่อนไขการแสดงผลเตียงและอัตราครองเตียง
+  const bedsText = isMonthClosed ? `${beds} เตียง` : `<span class="text-danger" style="font-size:13px;">(ต้องกดปิดยอดเดือนก่อน)</span>`;
+  const borOccText = isMonthClosed ? `${fmt2(borOcc)}%` : `<span class="text-danger" style="font-size:12px;">รอระบุเตียง</span>`;
+  const borUtilText = isMonthClosed ? `${fmt2(borUtil)}%` : `<span class="text-danger" style="font-size:12px;">รอระบุเตียง</span>`;
 
   return `
   <div class="report-block">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
       <div>
         <div class="fw-black" style="font-size:18px;">ใบรายงานสถิติผู้ป่วยใน หน่วยงาน Ward 9/2 เดือน ${escapeHtml(sheet)}</div>
-        <div class="subtle mt-1">จำนวนวันทั้งหมด <b>${days}</b> วัน | จำนวนเตียงที่เปิดจริง <b>${beds}</b> เตียง</div>
+        <div class="subtle mt-1">จำนวนวันทั้งหมด <b>${days}</b> วัน | จำนวนเตียงที่เปิดจริง <b>${bedsText}</b></div>
       </div>
       <div class="text-end subtle">
         ออกรายงาน: <b>${escapeHtml(new Date().toLocaleString('th-TH'))}</b>
@@ -2623,11 +2628,11 @@ patientDays, patientDaysUtil, bedDays, borOcc, borUtil,    deptRows,
               </tr>
             </thead>
             <tbody>
-<tr>${td("6")}${td("อัตราครองเตียง (ไม่นับ Admit < 6 ชม.)")}${tdn(fmt2(borOcc) + "%")}</tr>
-<tr>${td("7")}${td("อัตราการใช้เตียง (รวม Admit < 6 ชม. = 1)")}${tdn(fmt2(borUtil) + "%")}</tr>
-<tr>${td("8")}${td("จำนวนวันนอนรวม (LOS เคสปิด)")}${tdn(patientDays)}</tr>
-<tr>${td("9")}${td("จำนวนวันใช้เตียงรวม (วันนอน + เคส < 6 ชม.)")}${tdn(patientDaysUtil)}</tr>
-
+              <tr>${td("6")}${td("อัตราครองเตียง (ไม่นับ Admit < 6 ชม.)")}${tdn(borOccText)}</tr>
+              <tr>${td("7")}${td("อัตราการใช้เตียง (รวม Admit < 6 ชม. = 1)")}${tdn(borUtilText)}</tr>
+              <tr>${td("8")}${td("จำนวนวันนอนรวม (LOS เคสปิด)")}${tdn(patientDays)}</tr>
+              <tr>${td("9")}${td("จำนวนวันใช้เตียงรวม (วันนอน + เคส < 6 ชม.)")}${tdn(patientDaysUtil)}</tr>
+              
               <tr>${td("10")}${td("สถิติผู้ป่วย 5 โรคแรก")}${tdn("")}</tr>
               <tr><td colspan="3">${dx5}</td></tr>
 
@@ -2635,36 +2640,35 @@ patientDays, patientDaysUtil, bedDays, borOcc, borUtil,    deptRows,
               <tr>${td("12")}${td("จำนวนวันนอนรวมของผู้ป่วยที่ใส่ท่อเครื่องช่วยหายใจ")}${tdn(k.k12_vent_days)}</tr>
               <tr>${td("13")}${td("จำนวนครั้งที่เกิดการเลื่อนหลุดของ ICD Line")}${tdn(k.k13_icd_displaced)}</tr>
               <tr>${td("14")}${td("จำนวนวันนอนรวมของผู้ป่วยที่ On ICD Line")}${tdn(k.k14_icd_days)}</tr>
-
-  <tr>${td("15")}${td("อัตราการเกิดแผลกดทับ (ครั้ง/1000 วันนอน)")} ${tdn(k.k15_pressure_ulcer_rate)}</tr>
-<tr>${td("16")}${td("อัตราการเกิดพลัดตกหกล้ม (ครั้ง/1000 วันนอน)")} ${tdn(k.k16_fall_rate)}</tr>
-<tr>${td("17")}${td("ความคลาดเคลื่อนทางยา (ครั้ง/1000 วันนอน)")} ${tdn(k.k17_med_error)}</tr>
+              <tr>${td("15")}${td("อัตราการเกิดแผลกดทับ (ครั้ง/1000 วันนอน)")} ${tdn(k.k15_pressure_ulcer_rate)}</tr>
+              <tr>${td("16")}${td("อัตราการเกิดพลัดตกหกล้ม (ครั้ง/1000 วันนอน)")} ${tdn(k.k16_fall_rate)}</tr>
+              <tr>${td("17")}${td("ความคลาดเคลื่อนทางยา (ครั้ง/1000 วันนอน)")} ${tdn(k.k17_med_error)}</tr>
               <tr>${td("18")}${td("อุบัติการณ์เฉพาะโรคระดับ GHI (แนบรายงานอุบัติการณ์) ระดับ")}${tdn(k.k18_ghi_level)}</tr>
-
+              
               <tr>${td("19")}${td("อุบัติการณ์ Unplanned CPR")}${tdn(k.k19_unplanned_cpr)}</tr>
               <tr>${td("20")}${td("อุบัติการณ์ Unplanned ICU")}${tdn(k.k20_unplanned_icu)}</tr>
               <tr>${td("21")}${td("อุบัติการณ์หัตถการ ผิดคน/ผิดข้าง/ผิดตำแหน่ง (ครั้ง)")}${tdn(k.k21_wrong_proc)}</tr>
               <tr>${td("22")}${td("อุบัติการณ์การผ่าตัด ผิดคน/ผิดข้าง/ผิดตำแหน่ง (ครั้ง)")}${tdn(k.k22_wrong_surgery)}</tr>
               <tr>${td("23")}${td("อุบัติการณ์ให้เลือดผิดคนจากระบุตัวผิดพลาด (ครั้ง)")}${tdn(k.k23_wrong_blood)}</tr>
-
+              
               <tr>
                 ${td("24")}
                 ${td("จำนวนการเกิด Phlebitis")}
                 ${tdn(`grade1=${k.k24_phlebitis_g1}, g2=${k.k24_phlebitis_g2}, g3=${k.k24_phlebitis_g3}, g4=${k.k24_phlebitis_g4}`)}
               </tr>
-
+              
               <tr>
                 ${td("25")}
                 ${td("ความสมบูรณ์ของบันทึกทางการพยาบาล")}
                 ${tdn(`เชิงปริมาณ ${k.k25_note_qty} | เชิงคุณภาพ ${k.k25_note_qlt}`)}
               </tr>
-
+              
               <tr>
                 ${td("26")}
                 ${td("ระยะเวลารอคอยกลับบ้านเฉลี่ย")}
                 ${tdn(fmt2(k.k26_avg_wait_dc_min) + " นาที")}
               </tr>
-
+              
               <tr>
                 ${td("27")}
                 ${td("Refer + Day Care")}
@@ -2682,7 +2686,6 @@ patientDays, patientDaysUtil, bedDays, borOcc, borUtil,    deptRows,
   </div>
   `;
 }
-
 /* ================== PATCH showFullReport() ==================
    ✅ ดึง patients + summary + dxMap เหมือนเดิม
    ✅ สร้าง ctx.kpi1127 จาก summary ก่อน แล้ว normalize กันผิดช่อง
@@ -2714,10 +2717,11 @@ async function showFullReport(btn) {
       return String(dxMap[raw] || raw).trim().replace(/\s+/g, " ");
     };
 
-const days = daysInMonthFromSheet(currentSheet);
+    const days = daysInMonthFromSheet(currentSheet);
 
-    // beds: ถ้า summary ส่งมาใช้ summary, ไม่งั้น 21
-    const beds = summary && summary.beds ? Number(summary.beds) : 21; // เพิ่มบรรทัดนี้เพื่อประกาศตัวแปร beds
+    // ✅ เช็คว่ามีการปิดยอดเดือน (มีข้อมูลใน summary) หรือยัง?
+    const isMonthClosed = !!(summary && summary.beds);
+    const beds = isMonthClosed ? Number(summary.beds) : 0; // ถ้ายังไม่ปิดยอด เตียงจะเป็น 0
     const bedDays = beds * days;
 
     // group lists
@@ -2725,7 +2729,7 @@ const days = daysInMonthFromSheet(currentSheet);
     const inNewList      = patients.filter(p => typeOf(p) === "รับใหม่");
     const inTransferList = patients.filter(p => typeOf(p) === "รับย้าย");
     const inReferList    = patients.filter(p => typeOf(p) === "รับ Refer");
-    const inAllList      = [...carryList, ...inNewList, ...inTransferList, ...inReferList];
+    const inAllList      =[...carryList, ...inNewList, ...inTransferList, ...inReferList];
 
     const outDCList     = patients.filter(p => !!p?.rawData?.[20]);
     const outDeathList  = patients.filter(p => !!p?.rawData?.[30]);
@@ -2733,10 +2737,10 @@ const days = daysInMonthFromSheet(currentSheet);
     const outROList     = patients.filter(p => !!p?.rawData?.[28]);
     const outAbsList    = patients.filter(p => !!p?.rawData?.[26]);
     const outRefuseList = patients.filter(p => !!p?.rawData?.[27]);
-    const outAllList    = patients.filter(p => isOutcomeClosed(p.rawData || [])); // ✅ เคสปิด
+    const outAllList    = patients.filter(p => isOutcomeClosed(p.rawData ||[])); // เคสปิด
     const eomList       = patients.filter(p => p.status === "ยังรักษาอยู่");
 
-    // ✅ patientDays = รวม LOS ของเคสปิด
+    // patientDays = รวม LOS ของเคสปิด
     const patientDays = sumLos(outAllList);
 
     // BOR
@@ -2745,7 +2749,7 @@ const days = daysInMonthFromSheet(currentSheet);
     // dept rows
     const deptRows = {};
     inAllList.forEach(p=>{
-      const r = p.rawData || [];
+      const r = p.rawData ||[];
       const dept = deptFromRow(r);
       if(!deptRows[dept]) deptRows[dept] = {F:0,M:0,T:0,PD:0};
       const g = genderOf(p);
@@ -2758,15 +2762,15 @@ const days = daysInMonthFromSheet(currentSheet);
     // Top Dx5 (mapped)
     const counts = {};
     patients.forEach(p=>{
-      const r = p.rawData || [];
+      const r = p.rawData ||[];
       const dx1 = splitDxList(r[18]).map(mapDx);
       const dx2 = splitDxList(r[19]).map(mapDx);
       [...dx1, ...dx2].forEach(dx=>addCount(counts, dx, 1));
     });
     const topDx5 = topEntries(counts, 5);
 
-    // ✅ KPI 11–27 from IncidentLog (15–17 = อัตรา/1000 patient-days)
-    const pd = patientDays; // ชัด ๆ
+    // KPI 11–27 from IncidentLog
+    const pd = patientDays;
     const ratePer1000 = (n)=> (pd > 0 ? (n/pd*1000) : 0);
 
     const pressure = sumInc(incidents, "PRESSURE_ULCER");
@@ -2775,41 +2779,31 @@ const days = daysInMonthFromSheet(currentSheet);
 
     const ph = phlebitisByGrade(incidents);
 
-    // GHI: เอา level ล่าสุด (ถ้ามีหลายรายการ)
-    const ghiList = (incidents || []).filter(x => x.eventType === "GHI" && String(x.level||"").trim() !== "");
+    // GHI: เอา level ล่าสุด
+    const ghiList = (incidents ||[]).filter(x => x.eventType === "GHI" && String(x.level||"").trim() !== "");
     const ghiLevel = ghiList.length ? String(ghiList[ghiList.length - 1].level).trim() : "-";
 
-    // สร้าง kpi1127 ให้ตรง schema (ตัวเลข/ข้อความ)
     let kpi1127 = normalizeKpi11_27({
-      // ถ้าคุณอยากให้ “Summary เป็นค่าตั้งต้น” ให้ใส่ summary?.xxx ได้
-      // แต่ในรอบนี้: ใช้ incidents เป็นหลัก
       k11_unplanned_et:        sumInc(incidents,"UNPLANNED_ET"),
       k12_vent_days:           sumInc(incidents,"VENT_DAYS"),
       k13_icd_displaced:       sumInc(incidents,"ICD_DISLODGE"),
       k14_icd_days:            sumInc(incidents,"ICD_LINE_DAYS"),
-
-      // ✅ 15–17 เป็น "อัตรา/1000 patient-days" -> เก็บเป็น text
       k15_pressure_ulcer_rate: fmt2(ratePer1000(pressure)),
       k16_fall_rate:           fmt2(ratePer1000(fall)),
       k17_med_error:           fmt2(ratePer1000(mederr)),
       k18_ghi_level:           safeText(ghiLevel, "-"),
-
       k19_unplanned_cpr:       sumInc(incidents,"UNPLANNED_CPR"),
       k20_unplanned_icu:       sumInc(incidents,"UNPLANNED_ICU"),
       k21_wrong_proc:          sumInc(incidents,"WRONG_PROCEDURE"),
       k22_wrong_surgery:       sumInc(incidents,"WRONG_SURGERY"),
       k23_wrong_blood:         sumInc(incidents,"WRONG_TRANSFUSION"),
-
       k24_phlebitis_g1:        ph[1] || 0,
       k24_phlebitis_g2:        ph[2] || 0,
       k24_phlebitis_g3:        ph[3] || 0,
       k24_phlebitis_g4:        ph[4] || 0,
-
       k25_note_qty:            Math.round(avgInc(incidents,"NURSE_NOTE_QTY") || 0),
       k25_note_qlt:            Math.round(avgInc(incidents,"NURSE_NOTE_QLT") || 0),
-
       k26_avg_wait_dc_min:     avgInc(incidents,"DISCHARGE_WAIT_MIN") || 0,
-
       k27_refer_in:            sumInc(incidents,"REFER_IN"),
       k27_refer_out:           sumInc(incidents,"REFER_OUT"),
       k27_refer_back:          sumInc(incidents,"REFER_BACK"),
@@ -2817,26 +2811,21 @@ const days = daysInMonthFromSheet(currentSheet);
       k27_daycare:             sumInc(incidents,"DAYCARE"),
     });
 
-    // ✅ under6 = เคสที่กรอก Admit < 6 ชม. (ถือว่าใช้เตียง 1)
-const under6List = patients.filter(p => {
-  const r = p.rawData || [];
-  return String(r[22] || "").trim() !== ""; // admitUnder6 มีค่า
-});
-const under6Count = under6List.length;
+    const under6List = patients.filter(p => {
+      const r = p.rawData || [];
+      return String(r[22] || "").trim() !== "";
+    });
+    const under6Count = under6List.length;
 
-// ✅ patientDaysจริง = LOS ของ “เคสปิด” (ตามที่คุณทำ)
-const patientDaysOcc = sumLos(outAllList);
+    const patientDaysOcc = sumLos(outAllList);
+    const patientDaysUtil = patientDaysOcc + under6Count;
 
-// ✅ patientDaysสำหรับการใช้เตียง = patientDaysจริง + under6Count
-const patientDaysUtil = patientDaysOcc + under6Count;
-
-// ✅ อัตรา
-const borOcc  = (bedDays > 0) ? (patientDaysOcc  / bedDays * 100) : 0; // ข้อ 6
-const borUtil = (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0; // ข้อ 7
+    const borOcc  = (bedDays > 0) ? (patientDaysOcc  / bedDays * 100) : 0;
+    const borUtil = (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0;
 
     const ctx = {
       sheet: currentSheet,
-      days, beds, bedDays,
+      days, beds, bedDays, isMonthClosed, // ✅ ส่ง isMonthClosed ไปแสดงผลใน HTML
 
       inAllG: countByGender(inAllList),
       carryG: countByGender(carryList),
@@ -2852,15 +2841,14 @@ const borUtil = (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0; // ข้
       outAbsG: countByGender(outAbsList),
       outRefuseG: countByGender(outRefuseList),
 
-      eomG: countByGender(eomList),
+      eomG: countByGender(eomList),     
 
-        patientDays: patientDaysOcc,      // ข้อ 8 (วันนอนจริง)
-  patientDaysUtil,                  // (วันใช้เตียงแบบรวม under6)
-  borOcc,                           // ข้อ 6
-  borUtil,                          // ข้อ 7,
+      patientDays: patientDaysOcc,
+      patientDaysUtil,             
+      borOcc,                      
+      borUtil,                     
       deptRows,
       topDx5,
-
       kpi1127
     };
 
