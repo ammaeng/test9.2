@@ -2494,109 +2494,183 @@ async function showFullReport(btn) {
 // --------------------------------------------------------------------------------
 function buildModernReportHTML(ctx) {
   const k = ctx.kpi1127;
-  const borOccText = ctx.isMonthClosed ? `${fmt2(ctx.borOcc)}%` : `<span class="text-danger">ยังไม่ปิดยอด</span>`;
-  const borUtilText = ctx.isMonthClosed ? `${fmt2(ctx.borUtil)}%` : `<span class="text-danger">ยังไม่ปิดยอด</span>`;
-
+  const isC = ctx.isMonthClosed;
+  
   return `
-  <div class="mb-4">
-    <div class="d-flex justify-content-between align-items-center">
-        <h5 class="fw-black text-primary mb-0">📊 รายงานสรุปผล Ward 9/2 : ${ctx.sheet}</h5>
-        <button class="btn btn-danger rounded-pill shadow-sm fw-bold" onclick="printOfficialReport()">🖨️ พิมพ์ PDF ทางการ</button>
-    </div>
-    <div class="subtle">จำนวนเตียงที่เปิดจริง: <b>${ctx.isMonthClosed ? ctx.beds : 'รอการปิดยอด'} เตียง</b></div>
-  </div>
+  <style>
+    .report-modal-content { background: #f8f9fa; border-radius: 20px; overflow: hidden; }
+    .stat-card-premium { background: #fff; border: none; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: 0.3s; }
+    .stat-card-premium:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .text-gradient { background: linear-gradient(45deg, #0d6efd, #00bcd4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; }
+    .chart-box-main { min-height: 220px; }
+    .table-custom { font-size: 13px; border-radius: 12px; overflow: hidden; }
+    .table-custom thead { background: #f1f3f5; color: #495057; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+    .pill-qa { background: #fff; border: 1px solid #e9ecef; border-radius: 999px; padding: 6px 15px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+  </style>
 
-  <div class="row g-3">
-    <!-- ตารางแยกเพศ รับเข้า -->
-    <div class="col-12 col-md-6">
-      <div class="card p-3 shadow-sm border-0">
-        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-box-in"></i> สรุปการรับเข้า (แยกเพศ)</h6>
-        <table class="table table-bordered table-sm text-center">
-          <thead class="table-light"><tr><th>ประเภท</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr></thead>
-          <tbody>
-            <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td class="fw-bold">${ctx.carryG.T}</td></tr>
-            <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td class="fw-bold">${ctx.inNewG.T}</td></tr>
-            <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td class="fw-bold">${ctx.inTransferG.T}</td></tr>
-            <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td class="fw-bold">${ctx.inReferG.T}</td></tr>
-          </tbody>
-        </table>
+  <div class="p-2">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h4 class="text-gradient m-0">🏥 Medical Statistics Dashboard</h4>
+        <div class="subtle">Ward 9/2 | ประจำเดือน ${ctx.sheet} | เตียงเปิดจริง: ${isC ? ctx.beds : '<span class="badge bg-soft-danger text-danger">ยังไม่ปิดยอด</span>'}</div>
+      </div>
+      <button class="btn btn-danger shadow-sm rounded-pill px-4 fw-bold" onclick="printOfficialReport()">
+        <i class="bi bi-file-earmark-pdf"></i> พิมพ์ PDF ทางการ
+      </button>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="card p-3 stat-card-premium border-start border-primary border-4 text-center">
+          <div class="small text-muted mb-1 text-uppercase fw-bold" style="font-size:10px">BOR (Official)</div>
+          <div class="h3 fw-black m-0 text-primary">${isC ? fmt2(ctx.borOcc) + '%' : 'N/A'}</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card p-3 stat-card-premium border-start border-warning border-4 text-center">
+          <div class="small text-muted mb-1 text-uppercase fw-bold" style="font-size:10px">BOR (Utilization)</div>
+          <div class="h3 fw-black m-0 text-warning">${isC ? fmt2(ctx.borUtil) + '%' : 'N/A'}</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card p-3 stat-card-premium border-start border-success border-4 text-center">
+          <div class="small text-muted mb-1 text-uppercase fw-bold" style="font-size:10px">Total Patient Days</div>
+          <div class="h3 fw-black m-0 text-success">${ctx.patientDays}</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card p-3 stat-card-premium border-start border-info border-4 text-center">
+          <div class="small text-muted mb-1 text-uppercase fw-bold" style="font-size:10px">Current Census</div>
+          <div class="h3 fw-black m-0 text-info">${ctx.eomG.T}</div>
+        </div>
       </div>
     </div>
-    <!-- ตารางแยกเพศ จำหน่าย -->
-    <div class="col-12 col-md-6">
-      <div class="card p-3 shadow-sm border-0">
-        <h6 class="text-success fw-bold mb-3"><i class="bi bi-box-out"></i> สรุปการจำหน่าย (แยกเพศ)</h6>
-        <table class="table table-bordered table-sm text-center">
-          <thead class="table-light"><tr><th>ประเภท</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr></thead>
-          <tbody>
-            <tr><td>กลับบ้าน</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td class="fw-bold">${ctx.outDCG.T}</td></tr>
-            <tr><td>ย้ายแผนก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td class="fw-bold">${ctx.outTOG.T}</td></tr>
-            <tr><td>Refer Out</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td class="fw-bold">${ctx.outROG.T}</td></tr>
-            <tr><td>ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td class="fw-bold">${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
-          </tbody>
-        </table>
+
+    <!-- Charts Section -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-lg-4">
+        <div class="card p-3 stat-card-premium h-100">
+          <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill me-2"></i>Bed Occupancy Gauge</h6>
+          <div class="chart-box-main"><canvas id="chartBOR"></canvas></div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-8">
+        <div class="card p-3 stat-card-premium h-100">
+          <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill me-2"></i>Department Distribution (Gender)</h6>
+          <div class="chart-box-main"><canvas id="chartDept"></canvas></div>
+        </div>
       </div>
     </div>
-    <!-- KPI ส่วนเหลือ -->
-    <div class="col-12"><div class="card p-3 shadow-sm border-0"><div class="row text-center">
-       <div class="col-6 col-md-3"><div>BOR Official</div><div class="h4 text-info">${borOccText}</div></div>
-       <div class="col-6 col-md-3"><div>BOR Utilization</div><div class="h4 text-warning">${borUtilText}</div></div>
-       <div class="col-6 col-md-3"><div>วันนอนรวม</div><div class="h4">${ctx.patientDays}</div></div>
-       <div class="col-6 col-md-3"><div>คงค้างปลายเดือน</div><div class="h4">${ctx.eomG.T}</div></div>
-    </div></div></div>
+
+    <!-- Data Tables Section -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-lg-6">
+        <div class="card p-3 stat-card-premium border-top border-primary border-4 h-100">
+          <h6 class="fw-bold text-primary mb-3"><i class="bi bi-box-arrow-in-right me-2"></i>Admissions Details</h6>
+          <table class="table table-custom table-hover m-0">
+            <thead><tr><th>ประเภทการรับ</th><th>หญิง</th><th>ชาย</th><th class="text-primary">รวม</th></tr></thead>
+            <tbody>
+              <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td><b>${ctx.carryG.T}</b></td></tr>
+              <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td><b>${ctx.inNewG.T}</b></td></tr>
+              <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td><b>${ctx.inTransferG.T}</b></td></tr>
+              <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td><b>${ctx.inReferG.T}</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="card p-3 stat-card-premium border-top border-success border-4 h-100">
+          <h6 class="fw-bold text-success mb-3"><i class="bi bi-box-arrow-right me-2"></i>Discharges Details</h6>
+          <table class="table table-custom table-hover m-0">
+            <thead><tr><th>ประเภทจำหน่าย</th><th>หญิง</th><th>ชาย</th><th class="text-success">รวม</th></tr></thead>
+            <tbody>
+              <tr><td>กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td><b>${ctx.outDCG.T}</b></td></tr>
+              <tr><td>ย้ายแผนก / Refer</td><td>${ctx.outTOG.F + ctx.outROG.F}</td><td>${ctx.outTOG.M + ctx.outROG.M}</td><td><b>${ctx.outTOG.T + ctx.outROG.T}</b></td></tr>
+              <tr><td>ตาย / อื่นๆ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M}</td><td><b>${ctx.outDeathG.T + ctx.outAbsG.T}</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quality Section -->
+    <div class="card p-3 stat-card-premium bg-light">
+      <h6 class="fw-bold mb-3"><i class="bi bi-shield-check me-2"></i>QA / Incident Monitoring (Key Metrics)</h6>
+      <div class="d-flex flex-wrap gap-2">
+        <div class="pill-qa"><i class="bi bi-activity text-danger"></i> Unplanned ET: <b>${k.k11_unplanned_et}</b></div>
+        <div class="pill-qa"><i class="bi bi-droplet text-primary"></i> ICD Dislodge: <b>${k.k13_icd_displaced}</b></div>
+        <div class="pill-qa"><i class="bi bi-clipboard-check text-success"></i> Note Quality: <b>${k.k25_note_qlt}%</b></div>
+        <div class="pill-qa"><i class="bi bi-clock-history text-warning"></i> Avg Wait: <b>${fmt2(k.k26_avg_wait_dc_min)}m</b></div>
+        <div class="pill-qa"><i class="bi bi-heart-pulse text-danger"></i> Pressure Ulcer: <b>${k.k15_pressure_ulcer_rate}</b></div>
+      </div>
+    </div>
   </div>`;
 }
-// --------------------------------------------------------------------------------
+  
+  // --------------------------------------------------------------------------------
 // 2. ฟังก์ชันวาดกราฟใน Dashboard
 // --------------------------------------------------------------------------------
 function renderReportCharts(ctx) {
-  // ทำลายกราฟเดิมทิ้งเพื่อวาดใหม่ (ป้องกัน Error ซ้อน)
+  // 1. ทำลายกราฟเดิมทิ้งก่อนวาดใหม่เสมอ
   Chart.helpers.each(Chart.instances, (instance) => instance.destroy());
 
-  // 1. Half-Doughnut สำหรับ BOR (ดูโปรมาก)
-  const ctxGauge = document.getElementById('chartBOR');
-  new Chart(ctxGauge, {
-    type: 'doughnut',
-    data: {
-      labels: ['Occupied', 'Available'],
-      datasets: [{
-        data: [ctx.borOcc, 100 - ctx.borOcc],
-        backgroundColor: (ctx.borOcc > 80 ? ['#dc3545', '#eee'] : ['#0d6efd', '#eee']),
-        borderWidth: 0,
-        circumference: 180, rotation: 270
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } }
-    }
-  });
+  // 2. วาด BOR Gauge (Half-Doughnut)
+  const elBOR = document.getElementById('chartBOR');
+  if (elBOR) {
+    new Chart(elBOR, {
+      type: 'doughnut',
+      data: {
+        labels: ['Occupied', 'Free'],
+        datasets: [{
+          data: [ctx.borOcc || 0.1, 100 - (ctx.borOcc || 0)], // ใส่ 0.1 กันสูตรหารศูนย์
+          backgroundColor: [ctx.borOcc > 80 ? '#ff6b6b' : '#339af0', '#f1f3f5'],
+          borderWidth: 0,
+          circumference: 180,
+          rotation: 270,
+          cutout: '80%'
+        }]
+      },
+      options: { 
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 
-  // 2. Bar Chart สำหรับแยกเพศรายแผนก (ใช้ไล่เฉดสี)
-  const ctxDept = document.getElementById('chartDept');
-  const gradientF = ctxDept.getContext('2d').createLinearGradient(0, 0, 0, 200);
-  gradientF.addColorStop(0, '#ff7878'); gradientF.addColorStop(1, '#ff4d4d');
-  
-  const gradientM = ctxDept.getContext('2d').createLinearGradient(0, 0, 0, 200);
-  gradientM.addColorStop(0, '#74c0fc'); gradientM.addColorStop(1, '#339af0');
+  // 3. วาด Dept Chart (Stacked Bar with Gradient)
+  const elDept = document.getElementById('chartDept');
+  if (elDept) {
+    const chartCtx = elDept.getContext('2d');
+    
+    // สร้าง Gradient สีสวยๆ
+    const gradF = chartCtx.createLinearGradient(0, 0, 0, 300);
+    gradF.addColorStop(0, '#ff78b2'); gradF.addColorStop(1, '#ff4b82');
+    
+    const gradM = chartCtx.createLinearGradient(0, 0, 0, 300);
+    gradM.addColorStop(0, '#74c0fc'); gradM.addColorStop(1, '#339af0');
 
-  new Chart(ctxDept, {
-    type: 'bar',
-    data: {
-      labels: Object.keys(ctx.deptRows),
-      datasets: [
-        { label: 'หญิง', data: Object.values(ctx.deptRows).map(d => d.F), backgroundColor: gradientF },
-        { label: 'ชาย', data: Object.values(ctx.deptRows).map(d => d.M), backgroundColor: gradientM }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: { x: { grid: { display: false } }, y: { stacked: true, beginAtZero: true } },
-      plugins: { legend: { position: 'top' } }
-    }
-  });
+    const deptLabels = Object.keys(ctx.deptRows);
+    new Chart(elDept, {
+      type: 'bar',
+      data: {
+        labels: deptLabels,
+        datasets: [
+          { label: 'หญิง (F)', data: deptLabels.map(d => ctx.deptRows[d].F), backgroundColor: gradF, borderRadius: 5 },
+          { label: 'ชาย (M)', data: deptLabels.map(d => ctx.deptRows[d].M), backgroundColor: gradM, borderRadius: 5 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true } },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
 }
-// --------------------------------------------------------------------------------
+  
+  // --------------------------------------------------------------------------------
 // 3. ฟังก์ชันสร้างหน้าต่างใหม่และพิมพ์ PDF (แบบฟอร์มทางการ)
 // --------------------------------------------------------------------------------
 function printOfficialReport() {
