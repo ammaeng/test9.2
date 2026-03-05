@@ -310,6 +310,9 @@
     <li class="nav-item">
       <button class="nav-link rounded-pill" data-bs-toggle="tab" data-bs-target="#form-pane" onclick="prepareNewForm()">ลงทะเบียนใหม่</button>
     </li>
+    <li class="nav-item">
+  <button class="nav-link rounded-pill" data-bs-toggle="tab" data-bs-target="#incident-pane" onclick="openIncidentTab()">Incident/QA</button>
+</li>
   </ul>
 
   <div class="tab-content">
@@ -408,6 +411,8 @@
           ✅ Tips: คลิกที่ “แถวผู้ป่วย” เพื่อดูรายละเอียด (ไม่ต้องเปิดฟอร์ม) | ปุ่ม ⚡ D/C ใช้แบบเลือกวันที่ (B)
         </div>
       </div>
+
+     
 
     </div>
 
@@ -611,6 +616,75 @@
 
       </form>
     </div>
+     <div class="tab-pane fade" id="incident-pane">
+  <div class="card p-3">
+    <div class="section-title">Incident/QA (11–27)</div>
+    <div class="subtle mb-2">เลือกคนไข้ → เลือกประเภทเหตุการณ์ → บันทึก (ผูกกับเดือนและ HN/AN)</div>
+
+    <div class="row g-2">
+      <div class="col-12 col-md-4">
+        <label class="form-label">เลือกคนไข้ (จากตารางเดือนนี้)</label>
+        <select id="incPatientPick" class="form-select" onchange="onIncPickPatient()"></select>
+        <div class="subtle mt-1" id="incPatientMeta">-</div>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label">วันที่เกิดเหตุ</label>
+        <input type="date" id="incDate" class="form-control">
+      </div>
+
+      <div class="col-6 col-md-5">
+        <label class="form-label">ประเภทเหตุการณ์ (ล็อกตามข้อรายงาน)</label>
+        <select id="incType" class="form-select" onchange="toggleIncFields()"></select>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label">จำนวน/นาที/วัน (value)</label>
+        <input type="number" id="incValue" class="form-control" placeholder="เช่น 1 หรือ 30">
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label">Grade (ใช้กับ Phlebitis)</label>
+        <select id="incGrade" class="form-select">
+          <option value="">-</option>
+          <option value="1">1</option><option value="2">2</option>
+          <option value="3">3</option><option value="4">4</option>
+        </select>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label">Level (ใช้กับ GHI)</label>
+        <input type="text" id="incLevel" class="form-control" placeholder="เช่น A/B หรือ 1-5">
+      </div>
+
+      <div class="col-12 col-md-9">
+        <label class="form-label">หมายเหตุ</label>
+        <input type="text" id="incNote" class="form-control">
+      </div>
+
+      <div class="col-12">
+        <button class="btn btn-primary rounded-pill w-100" onclick="saveIncident()">บันทึกเหตุการณ์</button>
+      </div>
+    </div>
+
+    <hr class="my-3">
+
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="section-title">รายการเหตุการณ์ของเดือนนี้</div>
+      <button class="btn btn-outline-dark btn-sm" onclick="loadIncidents()">รีเฟรช</button>
+    </div>
+    <div class="table-wrap mt-2">
+      <table class="table table-sm table-bordered mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>วันที่</th><th>HN</th><th>AN</th><th>Type</th><th>value</th><th>grade</th><th>level</th><th>note</th><th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="incListBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
   </div>
 
 </div>
@@ -1917,6 +1991,159 @@
     }
   });
 
+  const INCIDENT_TYPES = [
+  {k:"UNPLANNED_ET", t:"(11) Unplanned ET tube", needsValue:true},
+  {k:"VENT_DAYS", t:"(12) Ventilator days", needsValue:true},
+  {k:"ICD_DISLODGE", t:"(13) ICD line หลุด", needsValue:true},
+  {k:"ICD_LINE_DAYS", t:"(14) ICD line days", needsValue:true},
+  {k:"PRESSURE_ULCER", t:"(15) แผลกดทับ (ครั้ง)", needsValue:true},
+  {k:"FALL", t:"(16) พลัดตกหกล้ม (ครั้ง)", needsValue:true},
+  {k:"MED_ERROR", t:"(17) คลาดเคลื่อนยา (ครั้ง)", needsValue:true},
+  {k:"GHI", t:"(18) GHI level", needsLevel:true},
+  {k:"UNPLANNED_CPR", t:"(19) Unplanned CPR", needsValue:true},
+  {k:"UNPLANNED_ICU", t:"(20) Unplanned ICU", needsValue:true},
+  {k:"WRONG_PROCEDURE", t:"(21) หัตถการผิดคน/ข้าง/ตำแหน่ง", needsValue:true},
+  {k:"WRONG_SURGERY", t:"(22) ผ่าตัดผิดคน/ข้าง/ตำแหน่ง", needsValue:true},
+  {k:"WRONG_TRANSFUSION", t:"(23) ให้เลือดผิดคน", needsValue:true},
+  {k:"PHLEBITIS", t:"(24) Phlebitis grade", needsGrade:true, needsValue:true},
+  {k:"NURSE_NOTE_QTY", t:"(25) บันทึกพยาบาลเชิงปริมาณ (%)", needsValue:true},
+  {k:"NURSE_NOTE_QLT", t:"(25) บันทึกพยาบาลเชิงคุณภาพ (%)", needsValue:true},
+  {k:"DISCHARGE_WAIT_MIN", t:"(26) รอคอยกลับบ้าน (นาที)", needsValue:true},
+  {k:"REFER_IN", t:"(27) Refer IN", needsValue:true},
+  {k:"REFER_OUT", t:"(27) Refer OUT", needsValue:true},
+  {k:"REFER_BACK", t:"(27) Refer Back", needsValue:true},
+  {k:"REFER_BACK_TO", t:"(27) Refer Back To", needsValue:true},
+  {k:"DAYCARE", t:"(27) Day Care", needsValue:true},
+];
+
+function openIncidentTab(){
+  // เตรียม dropdown คนไข้จาก lastData (เดือนปัจจุบัน)
+  const sel = document.getElementById("incPatientPick");
+  if(!sel) return;
+
+  sel.innerHTML = `<option value="">-- เลือกคนไข้ --</option>` + lastData.map(p=>{
+    const r = p.rawData || [];
+    const name = (r[32]||"") + (r[11]||"");
+    const hn = r[13]||"";
+    const an = r[14]||"";
+    return `<option value="${p.rowId}">${escapeHtml(an)} | ${escapeHtml(hn)} | ${escapeHtml(name)}</option>`;
+  }).join("");
+
+  const typeEl = document.getElementById("incType");
+  typeEl.innerHTML = INCIDENT_TYPES.map(x=>`<option value="${x.k}">${escapeHtml(x.t)}</option>`).join("");
+
+  // default date = วันนี้
+  document.getElementById("incDate").value = new Date().toISOString().split("T")[0];
+
+  toggleIncFields();
+  loadIncidents();
+}
+
+function onIncPickPatient(){
+  const rowId = document.getElementById("incPatientPick").value;
+  const p = getItemByRowId(rowId);
+  const meta = document.getElementById("incPatientMeta");
+  if(!p){ meta.innerText = "-"; return; }
+  const r = p.rawData || [];
+  meta.innerHTML = `ชื่อ: <b>${escapeHtml((r[32]||"")+(r[11]||""))}</b> | HN: <b>${escapeHtml(r[13]||"-")}</b> | AN: <b>${escapeHtml(r[14]||"-")}</b>`;
+}
+
+function toggleIncFields(){
+  const k = document.getElementById("incType").value;
+  const def = INCIDENT_TYPES.find(x=>x.k===k) || {};
+
+  // เปิด/ปิด input ตาม eventType
+  document.getElementById("incValue").disabled = !def.needsValue;
+  document.getElementById("incGrade").disabled = !def.needsGrade;
+  document.getElementById("incLevel").disabled = !def.needsLevel;
+
+  if(!def.needsValue) document.getElementById("incValue").value = "";
+  if(!def.needsGrade) document.getElementById("incGrade").value = "";
+  if(!def.needsLevel) document.getElementById("incLevel").value = "";
+}
+
+async function saveIncident(){
+  if(!currentSheet) return Swal.fire("ยังไม่ได้เลือกเดือน");
+
+  const rowId = document.getElementById("incPatientPick").value;
+  const p = getItemByRowId(rowId);
+  if(!p) return Swal.fire("เลือกคนไข้ก่อน");
+
+  const r = p.rawData || [];
+  const hn = r[13]||"";
+  const an = r[14]||"";
+
+  const eventDateISO = document.getElementById("incDate").value;
+  if(!eventDateISO) return Swal.fire("เลือกวันที่");
+  const eventDateTH = formatDateForSheet(eventDateISO);
+
+  const eventType = document.getElementById("incType").value;
+  const value = document.getElementById("incValue").value;
+  const grade = document.getElementById("incGrade").value;
+  const level = document.getElementById("incLevel").value;
+  const note  = document.getElementById("incNote").value;
+
+  Swal.fire({title:"กำลังบันทึก...", didOpen:()=>Swal.showLoading()});
+
+  try{
+    await callApi("ensureIncidentLog");
+    await callApi("addIncident", {
+      sheetName: currentSheet,
+      eventDate: eventDateTH,
+      hn, an,
+      eventType,
+      value: value === "" ? "" : Number(value),
+      grade, level, note,
+      rowIdRef: String(p.rowId || "")
+    });
+    Swal.fire("สำเร็จ","","success");
+    document.getElementById("incNote").value = "";
+    loadIncidents();
+  }catch(err){
+    Swal.fire("ผิดพลาด", err.toString(),"error");
+  }
+}
+
+async function loadIncidents(){
+  if(!currentSheet) return;
+  try{
+    const list = await callApi("getIncidentsByMonth", currentSheet);
+    const body = document.getElementById("incListBody");
+    if(!body) return;
+
+    body.innerHTML = (list||[]).map(it=>`
+      <tr>
+        <td>${escapeHtml(it.eventDate)}</td>
+        <td>${escapeHtml(it.hn)}</td>
+        <td>${escapeHtml(it.an)}</td>
+        <td>${escapeHtml(it.eventType)}</td>
+        <td class="text-end">${escapeHtml(it.value)}</td>
+        <td class="text-center">${escapeHtml(it.grade)}</td>
+        <td class="text-center">${escapeHtml(it.level)}</td>
+        <td>${escapeHtml(it.note)}</td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-danger" onclick="delIncident(${it.id})">ลบ</button>
+        </td>
+      </tr>
+    `).join("");
+  }catch(e){
+    console.error(e);
+  }
+}
+
+async function delIncident(rowId){
+  const ok = await Swal.fire({title:"ลบรายการนี้?", icon:"warning", showCancelButton:true});
+  if(!ok.isConfirmed) return;
+  try{
+    Swal.fire({title:"กำลังลบ...", didOpen:()=>Swal.showLoading()});
+    await callApi("deleteIncident", { rowId });
+    Swal.fire("ลบแล้ว","","success");
+    loadIncidents();
+  }catch(err){
+    Swal.fire("ผิดพลาด", err.toString(),"error");
+  }
+}
+
   // ================== Report (PRO) ==================
   // *** ส่วน Report/closeMonthUI ของคุณยังใช้ได้ตามเดิม ***
   // (เพื่อย่อข้อความ ผมคงโค้ด report ของคุณไว้เหมือนเดิมทั้งหมด)
@@ -2115,6 +2342,38 @@ function normalizeKpi11_27(raw){
 }
 
 /* ---------- render form ---------- */
+    const pd = patientDays; // ใช้ patientDays ที่คุณคำนวณแล้ว
+const pressure = sumInc(incidents,"PRESSURE_ULCER");
+const fall = sumInc(incidents,"FALL");
+const mederr = sumInc(incidents,"MED_ERROR");
+
+const ratePer1000 = (n)=> (pd>0 ? (n/pd*1000) : 0);
+
+const ph = phlebitisByGrade(incidents);
+
+ctx.q11 = sumInc(incidents,"UNPLANNED_ET");
+ctx.q12 = sumInc(incidents,"VENT_DAYS");
+ctx.q13 = sumInc(incidents,"ICD_DISLODGE");
+ctx.q14 = sumInc(incidents,"ICD_LINE_DAYS");
+ctx.q15 = ratePer1000(pressure); // หรือแสดงเป็นจำนวนด้วยก็ได้
+ctx.q16 = fall; // หรือ rate ต่อ 1000 ก็ได้ตามฟอร์ม
+ctx.q17 = mederr;
+ctx.q19 = sumInc(incidents,"UNPLANNED_CPR");
+ctx.q20 = sumInc(incidents,"UNPLANNED_ICU");
+ctx.q21 = sumInc(incidents,"WRONG_PROCEDURE");
+ctx.q22 = sumInc(incidents,"WRONG_SURGERY");
+ctx.q23 = sumInc(incidents,"WRONG_TRANSFUSION");
+
+ctx.phlebitis = ph;
+ctx.noteQty = avgInc(incidents,"NURSE_NOTE_QTY");
+ctx.noteQlt = avgInc(incidents,"NURSE_NOTE_QLT");
+ctx.waitMin = avgInc(incidents,"DISCHARGE_WAIT_MIN");
+
+ctx.refIn = sumInc(incidents,"REFER_IN");
+ctx.refOut2 = sumInc(incidents,"REFER_OUT");
+ctx.refBack = sumInc(incidents,"REFER_BACK");
+ctx.refBackTo = sumInc(incidents,"REFER_BACK_TO");
+ctx.dayCare = sumInc(incidents,"DAYCARE");
 function buildOfficialMonthlyFormHTML(ctx){
   const {
     sheet, days, beds,
@@ -2329,9 +2588,9 @@ function buildOfficialMonthlyFormHTML(ctx){
               <tr>${td("13")}${td("จำนวนครั้งที่เกิดการเลื่อนหลุดของ ICD Line")}${tdn(k.k13_icd_displaced)}</tr>
               <tr>${td("14")}${td("จำนวนวันนอนรวมของผู้ป่วยที่ On ICD Line")}${tdn(k.k14_icd_days)}</tr>
 
-              <tr>${td("15")}${td("อัตราการเกิดแผลกดทับ(<5ครั้ง/1000วันนอน)")}${tdn(k.k15_pressure_ulcer_rate)}</tr>
-              <tr>${td("16")}${td("อัตราการเกิดพลัดตกหกล้ม(C-I)")}${tdn(k.k16_fall_rate)}</tr>
-              <tr>${td("17")}${td("ความคลาดเคลื่อนทางยา(C-I)")}${tdn(k.k17_med_error)}</tr>
+  <tr>${td("15")}${td("อัตราการเกิดแผลกดทับ (ครั้ง/1000 วันนอน)")} ${tdn(k.k15_pressure_ulcer_rate)}</tr>
+<tr>${td("16")}${td("อัตราการเกิดพลัดตกหกล้ม (ครั้ง/1000 วันนอน)")} ${tdn(k.k16_fall_rate)}</tr>
+<tr>${td("17")}${td("ความคลาดเคลื่อนทางยา (ครั้ง/1000 วันนอน)")} ${tdn(k.k17_med_error)}</tr>
               <tr>${td("18")}${td("อุบัติการณ์เฉพาะโรคระดับ GHI (แนบรายงานอุบัติการณ์) ระดับ")}${tdn(k.k18_ghi_level)}</tr>
 
               <tr>${td("19")}${td("อุบัติการณ์ Unplanned CPR")}${tdn(k.k19_unplanned_cpr)}</tr>
@@ -2393,10 +2652,11 @@ async function showFullReport(btn) {
   Swal.fire({ title: 'คำนวณรายงานสรุป...', didOpen: () => Swal.showLoading() });
 
   try {
-    const [patients, summary, dxMapPack] = await Promise.all([
+    const [patients, summary, dxMapPack, incidents] = await Promise.all([
       callApi('getAllData', currentSheet),
       callApi('getMonthlySummaryRow', currentSheet),
-      callApi('getDxMap')
+      callApi('getDxMap'),
+      callApi('getIncidentsByMonth', currentSheet)
     ]);
 
     const dxMap = dxMapPack?.map || {};
@@ -2425,11 +2685,10 @@ async function showFullReport(btn) {
     const outROList     = patients.filter(p => !!p?.rawData?.[28]);
     const outAbsList    = patients.filter(p => !!p?.rawData?.[26]);
     const outRefuseList = patients.filter(p => !!p?.rawData?.[27]);
-    const outAllList    = patients.filter(p => isOutcomeClosed(p.rawData || []));
+    const outAllList    = patients.filter(p => isOutcomeClosed(p.rawData || [])); // ✅ เคสปิด
+    const eomList       = patients.filter(p => p.status === "ยังรักษาอยู่");
 
-    const eomList = patients.filter(p => p.status === "ยังรักษาอยู่");
-
-    // patientDays: รวม LOS ของเคสที่ "ปิด" (ตามนิยามเดิมของคุณ)
+    // ✅ patientDays = รวม LOS ของเคสปิด
     const patientDays = sumLos(outAllList);
 
     // BOR
@@ -2458,34 +2717,56 @@ async function showFullReport(btn) {
     });
     const topDx5 = topEntries(counts, 5);
 
-    // ✅ KPI 11–27: รับจาก summary ก่อน (ถ้ามี) แล้ว normalize กันผิดช่อง
-    // คุณสามารถให้ GAS ส่งคีย์พวกนี้มาใน summary ได้เลยในอนาคต
-    const kpi1127 = normalizeKpi11_27({
-      k11_unplanned_et:        summary?.k11_unplanned_et,
-      k12_vent_days:           summary?.k12_vent_days,
-      k13_icd_displaced:       summary?.k13_icd_displaced,
-      k14_icd_days:            summary?.k14_icd_days,
-      k15_pressure_ulcer_rate: summary?.k15_pressure_ulcer_rate,
-      k16_fall_rate:           summary?.k16_fall_rate,
-      k17_med_error:           summary?.k17_med_error,
-      k18_ghi_level:           summary?.k18_ghi_level,
-      k19_unplanned_cpr:       summary?.k19_unplanned_cpr,
-      k20_unplanned_icu:       summary?.k20_unplanned_icu,
-      k21_wrong_proc:          summary?.k21_wrong_proc,
-      k22_wrong_surgery:       summary?.k22_wrong_surgery,
-      k23_wrong_blood:         summary?.k23_wrong_blood,
-      k24_phlebitis_g1:        summary?.k24_phlebitis_g1,
-      k24_phlebitis_g2:        summary?.k24_phlebitis_g2,
-      k24_phlebitis_g3:        summary?.k24_phlebitis_g3,
-      k24_phlebitis_g4:        summary?.k24_phlebitis_g4,
-      k25_note_qty:            summary?.k25_note_qty,
-      k25_note_qlt:            summary?.k25_note_qlt,
-      k26_avg_wait_dc_min:     summary?.k26_avg_wait_dc_min,
-      k27_refer_in:            summary?.k27_refer_in,
-      k27_refer_out:           summary?.k27_refer_out,
-      k27_refer_back:          summary?.k27_refer_back,
-      k27_refer_back_to:       summary?.k27_refer_back_to,
-      k27_daycare:             summary?.k27_daycare,
+    // ✅ KPI 11–27 from IncidentLog (15–17 = อัตรา/1000 patient-days)
+    const pd = patientDays; // ชัด ๆ
+    const ratePer1000 = (n)=> (pd > 0 ? (n/pd*1000) : 0);
+
+    const pressure = sumInc(incidents, "PRESSURE_ULCER");
+    const fall     = sumInc(incidents, "FALL");
+    const mederr   = sumInc(incidents, "MED_ERROR");
+
+    const ph = phlebitisByGrade(incidents);
+
+    // GHI: เอา level ล่าสุด (ถ้ามีหลายรายการ)
+    const ghiList = (incidents || []).filter(x => x.eventType === "GHI" && String(x.level||"").trim() !== "");
+    const ghiLevel = ghiList.length ? String(ghiList[ghiList.length - 1].level).trim() : "-";
+
+    // สร้าง kpi1127 ให้ตรง schema (ตัวเลข/ข้อความ)
+    let kpi1127 = normalizeKpi11_27({
+      // ถ้าคุณอยากให้ “Summary เป็นค่าตั้งต้น” ให้ใส่ summary?.xxx ได้
+      // แต่ในรอบนี้: ใช้ incidents เป็นหลัก
+      k11_unplanned_et:        sumInc(incidents,"UNPLANNED_ET"),
+      k12_vent_days:           sumInc(incidents,"VENT_DAYS"),
+      k13_icd_displaced:       sumInc(incidents,"ICD_DISLODGE"),
+      k14_icd_days:            sumInc(incidents,"ICD_LINE_DAYS"),
+
+      // ✅ 15–17 เป็น "อัตรา/1000 patient-days" -> เก็บเป็น text
+      k15_pressure_ulcer_rate: fmt2(ratePer1000(pressure)),
+      k16_fall_rate:           fmt2(ratePer1000(fall)),
+      k17_med_error:           fmt2(ratePer1000(mederr)),
+      k18_ghi_level:           safeText(ghiLevel, "-"),
+
+      k19_unplanned_cpr:       sumInc(incidents,"UNPLANNED_CPR"),
+      k20_unplanned_icu:       sumInc(incidents,"UNPLANNED_ICU"),
+      k21_wrong_proc:          sumInc(incidents,"WRONG_PROCEDURE"),
+      k22_wrong_surgery:       sumInc(incidents,"WRONG_SURGERY"),
+      k23_wrong_blood:         sumInc(incidents,"WRONG_TRANSFUSION"),
+
+      k24_phlebitis_g1:        ph[1] || 0,
+      k24_phlebitis_g2:        ph[2] || 0,
+      k24_phlebitis_g3:        ph[3] || 0,
+      k24_phlebitis_g4:        ph[4] || 0,
+
+      k25_note_qty:            Math.round(avgInc(incidents,"NURSE_NOTE_QTY") || 0),
+      k25_note_qlt:            Math.round(avgInc(incidents,"NURSE_NOTE_QLT") || 0),
+
+      k26_avg_wait_dc_min:     avgInc(incidents,"DISCHARGE_WAIT_MIN") || 0,
+
+      k27_refer_in:            sumInc(incidents,"REFER_IN"),
+      k27_refer_out:           sumInc(incidents,"REFER_OUT"),
+      k27_refer_back:          sumInc(incidents,"REFER_BACK"),
+      k27_refer_back_to:       sumInc(incidents,"REFER_BACK_TO"),
+      k27_daycare:             sumInc(incidents,"DAYCARE"),
     });
 
     const ctx = {
@@ -2525,6 +2806,28 @@ async function showFullReport(btn) {
   } catch (err) {
     Swal.fire('ผิดพลาด', err.toString(), 'error');
   }
+}
+    
+    function sumInc(list, type){
+  return (list||[])
+    .filter(x=>x.eventType===type)
+    .reduce((s,x)=> s + (parseFloat(x.value)||0), 0);
+}
+function countInc(list, type){
+  return (list||[]).filter(x=>x.eventType===type).length;
+}
+function avgInc(list, type){
+  const a = (list||[]).filter(x=>x.eventType===type).map(x=>parseFloat(x.value)||0);
+  if(a.length===0) return null;
+  return a.reduce((s,v)=>s+v,0)/a.length;
+}
+function phlebitisByGrade(list){
+  const out = {1:0,2:0,3:0,4:0};
+  (list||[]).filter(x=>x.eventType==="PHLEBITIS").forEach(x=>{
+    const g = parseInt(x.grade,10);
+    if(out[g]!==undefined) out[g] += (parseFloat(x.value)||1);
+  });
+  return out;
 }
 window.showFullReport = showFullReport;
 </script>
