@@ -2341,39 +2341,7 @@ function normalizeKpi11_27(raw){
   return out;
 }
 
-/* ---------- render form ---------- */
-    const pd = patientDays; // ใช้ patientDays ที่คุณคำนวณแล้ว
-const pressure = sumInc(incidents,"PRESSURE_ULCER");
-const fall = sumInc(incidents,"FALL");
-const mederr = sumInc(incidents,"MED_ERROR");
 
-const ratePer1000 = (n)=> (pd>0 ? (n/pd*1000) : 0);
-
-const ph = phlebitisByGrade(incidents);
-
-ctx.q11 = sumInc(incidents,"UNPLANNED_ET");
-ctx.q12 = sumInc(incidents,"VENT_DAYS");
-ctx.q13 = sumInc(incidents,"ICD_DISLODGE");
-ctx.q14 = sumInc(incidents,"ICD_LINE_DAYS");
-ctx.q15 = ratePer1000(pressure); // หรือแสดงเป็นจำนวนด้วยก็ได้
-ctx.q16 = fall; // หรือ rate ต่อ 1000 ก็ได้ตามฟอร์ม
-ctx.q17 = mederr;
-ctx.q19 = sumInc(incidents,"UNPLANNED_CPR");
-ctx.q20 = sumInc(incidents,"UNPLANNED_ICU");
-ctx.q21 = sumInc(incidents,"WRONG_PROCEDURE");
-ctx.q22 = sumInc(incidents,"WRONG_SURGERY");
-ctx.q23 = sumInc(incidents,"WRONG_TRANSFUSION");
-
-ctx.phlebitis = ph;
-ctx.noteQty = avgInc(incidents,"NURSE_NOTE_QTY");
-ctx.noteQlt = avgInc(incidents,"NURSE_NOTE_QLT");
-ctx.waitMin = avgInc(incidents,"DISCHARGE_WAIT_MIN");
-
-ctx.refIn = sumInc(incidents,"REFER_IN");
-ctx.refOut2 = sumInc(incidents,"REFER_OUT");
-ctx.refBack = sumInc(incidents,"REFER_BACK");
-ctx.refBackTo = sumInc(incidents,"REFER_BACK_TO");
-ctx.dayCare = sumInc(incidents,"DAYCARE");
 function buildOfficialMonthlyFormHTML(ctx){
   const {
     sheet, days, beds,
