@@ -2020,24 +2020,28 @@ function isOutcomeClosed(r){
 }
 
 // map "สาย" -> "ภาควิชา" ในฟอร์ม (ปรับชื่อได้ตามจริงของรพ.)
-function deptFromSai(sai){
-  const s = String(sai || "").toLowerCase();
+function deptFromRow(r){
+  // r[15]=แผนก, r[16]=สาย
+  const ward = String(r?.[15] || "").trim();
+  const sai  = String(r?.[16] || "").trim();
+
+  const s = (ward || sai).toLowerCase();
+
   if(!s) return "ไม่ระบุ";
 
-  // คีย์เวิร์ดไทย/อังกฤษแบบกันพลาด
-  if (s.includes("อายุร") || s.includes("med")) return "อายุรศาสตร์";
-  if (s.includes("ศัลย") || s.includes("surg")) return "ศัลยศาสตร์";
-  if (s.includes("กุมาร") || s.includes("ped")) return "กุมารเวชศาสตร์";
-  if (s.includes("สูติ") || s.includes("obs")) return "สูติศาสตร์";
-  if (s.includes("นรี")  || s.includes("gyn")) return "นรีเวชวิทยา";
-  if (s.includes("จักษุ") || s.includes("eye") || s.includes("oph")) return "จักษุ";
-  if (s.includes("โสต") || s.includes("ent") || s.includes("หู") || s.includes("คอ") || s.includes("นาสิก")) return "โสต ศอ นาสิก";
-  if (s.includes("กระดูก") || s.includes("ortho") || s.includes("orth")) return "ศัลยกรรมกระดูกและข้อ";
+  // map ตามคำที่เจอจริง (เพิ่ม/แก้ได้)
+  if (s.includes("med") || s.includes("อายุร")) return "อายุรศาสตร์";
+  if (s.includes("surg") || s.includes("ศัลย")) return "ศัลยศาสตร์";
+  if (s.includes("ped") || s.includes("กุมาร")) return "กุมารเวชศาสตร์";
+  if (s.includes("obs") || s.includes("สูติ")) return "สูติศาสตร์";
+  if (s.includes("gyn") || s.includes("นรี")) return "นรีเวชวิทยา";
+  if (s.includes("oph") || s.includes("eye") || s.includes("จักษุ")) return "จักษุ";
+  if (s.includes("ent") || s.includes("โสต") || s.includes("หู") || s.includes("คอ") || s.includes("นาสิก")) return "โสต ศอ นาสิก";
+  if (s.includes("ortho") || s.includes("กระดูก")) return "ศัลยกรรมกระดูกและข้อ";
 
-  // fallback: แสดงตามสาย
-  return String(sai || "ไม่ระบุ");
+  // fallback: ถ้าไม่เข้าเงื่อนไข ให้ใช้ “แผนก” ก่อน ถ้าไม่มีค่อยใช้ “สาย”
+  return ward || sai || "ไม่ระบุ";
 }
-
 function countByGender(list){
   let F=0,M=0;
   list.forEach(p=>{
@@ -2080,19 +2084,26 @@ function buildOfficialMonthlyFormHTML(ctx){
   const tdn = (v, cls="text-end") => `<td class="${cls}">${escapeHtml(v)}</td>`;
 
   // ตารางแยกภาควิชา + วันนอน
-  const deptOrder = [
-    "อายุรศาสตร์","ศัลยศาสตร์","กุมารเวชศาสตร์","สูติศาสตร์","นรีเวชวิทยา","จักษุ","โสต ศอ นาสิก","ศัลยกรรมกระดูกและข้อ"
-  ];
-  const deptHtml = deptOrder.map(name=>{
-    const row = deptRows[name] || {F:0,M:0,T:0,PD:0};
-    return `
-      <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-        <div style="min-width:180px">- ${escapeHtml(name)}</div>
-        <div class="text-end" style="min-width:110px">หญิง ${row.F} | ชาย ${row.M} | รวม <b>${row.T}</b></div>
-        <div class="text-end" style="min-width:120px">วันนอน <b>${row.PD}</b></div>
-      </div>
-    `;
-  }).join("");
+const deptOrder = [
+  "อายุรศาสตร์","ศัลยศาสตร์","กุมารเวชศาสตร์","สูติศาสตร์","นรีเวชวิทยา",
+  "จักษุ","โสต ศอ นาสิก","ศัลยกรรมกระดูกและข้อ"
+];
+
+// ✅ เพิ่มคีย์อื่นๆ ที่พบจริง แต่ไม่อยู่ใน deptOrder (เช่น "Surg", "OPD PED", "A" ฯลฯ)
+const extra = Object.keys(deptRows || {}).filter(k => !deptOrder.includes(k));
+const deptList = [...deptOrder, ...extra.sort((a,b)=>a.localeCompare(b,'th'))];
+
+// แล้วเปลี่ยน deptHtml จากวน deptOrder -> deptList
+const deptHtml = deptList.map(name=>{
+  const row = deptRows[name] || {F:0,M:0,T:0,PD:0};
+  return `
+    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+      <div style="min-width:180px">- ${escapeHtml(name)}</div>
+      <div class="text-end" style="min-width:110px">หญิง ${row.F} | ชาย ${row.M} | รวม <b>${row.T}</b></div>
+      <div class="text-end" style="min-width:120px">วันนอน <b>${row.PD}</b></div>
+    </div>
+  `;
+}).join("");
 
   const dx5 = (topDx5 && topDx5.length)
     ? topDx5.map(([dx,c],i)=>`<div>${i+1}. ${escapeHtml(dx)} <b class="ms-1">${c}</b></div>`).join("")
@@ -2393,7 +2404,7 @@ async function showFullReport(btn) {
     const deptRows = {};
     inAllList.forEach(p=>{
       const r = p.rawData || [];
-      const dept = deptFromSai(r[16]);
+const dept = deptFromRow(r);
       if(!deptRows[dept]) deptRows[dept] = {F:0,M:0,T:0,PD:0};
       const g = genderOf(p);
       if(g==="F") deptRows[dept].F++;
