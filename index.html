@@ -699,8 +699,10 @@ function setLastDxToken(full, newToken) {
 function commitDxToken(inputEl, token) {
   const current = String(inputEl.value || "");
   const list = splitDxList(current); // โรคที่มีแล้ว (แตกตาม ;)
-  const t = String(token || getLastDxToken(current) || "").trim();
-  if (!t) return;
+const t = String(token || getLastDxToken(current) || "").trim();
+
+// ❌ กันคำสั้นเกิน เช่น ก / ค
+if (!t || t.length < 2) return;  if (!t) return;
 
   // กันซ้ำแบบง่าย (เทียบแบบตรง ๆ)
   if (!list.includes(t)) list.push(t);
