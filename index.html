@@ -1924,8 +1924,7 @@
 
   // ✅ เพื่อความชัวร์: ผูกขึ้น global ให้ onclick ใช้ได้แน่
   window.prepareNewForm = prepareNewForm;
-  window.showFullReport = showFullReport;
-  window.closeMonthUI = closeMonthUI;
+
 </script>
 
 <div class="modal fade" id="dischargeModal">
@@ -2461,8 +2460,8 @@ async function showFullReport(btn) {
     Swal.fire('ผิดพลาด', err.toString(), 'error');
   }
 }
-    window.showFullReport = showFullReport;
-
+window.showFullReport = showFullReport;
+window.closeMonthUI = closeMonthUI;
 // ------------------ closeMonthUI ------------------
 async function closeMonthUI() {
   if (!currentSheet) {
