@@ -1329,21 +1329,24 @@ function updateCharts(sMap, saMap) {
     return st === "รับใหม่" || st === "รับย้าย" || st === "รับ Refer";
   }
 
-  function updateSummary(all) {
-    const carryCount = all.filter(isCarryRow).length;
-    const newCount = all.filter(isNewThisMonthRow).length;
+function updateSummary(all) {
+  const carryCount = all.filter(isCarryRow).length;
+  const newCount = all.filter(isNewThisMonthRow).length;
 
-    const active = all.filter(x => x.status === 'ยังรักษาอยู่').length;
-    const dc = all.filter(x => x.status === 'จำหน่ายแล้ว').length;
+  const active = all.filter(x => x.status === 'ยังรักษาอยู่').length;
+  const dc = all.filter(x => x.status === 'จำหน่ายแล้ว').length;
 
-    document.getElementById('sumCarry').innerText = carryCount;
-    document.getElementById('sumNew').innerText = newCount;
-    document.getElementById('sumTotal').innerText = all.length;
+  document.getElementById('sumCarry').innerText = carryCount;
+  document.getElementById('sumNew').innerText = newCount;
+  document.getElementById('sumTotal').innerText = all.length;
 
-    document.getElementById('sumActive').innerText = active;
-    document.getElementById('sumDC').innerText = dc;
-    document.getElementById('sumRows').innerText = all.length;
-  }
+  document.getElementById('sumActive').innerText = active;
+  document.getElementById('sumDC').innerText = dc;
+
+  // ✅ กันพัง: sumRows อาจไม่มีในหน้า
+  const sumRowsEl = document.getElementById('sumRows');
+  if (sumRowsEl) sumRowsEl.innerText = all.length;
+}
 
   // ===== Table filter + quick search =====
   function quickSearch(which, text) {
