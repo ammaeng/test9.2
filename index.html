@@ -1990,199 +1990,350 @@
 </div>
 
   <script>
-// ================== Report (PRO) + closeMonthUI (รวมโค้ด) ==================
+/* ================== Monthly Official Form Report (Ward 9/2) ==================
+   - ทำฟอร์มรายงานตามที่คุณส่ง
+   - ข้อ 7 = อัตราการใช้เตียง = BOR (นิยามเดียวกัน)
+   - ข้อ 11-27 ยังไม่มี field -> แสดง 0/ว่างก่อน
+============================================================================== */
 
-// ต้องมีตัวแปรเหล่านี้อยู่แล้วในไฟล์หลัก
-// let currentSheet = "";
-// let repChartIn, repChartOut, repChartLOS;
-// let lastTriggerEl = null;
-
-// ------------------ Report helpers ------------------
-function destroyReportCharts() {
-  if (repChartIn) repChartIn.destroy();
-  if (repChartOut) repChartOut.destroy();
-  if (repChartLOS) repChartLOS.destroy();
-  repChartIn = repChartOut = repChartLOS = null;
+function daysInMonthFromSheet(sheetName){
+  const d = sheetNameToDate(sheetName);
+  if(!d) return new Date().getDate(); // fallback
+  return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
 }
 
-function buildReportSkeleton(monthTitle) {
+function fmt2(n){ return (isNaN(n)?0:n).toFixed(2); }
+
+function genderOf(p){
+  const g = String(p?.rawData?.[33] || "").trim();
+  if (g.includes("หญิง")) return "F";
+  if (g.includes("ชาย")) return "M";
+  return "U";
+}
+
+function typeOf(p){
+  return String(p?.patientStatus || p?.rawData?.[0] || "").trim();
+}
+
+function isOutcomeClosed(r){
+  return !!(r?.[20] || r?.[25] || r?.[26] || r?.[27] || r?.[28] || r?.[30]);
+}
+
+// map "สาย" -> "ภาควิชา" ในฟอร์ม (ปรับชื่อได้ตามจริงของรพ.)
+function deptFromSai(sai){
+  const s = String(sai || "").toLowerCase();
+  if(!s) return "ไม่ระบุ";
+
+  // คีย์เวิร์ดไทย/อังกฤษแบบกันพลาด
+  if (s.includes("อายุร") || s.includes("med")) return "อายุรศาสตร์";
+  if (s.includes("ศัลย") || s.includes("surg")) return "ศัลยศาสตร์";
+  if (s.includes("กุมาร") || s.includes("ped")) return "กุมารเวชศาสตร์";
+  if (s.includes("สูติ") || s.includes("obs")) return "สูติศาสตร์";
+  if (s.includes("นรี")  || s.includes("gyn")) return "นรีเวชวิทยา";
+  if (s.includes("จักษุ") || s.includes("eye") || s.includes("oph")) return "จักษุ";
+  if (s.includes("โสต") || s.includes("ent") || s.includes("หู") || s.includes("คอ") || s.includes("นาสิก")) return "โสต ศอ นาสิก";
+  if (s.includes("กระดูก") || s.includes("ortho") || s.includes("orth")) return "ศัลยกรรมกระดูกและข้อ";
+
+  // fallback: แสดงตามสาย
+  return String(sai || "ไม่ระบุ");
+}
+
+function countByGender(list){
+  let F=0,M=0;
+  list.forEach(p=>{
+    const g = genderOf(p);
+    if(g==="F") F++;
+    else if(g==="M") M++;
+  });
+  return {F,M,T:F+M};
+}
+
+function sumLos(list){
+  return list.reduce((s,p)=>s + safeInt(p.displayLOS), 0);
+}
+
+function topDxN(patients, n=5){
+  const counts = {};
+  patients.forEach(p=>{
+    const r = p.rawData || [];
+    // นับ Dx1+Dx2 แบบเดิมของ report pro (ใช้ mapDx ที่ showFullReport มี)
+    const dx1List = splitDxList(r[18]).map(x=>String(x||"").trim()).filter(Boolean);
+    const dx2List = splitDxList(r[19]).map(x=>String(x||"").trim()).filter(Boolean);
+    [...dx1List, ...dx2List].forEach(dx => addCount(counts, dx, 1));
+  });
+  return topEntries(counts, n);
+}
+
+function buildOfficialMonthlyFormHTML(ctx){
+  // ctx: { sheet, days, beds, bor, patients, numbers..., topDx5 }
+  const {
+    sheet, days, beds,
+    inAllG, carryG, inNewG, inTransferG, inReferG,
+    outAllG, outDCG, outDeathG, outTOG, outROG, outAbsG, outRefuseG,
+    eomG,
+    patientDays, bedDays, bor,
+    deptRows,
+    topDx5
+  } = ctx;
+
+  const td = (v, cls="") => `<td class="${cls}">${escapeHtml(v)}</td>`;
+  const tdn = (v, cls="text-end") => `<td class="${cls}">${escapeHtml(v)}</td>`;
+
+  // ตารางแยกภาควิชา + วันนอน
+  const deptOrder = [
+    "อายุรศาสตร์","ศัลยศาสตร์","กุมารเวชศาสตร์","สูติศาสตร์","นรีเวชวิทยา","จักษุ","โสต ศอ นาสิก","ศัลยกรรมกระดูกและข้อ"
+  ];
+  const deptHtml = deptOrder.map(name=>{
+    const row = deptRows[name] || {F:0,M:0,T:0,PD:0};
+    return `
+      <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+        <div style="min-width:180px">- ${escapeHtml(name)}</div>
+        <div class="text-end" style="min-width:110px">หญิง ${row.F} | ชาย ${row.M} | รวม <b>${row.T}</b></div>
+        <div class="text-end" style="min-width:120px">วันนอน <b>${row.PD}</b></div>
+      </div>
+    `;
+  }).join("");
+
+  const dx5 = (topDx5 && topDx5.length)
+    ? topDx5.map(([dx,c],i)=>`<div>${i+1}. ${escapeHtml(dx)} <b class="ms-1">${c}</b></div>`).join("")
+    : `<div class="text-muted">- ยังไม่มีข้อมูล Dx -</div>`;
+
   return `
-    <div class="report-note mb-2">
-      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start">
-        <div>
-          <div class="fw-black">นิยาม (สำหรับ HA/Accreditation)</div>
-          <div>• Patient Days = ผลรวม LOS ที่ตัดยอดภายในเดือน</div>
-          <div>• ALOS(จำหน่าย) = Patient Days / Separations</div>
-          <div>• ALOS(รับเข้า) = Patient Days / Admissions</div>
-        </div>
-        <div class="text-end">
-          <span class="pill">เดือน: <b>${escapeHtml(monthTitle)}</b></span>
-          <span class="pill">ออกรายงาน: <b>${escapeHtml(new Date().toLocaleString('th-TH'))}</b></span>
-        </div>
+  <div class="report-block">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+      <div>
+        <div class="fw-black" style="font-size:18px;">ใบรายงานสถิติผู้ป่วยใน หน่วยงาน Ward 9/2 เดือน ${escapeHtml(sheet)}</div>
+        <div class="subtle mt-1">จำนวนวันทั้งหมด <b>${days}</b> วัน | จำนวนเตียงที่เปิดจริง <b>${beds}</b> เตียง</div>
+      </div>
+      <div class="text-end subtle">
+        ออกรายงาน: <b>${escapeHtml(new Date().toLocaleString('th-TH'))}</b>
       </div>
     </div>
 
-    <!-- KPI GRID -->
-    <div class="row g-2 mb-2">
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">ยอดยกมา (BOB)</div>
-        <div class="kpi-value text-secondary" id="kpiCarry">0</div>
-        <div class="kpi-sub">ผู้ป่วยค้างจากเดือนก่อน</div>
-      </div></div>
+    <hr class="my-2">
 
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">รับเข้าในเดือน (Admissions)</div>
-        <div class="kpi-value text-primary" id="kpiInTotal">0</div>
-        <div class="kpi-sub">ใหม่ <b id="kpiInNew">0</b> | ย้าย <b id="kpiInTransfer">0</b> | Refer <b id="kpiInRefer">0</b></div>
-      </div></div>
-
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">จำหน่ายทั้งหมด (Separations)</div>
-        <div class="kpi-value text-success" id="kpiOutTotal">0</div>
-        <div class="kpi-sub">
-          D/C <b id="kpiOutDC">0</b> |
-          ย้าย <b id="kpiOutTO">0</b> |
-          หนี <b id="kpiOutAbs">0</b> |
-          ปฏิเสธ <b id="kpiOutRefu">0</b> |
-          ReferOut <b id="kpiOutRO">0</b> |
-          ตาย <b id="kpiOutDeath">0</b>
-        </div>
-      </div></div>
-
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">คงเหลือสิ้นเดือน (EOM Census)</div>
-        <div class="kpi-value text-dark" id="kpiEOM">0</div>
-        <div class="kpi-sub">ผู้ป่วยที่ยังรักษาอยู่</div>
-      </div></div>
-
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">Patient Days (วันนอนรวม)</div>
-        <div class="kpi-value text-dark" id="kpiPatientDays">0</div>
-        <div class="kpi-sub">รวม LOS ที่ตัดยอดในเดือน</div>
-      </div></div>
-
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">ALOS (จำหน่าย)</div>
-        <div class="kpi-value text-dark" id="kpiALOSOut">0.00</div>
-        <div class="kpi-sub">PatientDays / Separations</div>
-      </div></div>
-
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">ALOS (รับเข้า)</div>
-        <div class="kpi-value text-dark" id="kpiALOSIn">0.00</div>
-        <div class="kpi-sub">PatientDays / Admissions</div>
-      </div></div>
-
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">BOR (%)</div>
-        <div class="kpi-value text-muted" id="kpiBOR">-</div>
-        <div class="kpi-sub" id="kpiBedsSub">จากจำนวนเตียง <b>-</b> เตียง</div>
-      </div></div>
-
-      <div class="col-6 col-lg-3"><div class="kpi-card">
-        <div class="kpi-label">Mortality Rate (%)</div>
-        <div class="kpi-value text-dark" id="kpiMortRate">0.00</div>
-        <div class="kpi-sub">Death / Admissions × 100</div>
-      </div></div>
-    </div>
-
-    <!-- Dx Summary -->
-    <div class="report-block mb-2">
-      <div class="fw-black mb-2">Dx Summary (Top 10)</div>
-      <div class="subtle mb-2">* ใช้ DxMap ในการจัดกลุ่ม (ถ้าไม่พบ map จะใช้คำเดิม) | นับ Dx1 + Dx2</div>
-      <div class="table-wrap">
-        <table class="table table-sm table-striped align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th style="width:60px">#</th>
-              <th>Dx (Mapped)</th>
-              <th style="width:110px" class="text-end">จำนวน</th>
-            </tr>
-          </thead>
-          <tbody id="dxSummaryBody">
-            <tr><td colspan="3" class="text-center text-muted">กำลังคำนวณ...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Advanced HA Report -->
-    <div class="accordion mb-2" id="advHaAcc">
-      <div class="accordion-item">
-        <h2 class="accordion-header">
-          <button class="accordion-button fw-black" type="button" data-bs-toggle="collapse" data-bs-target="#advHa1">
-            Advanced HA Report
-          </button>
-        </h2>
-        <div id="advHa1" class="accordion-collapse collapse show" data-bs-parent="#advHaAcc">
-          <div class="accordion-body">
-
-            <div class="row g-2">
-              <div class="col-12 col-lg-6">
-                <div class="report-block">
-                  <div class="fw-black mb-2">Top Dx (Primary Dx1) by Age Group</div>
-                  <div class="subtle mb-2">0-1y | 1-5y | 6-12y | 13-15y (นับเฉพาะ Dx1)</div>
-                  <div id="advDxAge" class="subtle">กำลังคำนวณ...</div>
-                </div>
-              </div>
-
-              <div class="col-12 col-lg-6">
-                <div class="report-block">
-                  <div class="fw-black mb-2">Top Dx (Primary Dx1) by Outcome</div>
-                  <div class="subtle mb-2">DC | TransferOut | ReferOut | Death (นับเฉพาะ Dx1)</div>
-                  <div id="advDxOutcome" class="subtle">กำลังคำนวณ...</div>
-                </div>
-              </div>
-
-              <div class="col-12 col-lg-6">
-                <div class="report-block">
-                  <div class="fw-black mb-2">Dx vs LOS (Average LOS by Dx1)</div>
-                  <div class="subtle mb-2">เฉลี่ย LOS ตาม Dx1 (Top 10)</div>
-                  <div id="advDxLos" class="subtle">กำลังคำนวณ...</div>
-                </div>
-              </div>
-
-              <div class="col-12 col-lg-6">
-                <div class="report-block">
-                  <div class="fw-black mb-2">Long-stay (≥30) Dx (Primary Dx1)</div>
-                  <div class="subtle mb-2">Top Dx1 ในกลุ่ม LOS ≥ 30</div>
-                  <div id="advLongStayDx" class="subtle">กำลังคำนวณ...</div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Charts -->
     <div class="row g-2">
-      <div class="col-12 col-lg-4">
-        <div class="report-block">
-          <div class="fw-black mb-2">Admissions by Type</div>
-          <canvas id="repChartIn" style="max-height:220px;"></canvas>
+      <!-- LEFT -->
+      <div class="col-12 col-lg-7">
+        <div class="table-wrap">
+          <table class="table table-sm table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:56px">ลำดับ</th>
+                <th>รายการ</th>
+                <th style="width:90px" class="text-end">หญิง</th>
+                <th style="width:90px" class="text-end">ชาย</th>
+                <th style="width:90px" class="text-end">รวม</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                ${td("1")}
+                ${td("จำนวนผู้ป่วยในทั้งหมด")}
+                ${tdn(inAllG.F)}
+                ${tdn(inAllG.M)}
+                ${tdn(inAllG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนยอดผู้ป่วย ยกมาจากเดือนที่แล้ว")}
+                ${tdn(carryG.F)}
+                ${tdn(carryG.M)}
+                ${tdn(carryG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยรับใหม่")}
+                ${tdn(inNewG.F)}
+                ${tdn(inNewG.M)}
+                ${tdn(inNewG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยรับย้าย")}
+                ${tdn(inTransferG.F)}
+                ${tdn(inTransferG.M)}
+                ${tdn(inTransferG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยรับ Refer")}
+                ${tdn(inReferG.F)}
+                ${tdn(inReferG.M)}
+                ${tdn(inReferG.T)}
+              </tr>
+
+              <tr>
+                ${td("2")}
+                ${td("จำนวนผู้ป่วยที่จำหน่ายทั้งหมด")}
+                ${tdn(outAllG.F)}
+                ${tdn(outAllG.M)}
+                ${tdn(outAllG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการกลับบ้าน (D/C)")}
+                ${tdn(outDCG.F)}
+                ${tdn(outDCG.M)}
+                ${tdn(outDCG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการตาย")}
+                ${tdn(outDeathG.F)}
+                ${tdn(outDeathG.M)}
+                ${tdn(outDeathG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยที่จำหน่าย โดยการย้ายแผนก")}
+                ${tdn(outTOG.F)}
+                ${tdn(outTOG.M)}
+                ${tdn(outTOG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยที่จำหน่าย โดยการ Refer")}
+                ${tdn(outROG.F)}
+                ${tdn(outROG.M)}
+                ${tdn(outROG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการหนี")}
+                ${tdn(outAbsG.F)}
+                ${tdn(outAbsG.M)}
+                ${tdn(outAbsG.T)}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนผู้ป่วยที่ไม่สมัครใจอยู่")}
+                ${tdn(outRefuseG.F)}
+                ${tdn(outRefuseG.M)}
+                ${tdn(outRefuseG.T)}
+              </tr>
+
+              <tr>
+                ${td("3")}
+                ${td("จำนวนผู้ป่วย ยกยอดไปเดือนหน้า")}
+                ${tdn(eomG.F)}
+                ${tdn(eomG.M)}
+                ${tdn(eomG.T)}
+              </tr>
+
+              <tr>
+                ${td("4")}
+                ${td("จำนวนผู้ป่วยแยกตามภาควิชา")}
+                ${tdn("")}
+                ${tdn("")}
+                ${tdn("")}
+              </tr>
+              <tr>
+                <td colspan="5">
+                  ${deptHtml}
+                </td>
+              </tr>
+
+              <tr>
+                ${td("5")}
+                ${td("Newborn (ยังไม่ได้เก็บข้อมูลในชีทหลัก)")}
+                ${tdn("0")}
+                ${tdn("0")}
+                ${tdn("0")}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนทารกแรกเกิดทั้งหมดใน 1 เดือน")}
+                ${tdn("0")}
+                ${tdn("0")}
+                ${tdn("0")}
+              </tr>
+              <tr class="table-light">
+                ${td("")}
+                ${td(" - จำนวนวันนอนของทารกแรกเกิด")}
+                ${tdn("0")}
+                ${tdn("0")}
+                ${tdn("0")}
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div class="col-12 col-lg-4">
-        <div class="report-block">
-          <div class="fw-black mb-2">Outcome Mix</div>
-          <canvas id="repChartOut" style="max-height:220px;"></canvas>
-        </div>
-      </div>
+      <!-- RIGHT -->
+      <div class="col-12 col-lg-5">
+        <div class="table-wrap">
+          <table class="table table-sm table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:56px">ลำดับ</th>
+                <th>รายการ</th>
+                <th style="width:110px" class="text-end">จำนวน/ร้อยละ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>${td("6")}${td("อัตราครองเตียง (BOR %)")}${tdn(fmt2(bor) + "%")}</tr>
+              <tr>${td("7")}${td("อัตราการใช้เตียง (%)")}${tdn(fmt2(bor) + "%")}</tr>
+              <tr>${td("8")}${td("จำนวนวันนอนรวม (Patient Days)")}${tdn(patientDays)}</tr>
+              <tr>${td("9")}${td("จำนวนวันใช้เตียงรวม (Bed Days)")}${tdn(bedDays)}</tr>
+              <tr>
+                ${td("10")}
+                ${td("สถิติผู้ป่วย 5 โรคแรก")}
+                ${tdn("")}
+              </tr>
+              <tr><td colspan="3">${dx5}</td></tr>
 
-      <div class="col-12 col-lg-4">
-        <div class="report-block">
-          <div class="fw-black mb-2">LOS Distribution</div>
-          <canvas id="repChartLOS" style="max-height:220px;"></canvas>
+              <tr>${td("11")}${td("จำนวนผู้ป่วย Unplanned ET tube")}${tdn("0")}</tr>
+              <tr>${td("12")}${td("จำนวนวันนอนรวมของผู้ป่วยที่ใส่ท่อเครื่องช่วยหายใจ")}${tdn("0")}</tr>
+              <tr>${td("13")}${td("จำนวนครั้งที่เกิดการเลื่อนหลุดของ ICD Line")}${tdn("0")}</tr>
+              <tr>${td("14")}${td("จำนวนวันนอนรวมของผู้ป่วยที่ On ICD Line")}${tdn("0")}</tr>
+              <tr>${td("15")}${td("อัตราการเกิดแผลกดทับ (<5ครั้ง/1000วันนอน)")}${tdn("-")}</tr>
+              <tr>${td("16")}${td("อัตราการเกิดพลัดตกหกล้ม (C-I)")}${tdn("-")}</tr>
+              <tr>${td("17")}${td("ความคลาดเคลื่อนทางยา (C-I)")}${tdn("-")}</tr>
+              <tr>${td("18")}${td("อุบัติการณ์เฉพาะโรคระดับ GHI")}${tdn("-")}</tr>
+              <tr>${td("19")}${td("อุบัติการณ์ Unplanned CPR")}${tdn("0")}</tr>
+              <tr>${td("20")}${td("อุบัติการณ์ Unplanned ICU")}${tdn("0")}</tr>
+              <tr>${td("21")}${td("หัตถการ ผิดคน/ผิดข้าง/ผิดตำแหน่ง")}${tdn("0")}</tr>
+              <tr>${td("22")}${td("ผ่าตัด ผิดคน/ผิดข้าง/ผิดตำแหน่ง")}${tdn("0")}</tr>
+              <tr>${td("23")}${td("ให้เลือดผิดคนจากระบุตัวผิดพลาด")}${tdn("0")}</tr>
+              <tr>
+                ${td("24")}
+                ${td("จำนวนการเกิด Phlebitis (grade 1-4)")}
+                ${tdn("0")}
+              </tr>
+              <tr>
+                ${td("25")}
+                ${td("ความสมบูรณ์ของบันทึกทางการพยาบาล (ปริมาณ/คุณภาพ)")}
+                ${tdn("-")}
+              </tr>
+              <tr>
+                ${td("26")}
+                ${td("ระยะเวลารอคอยกลับบ้านเฉลี่ย (นาที)")}
+                ${tdn("-")}
+              </tr>
+              <tr>
+                ${td("27")}
+                ${td("Refer (IN/Out/Back/BackTo) + Day Care")}
+                ${tdn("-")}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="subtle mt-2">
+          * ข้อ 11–27 จะคำนวณได้เมื่อเพิ่มชีท Incident/QA หรือเพิ่ม field ในฟอร์ม
         </div>
       </div>
     </div>
+  </div>
   `;
 }
 
-// ------------------ Report main ------------------
+/* ================== PATCH showFullReport() ==================
+   - เปลี่ยนจาก report pro เดิม -> ฟอร์มรายงานแบบทางการ
+   - ใช้ dxMap เหมือนเดิมได้ (ถ้าคุณอยาก map Dx ใน Top5)
+================================================================ */
+
 async function showFullReport(btn) {
   lastTriggerEl = btn || document.activeElement;
   lastTriggerEl?.blur?.();
@@ -2201,6 +2352,7 @@ async function showFullReport(btn) {
       callApi('getDxMap')
     ]);
 
+    // DxMap (ถ้าต้องการใช้ mapped ใน Top5 ให้ใช้ mapDx ตรงนี้)
     const dxMap = dxMapPack?.map || {};
     const mapDx = (s) => {
       const raw = String(s || "").trim().replace(/\s+/g, " ");
@@ -2208,250 +2360,89 @@ async function showFullReport(btn) {
       return String(dxMap[raw] || raw).trim().replace(/\s+/g, " ");
     };
 
-    document.getElementById('reportMonthTitle').innerText = currentSheet;
-    destroyReportCharts();
-    document.getElementById('reportResult').innerHTML = buildReportSkeleton(currentSheet);
+    // days + beds
+    const days = daysInMonthFromSheet(currentSheet);
+    const beds = parseInt(summary?.beds ?? 21, 10) || 21;
+    const bedDays = beds * days;
 
-    // BOR from summary (ถ้ามี)
-    if (summary) {
-      const borNum = parseFloat(String(summary.bor).replace('%', '')) || 0;
-      const bedsNum = summary.beds ?? "-";
+    // group lists
+    const carryList = patients.filter(p => typeOf(p) === "ยอดยกมา");
+    const inNewList = patients.filter(p => typeOf(p) === "รับใหม่");
+    const inTransferList = patients.filter(p => typeOf(p) === "รับย้าย");
+    const inReferList = patients.filter(p => typeOf(p) === "รับ Refer");
+    const inAllList = [...carryList, ...inNewList, ...inTransferList, ...inReferList];
 
-      const borEl = document.getElementById('kpiBOR');
-      if (borEl) {
-        borEl.innerText = borNum.toFixed(2) + '%';
-        borEl.className =
-          'kpi-value ' +
-          (borNum > 90 ? 'text-danger' : (borNum > 70 ? 'text-success' : 'text-primary'));
-      }
-      const bedsSub = document.getElementById('kpiBedsSub');
-      if (bedsSub) bedsSub.innerHTML = `จากจำนวนเตียง <b>${bedsNum}</b> เตียง`;
-    }
+    const outDCList = patients.filter(p => !!p?.rawData?.[20]);
+    const outDeathList = patients.filter(p => !!p?.rawData?.[30]);
+    const outTOList = patients.filter(p => !!p?.rawData?.[25]);
+    const outROList = patients.filter(p => !!p?.rawData?.[28]);
+    const outAbsList = patients.filter(p => !!p?.rawData?.[26]);
+    const outRefuseList = patients.filter(p => !!p?.rawData?.[27]);
 
-    const typeOf = (item) => ((item.patientStatus || item.rawData?.[0] || "").trim());
+    const outAllList = patients.filter(p => isOutcomeClosed(p.rawData || []));
 
-    const carry = patients.filter(x => typeOf(x) === "ยอดยกมา").length;
-    const inNew = patients.filter(x => typeOf(x) === "รับใหม่").length;
-    const inTransfer = patients.filter(x => typeOf(x) === "รับย้าย").length;
-    const inRefer = patients.filter(x => typeOf(x) === "รับ Refer").length;
-    const inTotal = inNew + inTransfer + inRefer;
+    const eomList = patients.filter(p => p.status === "ยังรักษาอยู่");
 
-    const outDC = patients.filter(x => x.rawData?.[20]).length;
-    const outTO = patients.filter(x => x.rawData?.[25]).length;
-    const outAbs = patients.filter(x => x.rawData?.[26]).length;
-    const outRefu = patients.filter(x => x.rawData?.[27]).length;
-    const outRO = patients.filter(x => x.rawData?.[28]).length;
-    const outDeath = patients.filter(x => x.rawData?.[30]).length;
+    // patientDays (นิยาม HA-style ตามที่คุณทำไว้: นับเฉพาะเคสปิด)
+    const patientDays = sumLos(outAllList);
 
-    const outTotal = outDC + outTO + outAbs + outRefu + outRO + outDeath;
-    const eom = patients.filter(x => x.status === "ยังรักษาอยู่").length;
+    // BOR
+    const bor = (bedDays > 0) ? (patientDays / bedDays * 100) : 0;
 
-    // ✅ HA-style PatientDays: ใช้เฉพาะเคสที่ "ปิดเคสแล้ว"
-    const discharged = patients.filter(x => {
-      const r = x.rawData || [];
-      return r[20] || r[25] || r[26] || r[27] || r[28] || r[30];
-    });
-    const patientDays = discharged.reduce((s, x) => s + safeInt(x.displayLOS), 0);
-
-    // KPI fill
-    document.getElementById('kpiCarry').innerText = carry;
-
-    document.getElementById('kpiInTotal').innerText = inTotal;
-    document.getElementById('kpiInNew').innerText = inNew;
-    document.getElementById('kpiInTransfer').innerText = inTransfer;
-    document.getElementById('kpiInRefer').innerText = inRefer;
-
-    document.getElementById('kpiOutTotal').innerText = outTotal;
-    document.getElementById('kpiOutDC').innerText = outDC;
-    document.getElementById('kpiOutTO').innerText = outTO;
-    document.getElementById('kpiOutAbs').innerText = outAbs;
-    document.getElementById('kpiOutRefu').innerText = outRefu;
-    document.getElementById('kpiOutRO').innerText = outRO;
-    document.getElementById('kpiOutDeath').innerText = outDeath;
-
-    document.getElementById('kpiEOM').innerText = eom;
-    document.getElementById('kpiPatientDays').innerText = patientDays;
-    document.getElementById('kpiALOSOut').innerText = (outTotal > 0) ? (patientDays / outTotal).toFixed(2) : "0.00";
-    document.getElementById('kpiALOSIn').innerText = (inTotal > 0) ? (patientDays / inTotal).toFixed(2) : "0.00";
-
-    // Mortality Rate
-    const mortRate = (inTotal > 0) ? ((outDeath / inTotal) * 100) : 0;
-    document.getElementById('kpiMortRate').innerText = mortRate.toFixed(2);
-
-    // Charts
-    repChartIn = new Chart(document.getElementById('repChartIn'), {
-      type: 'doughnut',
-      data: { labels: ['รับใหม่', 'รับย้าย', 'รับ Refer'], datasets: [{ data: [inNew, inTransfer, inRefer] }] },
-      options: { plugins: { legend: { position: 'bottom' } } }
+    // dept rows (ใช้ sai=r[16])
+    const deptRows = {};
+    inAllList.forEach(p=>{
+      const r = p.rawData || [];
+      const dept = deptFromSai(r[16]);
+      if(!deptRows[dept]) deptRows[dept] = {F:0,M:0,T:0,PD:0};
+      const g = genderOf(p);
+      if(g==="F") deptRows[dept].F++;
+      if(g==="M") deptRows[dept].M++;
+      deptRows[dept].T = deptRows[dept].F + deptRows[dept].M;
+      // วันนอน: ใช้ displayLOS ของคนคนนั้น (เดือนนี้) รวมตามภาควิชา
+      deptRows[dept].PD += safeInt(p.displayLOS);
     });
 
-    repChartOut = new Chart(document.getElementById('repChartOut'), {
-      type: 'doughnut',
-      data: { labels: ['D/C', 'ย้ายออก', 'หนี', 'ปฏิเสธ', 'Refer Out', 'เสียชีวิต'], datasets: [{ data: [outDC, outTO, outAbs, outRefu, outRO, outDeath] }] },
-      options: { plugins: { legend: { position: 'bottom' } } }
-    });
-
-    const buckets = { "0": 0, "1-3": 0, "4-6": 0, "7-13": 0, "14-29": 0, "30+": 0 };
-    patients.forEach(p => {
-      const los = safeInt(p.displayLOS);
-      if (los <= 0) buckets["0"]++;
-      else if (los <= 3) buckets["1-3"]++;
-      else if (los <= 6) buckets["4-6"]++;
-      else if (los <= 13) buckets["7-13"]++;
-      else if (los <= 29) buckets["14-29"]++;
-      else buckets["30+"]++;
-    });
-
-    repChartLOS = new Chart(document.getElementById('repChartLOS'), {
-      type: 'bar',
-      data: { labels: Object.keys(buckets), datasets: [{ data: Object.values(buckets), borderRadius: 8 }] },
-      options: { plugins: { legend: { display: false } } }
-    });
-
-    // Dx Summary (Dx1 + Dx2)
+    // Top Dx5 (ใช้ mapped)
     const counts = {};
-    patients.forEach(p => {
+    patients.forEach(p=>{
       const r = p.rawData || [];
-      const dx1List = splitDxList(r[18]).map(mapDx);
-      const dx2List = splitDxList(r[19]).map(mapDx);
-      [...dx1List, ...dx2List].forEach(dx => addCount(counts, dx, 1));
+      const dx1 = splitDxList(r[18]).map(mapDx);
+      const dx2 = splitDxList(r[19]).map(mapDx);
+      [...dx1, ...dx2].forEach(dx=>addCount(counts, dx, 1));
     });
+    const topDx5 = topEntries(counts, 5);
 
-    const top = topEntries(counts, 10);
-    const body = document.getElementById('dxSummaryBody');
-    if (body) {
-      body.innerHTML = (top.length === 0)
-        ? `<tr><td colspan="3" class="text-center text-muted">ยังไม่มีข้อมูล Dx</td></tr>`
-        : top.map(([dx, n], i) => `
-            <tr>
-              <td>${i+1}</td>
-              <td>${escapeHtml(dx)}</td>
-              <td class="text-end"><b>${n}</b></td>
-            </tr>
-          `).join('');
-    }
+    // genders
+    const ctx = {
+      sheet: currentSheet,
+      days, beds, bedDays,
+      inAllG: countByGender(inAllList),
+      carryG: countByGender(carryList),
+      inNewG: countByGender(inNewList),
+      inTransferG: countByGender(inTransferList),
+      inReferG: countByGender(inReferList),
 
-    // Advanced HA
-    // A) Top Dx1 by Age Group
-    const ageGroups = [
-      { key: "0-1y",  test: (y) => y <= 1 },
-      { key: "1-5y",  test: (y) => y >= 2 && y <= 5 },
-      { key: "6-12y", test: (y) => y >= 6 && y <= 12 },
-      { key: "13-15y",test: (y) => y >= 13 }
-    ];
-    const ageDx = {}; ageGroups.forEach(g => ageDx[g.key] = {});
-    patients.forEach(p => {
-      const r = p.rawData || [];
-      const y = parseAgeYears(r[12]);
-      const g = ageGroups.find(x => x.test(y))?.key || "13-15y";
-      const dx1Primary = mapDx(primaryDxFromDx1(r[18]));
-      addCount(ageDx[g], dx1Primary, 1);
-    });
+      outAllG: countByGender(outAllList),
+      outDCG: countByGender(outDCList),
+      outDeathG: countByGender(outDeathList),
+      outTOG: countByGender(outTOList),
+      outROG: countByGender(outROList),
+      outAbsG: countByGender(outAbsList),
+      outRefuseG: countByGender(outRefuseList),
 
-    document.getElementById('advDxAge').innerHTML = ageGroups.map(g => {
-      const t = topEntries(ageDx[g.key], 5);
-      const rows = (t.length === 0)
-        ? `<div class="text-muted">- ไม่มีข้อมูล -</div>`
-        : `<ol class="mb-0">${t.map(([dx,n]) => `<li>${escapeHtml(dx)} <b class="ms-1">(${n})</b></li>`).join('')}</ol>`;
-      return `<div class="mb-2"><div class="fw-black">${g.key}</div>${rows}</div>`;
-    }).join('');
+      eomG: countByGender(eomList),
 
-    // B) Top Dx1 by Outcome
-    const outcomeKeys = ["DC","TransferOut","ReferOut","Death"];
-    const outDx = {}; outcomeKeys.forEach(k => outDx[k] = {});
-    patients.forEach(p => {
-      const r = p.rawData || [];
-      const out = getOutcomeType(r);
-      if (!outDx[out]) return;
-      const dx1Primary = mapDx(primaryDxFromDx1(r[18]));
-      addCount(outDx[out], dx1Primary, 1);
-    });
+      patientDays,
+      bor,
+      deptRows,
+      topDx5
+    };
 
-    document.getElementById('advDxOutcome').innerHTML = outcomeKeys.map(k => {
-      const t = topEntries(outDx[k], 5);
-      const rows = (t.length === 0)
-        ? `<div class="text-muted">- ไม่มีข้อมูล -</div>`
-        : `<ol class="mb-0">${t.map(([dx,n]) => `<li>${escapeHtml(dx)} <b class="ms-1">(${n})</b></li>`).join('')}</ol>`;
-      return `<div class="mb-2"><div class="fw-black">${k}</div>${rows}</div>`;
-    }).join('');
+    document.getElementById('reportMonthTitle').innerText = currentSheet;
 
-    // C) Dx vs LOS (avg LOS by Dx1)
-    const dxLos = {};
-    patients.forEach(p => {
-      const r = p.rawData || [];
-      const dx1Primary = mapDx(primaryDxFromDx1(r[18]));
-      const los = safeInt(p.displayLOS);
-      if (!dx1Primary) return;
-      addSum(dxLos, dx1Primary, los);
-    });
-
-    const avgList = Object.entries(dxLos)
-      .map(([dx, obj]) => [dx, (obj.n ? (obj.sum / obj.n) : 0), obj.n])
-      .sort((a,b) => b[1] - a[1])
-      .slice(0, 10);
-
-    document.getElementById('advDxLos').innerHTML = (avgList.length === 0)
-      ? `<div class="text-muted">- ไม่มีข้อมูล -</div>`
-      : `
-        <div class="table-wrap">
-          <table class="table table-sm table-striped mb-0">
-            <thead class="table-light">
-              <tr>
-                <th style="width:60px">#</th>
-                <th>Dx1</th>
-                <th class="text-end" style="width:120px">Avg LOS</th>
-                <th class="text-end" style="width:120px">Cases</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${avgList.map((x,i)=>`
-                <tr>
-                  <td>${i+1}</td>
-                  <td>${escapeHtml(x[0])}</td>
-                  <td class="text-end"><b>${x[1].toFixed(2)}</b></td>
-                  <td class="text-end">${x[2]}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-
-    // D) Long-stay Dx1 (LOS >= 30)
-    const longDx = {};
-    patients.forEach(p => {
-      const los = safeInt(p.displayLOS);
-      if (los < 30) return;
-      const r = p.rawData || [];
-      const dx1Primary = mapDx(primaryDxFromDx1(r[18]));
-      addCount(longDx, dx1Primary, 1);
-    });
-
-    const longTop = topEntries(longDx, 10);
-    document.getElementById('advLongStayDx').innerHTML = (longTop.length === 0)
-      ? `<div class="text-muted">- ไม่มีเคส Long-stay -</div>`
-      : `
-        <div class="table-wrap">
-          <table class="table table-sm table-striped mb-0">
-            <thead class="table-light">
-              <tr>
-                <th style="width:60px">#</th>
-                <th>Dx1</th>
-                <th class="text-end" style="width:120px">Cases</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${longTop.map(([dx,n],i)=>`
-                <tr>
-                  <td>${i+1}</td>
-                  <td>${escapeHtml(dx)}</td>
-                  <td class="text-end"><b>${n}</b></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
+    // ใส่ HTML ฟอร์มใหม่
+    document.getElementById('reportResult').innerHTML = buildOfficialMonthlyFormHTML(ctx);
 
     Swal.close();
     bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show();
@@ -2461,66 +2452,8 @@ async function showFullReport(btn) {
   }
 }
 
-// ------------------ closeMonthUI ------------------
-async function closeMonthUI() {
-  if (!currentSheet) {
-    Swal.fire("ยังไม่ได้เลือกเดือน", "", "warning");
-    return;
-  }
-
-  const { value: bedCount } = await Swal.fire({
-    title: 'ปิดยอดเดือน?',
-    text: 'ระบุจำนวนเตียงที่ใช้จริงในเดือนนี้:',
-    input: 'number',
-    inputValue: 20,
-    showCancelButton: true,
-    confirmButtonText: 'ปิดยอด',
-    cancelButtonText: 'ยกเลิก'
-  });
-
-  if (bedCount === undefined) return;
-
-  const beds = parseInt(bedCount, 10);
-  if (isNaN(beds) || beds <= 0) {
-    Swal.fire("จำนวนเตียงไม่ถูกต้อง", "กรุณาใส่ตัวเลขมากกว่า 0", "warning");
-    return;
-  }
-
-  try {
-    Swal.fire({ title: 'กำลังดำเนินการ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    await callApi('closeMonthAction', {
-      currentSheetName: currentSheet,
-      bedCount: beds
-    });
-
-    Swal.close();
-    Swal.fire("ปิดยอดสำเร็จ", "", "success");
-
-    // ต้องมี initSheets() อยู่แล้ว
-    await initSheets();
-
-  } catch (err) {
-    Swal.fire('ผิดพลาด', err.toString(), 'error');
-  }
-}
+// expose
 window.showFullReport = showFullReport;
-window.closeMonthUI = closeMonthUI;
-// ------------------ expose for onclick ------------------
-
-// ✅ expose functions used by inline onclick / html attributes
-window.setNurseIdUI = setNurseIdUI;
-window.onSheetChange = onSheetChange;
-window.loadDashboard = loadDashboard;
-window.prepareNewForm = prepareNewForm;
-
-window.exportCSV = exportCSV;
-window.setTableFilter = setTableFilter;
-window.quickSearch = quickSearch;
-
-window.saveDischarge = saveDischarge;   // ปุ่มใน discharge modal ใช้ onclick
-window.editPatient = editPatient;
-window.printPDF = printPDF;
 </script>
 
 </body>
