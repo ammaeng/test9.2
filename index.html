@@ -2220,383 +2220,12 @@ window.onSheetChange = onSheetChange;
 window.loadDashboard = loadDashboard;
 window.setNurseIdUI = setNurseIdUI;
 
-  // ================== Report (PRO) ==================
-  // *** ส่วน Report/closeMonthUI ของคุณยังใช้ได้ตามเดิม ***
-  // (เพื่อย่อข้อความ ผมคงโค้ด report ของคุณไว้เหมือนเดิมทั้งหมด)
-  // >>> ให้คุณเอาโค้ดส่วน Report + closeMonthUI เดิมของคุณ “วางต่อท้ายตรงนี้” ได้เลย <<<
+ /* ================== Report (PRO) Modern Dashboard + PDF ================== */
 
-  // ✅ เพื่อความชัวร์: ผูกขึ้น global ให้ onclick ใช้ได้แน่
-  window.prepareNewForm = prepareNewForm;
-
-</script>
-
-<div class="modal fade" id="dischargeModal">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-
-      <div class="modal-header bg-warning">
-        <h5 class="modal-title fw-bold">จำหน่ายผู้ป่วย</h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-
-        <input type="hidden" id="disRowId">
-
-        <div class="mb-2">
-          <label class="form-label">ประเภทจำหน่าย</label>
-          <select id="disType" class="form-select">
-            <option value="">--เลือก--</option>
-            <option value="dc">D/C</option>
-            <option value="transfer">ย้ายแผนก</option>
-            <option value="refer">Refer Out</option>
-            <option value="death">เสียชีวิต</option>
-            <option value="abscond">หนี</option>
-            <option value="refuse">ปฏิเสธ</option>
-          </select>
-        </div>
-
-        <div class="mb-2">
-          <label class="form-label">วันที่</label>
-          <input type="date" id="disDate" class="form-control">
-        </div>
-
-        <!-- ✅ ซ่อนไว้ตั้งแต่แรก กันหน้าเด้ง -->
-        <div class="mb-2" id="fuBox" style="display:none;">
-          <label class="form-label">F/U</label>
-          <input type="text" id="disFU" class="form-control">
-        </div>
-
-        <div class="mb-2" id="transferBox" style="display:none;">
-          <label class="form-label">ย้ายไปแผนก</label>
-          <input type="text" id="transferDept" class="form-control">
-        </div>
-
-        <div class="mb-2" id="referBox" style="display:none;">
-          <label class="form-label">Refer ไปที่</label>
-          <input type="text" id="referDest" class="form-control">
-        </div>
-
-        <div class="small text-muted">
-          Nurse ID: <b id="disNurseId"></b>
-        </div>
-
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-        <button class="btn btn-success" onclick="saveDischarge()">บันทึก</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-  <script>
-/* ================== Monthly Official Form Report (Ward 9/2) ==================
-   ✅ ครบข้อ 11–27 ตามแบบรายงานจริง
-   ✅ กันใส่ผิดช่องด้วย object + normalize + render by key
-   ✅ ใช้ข้อมูลจาก summary ก่อน (ถ้ามี) ถ้าไม่มีก็ fallback เป็นค่าเริ่มต้น
-============================================================================== */
-function daysInThisMonth(d = new Date()){
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-}
-
-
-
-function daysInMonthFromSheet(sheetName){
-  const d = sheetNameToDate(sheetName);
-  if(!d) return new Date().getDate();
-  return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
-}
-function fmt2(n){ return (isNaN(n)?0:n).toFixed(2); }
-function safeNum(v, def=0){
-  const n = Number(v);
-  return Number.isFinite(n) ? n : def;
-}
-function safeText(v, def="-"){
-  const s = String(v ?? "").trim();
-  return s ? s : def;
-}
-
-function genderOf(p){
-  const g = String(p?.rawData?.[33] || "").trim();
-  if (g.includes("หญิง")) return "F";
-  if (g.includes("ชาย")) return "M";
-  return "U";
-}
-function typeOf(p){
-  return String(p?.patientStatus || p?.rawData?.[0] || "").trim();
-}
-function isOutcomeClosed(r){
-  return !!(r?.[20] || r?.[25] || r?.[26] || r?.[27] || r?.[28] || r?.[30]);
-}
-
-function deptFromRow(r){
-  const ward = String(r?.[15] || "").trim();
-  const sai  = String(r?.[16] || "").trim();
-  const s = (ward || sai).toLowerCase();
-  if(!s) return "ไม่ระบุ";
-  if (s.includes("med") || s.includes("อายุร")) return "อายุรศาสตร์";
-  if (s.includes("surg") || s.includes("ศัลย")) return "ศัลยศาสตร์";
-  if (s.includes("ped") || s.includes("กุมาร")) return "กุมารเวชศาสตร์";
-  if (s.includes("obs") || s.includes("สูติ")) return "สูติศาสตร์";
-  if (s.includes("gyn") || s.includes("นรี")) return "นรีเวชวิทยา";
-  if (s.includes("oph") || s.includes("eye") || s.includes("จักษุ")) return "จักษุ";
-  if (s.includes("ent") || s.includes("โสต") || s.includes("หู") || s.includes("คอ") || s.includes("นาสิก")) return "โสต ศอ นาสิก";
-  if (s.includes("ortho") || s.includes("กระดูก")) return "ศัลยกรรมกระดูกและข้อ";
-  return ward || sai || "ไม่ระบุ";
-}
-
-function countByGender(list){
-  let F=0,M=0;
-  list.forEach(p=>{
-    const g = genderOf(p);
-    if(g==="F") F++;
-    else if(g==="M") M++;
-  });
-  return {F,M,T:F+M};
-}
-function sumLos(list){
-  return list.reduce((s,p)=>s + safeInt(p.displayLOS), 0);
-}
-
-/* ---------- 11–27: schema + normalize กันผิดช่อง ---------- */
-const KPI_SCHEMA_11_27 = {
-  // 11–14: ตัวเลข
-  k11_unplanned_et:        { label:"จำนวนผู้ป่วย Unplanned ET tube", type:"int", def:0 },
-  k12_vent_days:           { label:"จำนวนวันนอนรวมของผู้ป่วยที่ใส่ท่อเครื่องช่วยหายใจ", type:"int", def:0 },
-  k13_icd_displaced:       { label:"จำนวนครั้งที่เกิดการเลื่อนหลุดของ ICD Line", type:"int", def:0 },
-  k14_icd_days:            { label:"จำนวนวันนอนรวมของผู้ป่วยที่ On ICD Line", type:"int", def:0 },
-
-  // 15–18: อัตรา/ระดับ (แสดงเป็นข้อความได้)
-  k15_pressure_ulcer_rate: { label:"อัตราการเกิดแผลกดทับ(<5ครั้ง/1000วันนอน)", type:"text", def:"-" },
-  k16_fall_rate:           { label:"อัตราการเกิดพลัดตกหกล้ม(C-I)", type:"text", def:"-" },
-  k17_med_error:           { label:"ความคลาดเคลื่อนทางยา(C-I)", type:"text", def:"-" },
-  k18_ghi_level:           { label:"อุบัติการณ์เฉพาะโรคระดับ GHI (แนบรายงานอุบัติการณ์)", type:"text", def:"-" },
-
-  // 19–23: ตัวเลข
-  k19_unplanned_cpr:       { label:"อุบัติการณ์ Unplanned CPR", type:"int", def:0 },
-  k20_unplanned_icu:       { label:"อุบัติการณ์ Unplanned ICU", type:"int", def:0 },
-  k21_wrong_proc:          { label:"อุบัติการณ์หัตถการ ผิดคน/ผิดข้าง/ผิดตำแหน่ง (ครั้ง)", type:"int", def:0 },
-  k22_wrong_surgery:       { label:"อุบัติการณ์การผ่าตัด ผิดคน/ผิดข้าง/ผิดตำแหน่ง (ครั้ง)", type:"int", def:0 },
-  k23_wrong_blood:         { label:"อุบัติการณ์ให้เลือดผิดคนจากระบุตัวผิดพลาด (ครั้ง)", type:"int", def:0 },
-
-  // 24: phlebitis grade 1-4
-  k24_phlebitis_g1:        { label:"Phlebitis grade 1 (ครั้ง)", type:"int", def:0 },
-  k24_phlebitis_g2:        { label:"Phlebitis grade 2 (ครั้ง)", type:"int", def:0 },
-  k24_phlebitis_g3:        { label:"Phlebitis grade 3 (ครั้ง)", type:"int", def:0 },
-  k24_phlebitis_g4:        { label:"Phlebitis grade 4 (ครั้ง)", type:"int", def:0 },
-
-  // 25: completeness
-  k25_note_qty:            { label:"ความสมบูรณ์บันทึกฯ เชิงปริมาณ", type:"int", def:0 },
-  k25_note_qlt:            { label:"ความสมบูรณ์บันทึกฯ เชิงคุณภาพ", type:"int", def:0 },
-
-  // 26: waiting time
-  k26_avg_wait_dc_min:     { label:"ระยะเวลารอคอยกลับบ้านเฉลี่ย (นาที)", type:"float1", def:0 },
-
-  // 27: refer + daycare
-  k27_refer_in:            { label:"Refer IN", type:"int", def:0 },
-  k27_refer_out:           { label:"Refer Out", type:"int", def:0 },
-  k27_refer_back:          { label:"Refer Back", type:"int", def:0 },
-  k27_refer_back_to:       { label:"Refer Back To", type:"int", def:0 },
-  k27_daycare:             { label:"ผู้ป่วย Day Care (case)", type:"int", def:0 },
-};
-
-function normalizeKpi11_27(raw){
-  const out = {};
-  const src = raw || {};
-  for(const key in KPI_SCHEMA_11_27){
-    const rule = KPI_SCHEMA_11_27[key];
-    const v = src[key];
-
-    if(rule.type === "int"){
-      out[key] = Math.max(0, parseInt(v,10) || rule.def);
-    } else if(rule.type === "float1"){
-      const n = safeNum(v, rule.def);
-      out[key] = Number.isFinite(n) ? n : rule.def;
-    } else { // text
-      out[key] = safeText(v, rule.def);
-    }
-  }
-  return out;
-}
-
-
-function buildOfficialMonthlyFormHTML(ctx){
-  const {
-    sheet, days, beds, isMonthClosed,
-    inAllG, carryG, inNewG, inTransferG, inReferG,
-    outAllG, outDCG, outDeathG, outTOG, outROG, outAbsG, outRefuseG,
-    eomG, patientDays, patientDaysUtil, bedDays, borOcc, borUtil,   
-    deptRows,
-    topDx5,
-    kpi1127
-  } = ctx;
-
-  const td = (v, cls="") => `<td class="${cls}">${escapeHtml(v)}</td>`;
-  const tdn = (v, cls="text-end") => `<td class="${cls}">${v}</td>`;
-
-  const deptOrder =[
-    "อายุรศาสตร์","ศัลยศาสตร์","กุมารเวชศาสตร์","สูติศาสตร์","นรีเวชวิทยา",
-    "จักษุ","โสต ศอ นาสิก","ศัลยกรรมกระดูกและข้อ"
-  ];
-  const extra = Object.keys(deptRows || {}).filter(k => !deptOrder.includes(k));
-  const deptList =[...deptOrder, ...extra.sort((a,b)=>a.localeCompare(b,'th'))];
-
-  const deptHtml = deptList.map(name=>{
-    const row = deptRows[name] || {F:0,M:0,T:0,PD:0};
-    return `
-      <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-        <div style="min-width:180px">- ${escapeHtml(name)}</div>
-        <div class="text-end" style="min-width:110px">หญิง ${row.F} | ชาย ${row.M} | รวม <b>${row.T}</b></div>
-        <div class="text-end" style="min-width:120px">วันนอน <b>${row.PD}</b></div>
-      </div>
-    `;
-  }).join("");
-
-  const dx5 = (topDx5 && topDx5.length)
-    ? topDx5.map(([dx,c],i)=>`<div>${i+1}. ${escapeHtml(dx)} <b class="ms-1">${c}</b></div>`).join("")
-    : `<div class="text-muted">- ยังไม่มีข้อมูล Dx -</div>`;
-
-  const k = kpi1127; 
-
-  const bedsText = isMonthClosed ? `${beds} เตียง` : `<span class="text-danger" style="font-size:13px;">(ต้องกดปิดยอดเดือนก่อน)</span>`;
-  const borOccText = isMonthClosed ? `${fmt2(borOcc)}%` : `<span class="text-danger" style="font-size:12px;">รอระบุเตียง</span>`;
-  const borUtilText = isMonthClosed ? `${fmt2(borUtil)}%` : `<span class="text-danger" style="font-size:12px;">รอระบุเตียง</span>`;
-
-  return `
-  <div class="report-block">
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-      <div>
-        <div class="fw-black" style="font-size:18px;">ใบรายงานสถิติผู้ป่วยใน หน่วยงาน Ward 9/2 เดือน ${escapeHtml(sheet)}</div>
-        <div class="subtle mt-1">จำนวนวันทั้งหมด <b>${days}</b> วัน | จำนวนเตียงที่เปิดจริง <b>${bedsText}</b></div>
-      </div>
-      <div class="text-end subtle">
-        ออกรายงาน: <b>${escapeHtml(new Date().toLocaleString('th-TH'))}</b>
-      </div>
-    </div>
-
-    <hr class="my-2">
-
-    <div class="row g-2">
-      <!-- LEFT -->
-      <div class="col-12 col-lg-7">
-        <div class="table-wrap">
-          <table class="table table-sm table-bordered align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th style="width:56px">ลำดับ</th>
-                <th>รายการ</th>
-                <th style="width:90px" class="text-end">หญิง</th>
-                <th style="width:90px" class="text-end">ชาย</th>
-                <th style="width:90px" class="text-end">รวม</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>${td("1")}${td("จำนวนผู้ป่วยในทั้งหมด")}${tdn(inAllG.F)}${tdn(inAllG.M)}${tdn(inAllG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนยอดผู้ป่วย ยกมาจากเดือนที่แล้ว")}${tdn(carryG.F)}${tdn(carryG.M)}${tdn(carryG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยรับใหม่")}${tdn(inNewG.F)}${tdn(inNewG.M)}${tdn(inNewG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยรับย้าย")}${tdn(inTransferG.F)}${tdn(inTransferG.M)}${tdn(inTransferG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยรับ Refer")}${tdn(inReferG.F)}${tdn(inReferG.M)}${tdn(inReferG.T)}</tr>
-
-              <tr>${td("2")}${td("จำนวนผู้ป่วยที่จำหน่ายทั้งหมด")}${tdn(outAllG.F)}${tdn(outAllG.M)}${tdn(outAllG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการกลับบ้าน (D/C)")}${tdn(outDCG.F)}${tdn(outDCG.M)}${tdn(outDCG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการตาย")}${tdn(outDeathG.F)}${tdn(outDeathG.M)}${tdn(outDeathG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่าย โดยการย้ายแผนก")}${tdn(outTOG.F)}${tdn(outTOG.M)}${tdn(outTOG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่าย โดยการ Refer")}${tdn(outROG.F)}${tdn(outROG.M)}${tdn(outROG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการหนี")}${tdn(outAbsG.F)}${tdn(outAbsG.M)}${tdn(outAbsG.T)}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่ไม่สมัครใจอยู่")}${tdn(outRefuseG.F)}${tdn(outRefuseG.M)}${tdn(outRefuseG.T)}</tr>
-
-              <tr>${td("3")}${td("จำนวนผู้ป่วย ยกยอดไปเดือนหน้า")}${tdn(eomG.F)}${tdn(eomG.M)}${tdn(eomG.T)}</tr>
-
-              <tr>${td("4")}${td("จำนวนผู้ป่วยแยกตามภาควิชา")}${tdn("")}${tdn("")}${tdn("")}</tr>
-              <tr><td colspan="5">${deptHtml}</td></tr>
-
-              <tr>${td("5")}${td("Newborn (ยังไม่ได้เก็บข้อมูลในชีทหลัก)")}${tdn("0")}${tdn("0")}${tdn("0")}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนทารกแรกเกิดทั้งหมดใน 1 เดือน")}${tdn("0")}${tdn("0")}${tdn("0")}</tr>
-              <tr class="table-light">${td("")}${td(" - จำนวนวันนอนของทารกแรกเกิด")}${tdn("0")}${tdn("0")}${tdn("0")}</tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- RIGHT -->
-      <div class="col-12 col-lg-5">
-        <div class="table-wrap mb-2">
-          <table class="table table-sm table-bordered align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th style="width:56px">ลำดับ</th>
-                <th>รายการ</th>
-                <th style="width:120px" class="text-end">จำนวน/ร้อยละ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>${td("6")}${td("อัตราครองเตียง (ไม่นับ Admit < 6 ชม.)")}${tdn(borOccText)}</tr>
-              <tr>${td("7")}${td("อัตราการใช้เตียง (รวม Admit < 6 ชม. = 1)")}${tdn(borUtilText)}</tr>
-              <tr>${td("8")}${td("จำนวนวันนอนรวม (LOS เคสปิด)")}${tdn(patientDays)}</tr>
-              <tr>${td("9")}${td("จำนวนวันใช้เตียงรวม (วันนอน + เคส < 6 ชม.)")}${tdn(patientDaysUtil)}</tr>
-              
-              <tr>${td("10")}${td("สถิติผู้ป่วย 5 โรคแรก")}${tdn("")}</tr>
-              <tr><td colspan="3">${dx5}</td></tr>
-
-              <tr>${td("11")}${td("จำนวนผู้ป่วย Unplanned ET tube")}${tdn(k.k11_unplanned_et)}</tr>
-              <tr>${td("12")}${td("จำนวนวันนอนรวมของผู้ป่วยที่ใส่ท่อเครื่องช่วยหายใจ")}${tdn(k.k12_vent_days)}</tr>
-              <tr>${td("13")}${td("จำนวนครั้งที่เกิดการเลื่อนหลุดของ ICD Line")}${tdn(k.k13_icd_displaced)}</tr>
-              <tr>${td("14")}${td("จำนวนวันนอนรวมของผู้ป่วยที่ On ICD Line")}${tdn(k.k14_icd_days)}</tr>
-              <tr>${td("15")}${td("อัตราการเกิดแผลกดทับ (ครั้ง/1000 วันนอน)")} ${tdn(k.k15_pressure_ulcer_rate)}</tr>
-              <tr>${td("16")}${td("อัตราการเกิดพลัดตกหกล้ม (ครั้ง/1000 วันนอน)")} ${tdn(k.k16_fall_rate)}</tr>
-              <tr>${td("17")}${td("ความคลาดเคลื่อนทางยา (ครั้ง/1000 วันนอน)")} ${tdn(k.k17_med_error)}</tr>
-              <tr>${td("18")}${td("อุบัติการณ์เฉพาะโรคระดับ GHI (แนบรายงานอุบัติการณ์) ระดับ")}${tdn(k.k18_ghi_level)}</tr>
-              
-              <tr>${td("19")}${td("อุบัติการณ์ Unplanned CPR")}${tdn(k.k19_unplanned_cpr)}</tr>
-              <tr>${td("20")}${td("อุบัติการณ์ Unplanned ICU")}${tdn(k.k20_unplanned_icu)}</tr>
-              <tr>${td("21")}${td("อุบัติการณ์หัตถการ ผิดคน/ผิดข้าง/ผิดตำแหน่ง (ครั้ง)")}${tdn(k.k21_wrong_proc)}</tr>
-              <tr>${td("22")}${td("อุบัติการณ์การผ่าตัด ผิดคน/ผิดข้าง/ผิดตำแหน่ง (ครั้ง)")}${tdn(k.k22_wrong_surgery)}</tr>
-              <tr>${td("23")}${td("อุบัติการณ์ให้เลือดผิดคนจากระบุตัวผิดพลาด (ครั้ง)")}${tdn(k.k23_wrong_blood)}</tr>
-              <tr>${td("24")}${td("จำนวนการเกิด Phlebitis")}${tdn(`grade1=${k.k24_phlebitis_g1}, g2=${k.k24_phlebitis_g2}, g3=${k.k24_phlebitis_g3}, g4=${k.k24_phlebitis_g4}`)}</tr>
-              <tr>${td("25")}${td("ความสมบูรณ์ของบันทึกทางการพยาบาล")}${tdn(`ปริมาณ ${k.k25_note_qty} | คุณภาพ ${k.k25_note_qlt}`)}</tr>
-              <tr>${td("26")}${td("ระยะเวลารอคอยกลับบ้านเฉลี่ย")}${tdn(fmt2(k.k26_avg_wait_dc_min) + " นาที")}</tr>
-              <tr>${td("27")}${td("Refer + Day Care")}${tdn(`IN ${k.k27_refer_in} | Out ${k.k27_refer_out} | Back ${k.k27_refer_back} | BackTo ${k.k27_refer_back_to} | DayCare ${k.k27_daycare}`)}</tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="subtle">
-          * ข้อ 11–27: ถ้ายังไม่ได้กรอกใน Summary/QA ระบบจะแสดงค่าเริ่มต้นอัตโนมัติ (0 หรือ -)
-        </div>
-      </div>
-    </div>
-
-    <!-- ✅ เพิ่มส่วนคู่มือเกร็ดความรู้ตรงนี้ -->
-    <hr class="my-3">
-    <div class="report-note" style="background-color: #f8fbfd; border-color: #b8daff;">
-      <div class="fw-bold mb-2 text-primary" style="font-size: 14px;">💡 เกร็ดความรู้ / คู่มือการคำนวณอัตราครองเตียง (อ้างอิงข้อ 6 และ 7)</div>
-      
-      <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <p class="mb-1 fw-bold text-dark">1. อัตราครองเตียง (Bed Occupancy Rate - borOcc)</p>
-          <ul class="mb-0 ps-3" style="color: #495057;">
-            <li class="mb-1"><b>ความหมาย:</b> เป็นอัตราครองเตียงแบบ "เป็นทางการ (Official)" ตามหลักสถิติโรงพยาบาลทั่วไป ระบบจะนำผลรวมของวันนอน (LOS) ของผู้ป่วยทุกคนมาคำนวณรวมกัน</li>
-            <li><b>จุดสำคัญ:</b> ในฟังก์ชันคำนวณ LOS ถ้ามีการติ๊กว่าผู้ป่วยคนนี้ <span class="badge bg-warning text-dark">Admit &lt; 6 ชม.</span> ระบบจะปัดค่า LOS เป็น 0 ทันที ทำให้ผู้ป่วยกลุ่มนี้ไม่ถูกนำมาคิดในอัตราครองเตียง (เพราะถือว่าไม่ได้นอนค้างคืน หรือครองเตียงข้ามวันตามเกณฑ์)</li>
-          </ul>
-        </div>
-        <div class="col-12 col-md-6">
-          <p class="mb-1 fw-bold text-dark">2. อัตราการใช้เตียง (Bed Utilization Rate - borUtil)</p>
-          <ul class="mb-0 ps-3" style="color: #495057;">
-            <li class="mb-1"><b>ความหมาย:</b> ค่านี้สร้างขึ้นมาเพื่อ "สะท้อนภาระงานจริง (Workload) ของวอร์ด" เพราะในความเป็นจริง แม้ผู้ป่วยจะแอดมิทมาแค่ 2-3 ชั่วโมงแล้วจำหน่าย/เสียชีวิต/Refer แต่พยาบาลก็ต้องเตรียมเตียง ปูเตียง รับเวร และทำความสะอาดเตียงใหม่เมื่อผู้ป่วยกลับอยู่ดี</li>
-            <li><b>จุดสำคัญ:</b> ระบบจะทำการนับเคสที่ <span class="badge bg-warning text-dark">&lt; 6 ชม.</span> ทั้งหมดมาตีค่าให้เท่ากับ "1 วัน" (หรือการใช้งาน 1 เตียง) แล้วบวกเพิ่มเข้าไปในวันนอนรวม ทำให้ตัวเลข "อัตราการใช้เตียง" จะมีค่าสูงกว่าหรือเท่ากับอัตราครองเตียงเสมอ</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-  </div>
-  `;
-}/* ================== PATCH showFullReport() ==================
-   ✅ ดึง patients + summary + dxMap เหมือนเดิม
-   ✅ สร้าง ctx.kpi1127 จาก summary ก่อน แล้ว normalize กันผิดช่อง
-================================================================ */
+// ตัวแปรเก็บกราฟและข้อมูลชั่วคราว
+let currentReportCtx = null;
+let repChartOutcome = null;
+let repChartDept = null;
 
 async function showFullReport(btn) {
   lastTriggerEl = btn || document.activeElement;
@@ -2620,18 +2249,14 @@ async function showFullReport(btn) {
     const dxMap = dxMapPack?.map || {};
     const mapDx = (s) => {
       const raw = String(s || "").trim().replace(/\s+/g, " ");
-      if (!raw) return "";
-      return String(dxMap[raw] || raw).trim().replace(/\s+/g, " ");
+      return String(dxMap[raw] || raw).trim().replace(/\s+/g, " ") || "";
     };
 
     const days = daysInMonthFromSheet(currentSheet);
-
-    // ✅ เช็คว่ามีการปิดยอดเดือน (มีข้อมูลใน summary) หรือยัง?
     const isMonthClosed = !!(summary && summary.beds);
-    const beds = isMonthClosed ? Number(summary.beds) : 0; // ถ้ายังไม่ปิดยอด เตียงจะเป็น 0
+    const beds = isMonthClosed ? Number(summary.beds) : 0;
     const bedDays = beds * days;
 
-    // group lists
     const carryList      = patients.filter(p => typeOf(p) === "ยอดยกมา");
     const inNewList      = patients.filter(p => typeOf(p) === "รับใหม่");
     const inTransferList = patients.filter(p => typeOf(p) === "รับย้าย");
@@ -2644,16 +2269,11 @@ async function showFullReport(btn) {
     const outROList     = patients.filter(p => !!p?.rawData?.[28]);
     const outAbsList    = patients.filter(p => !!p?.rawData?.[26]);
     const outRefuseList = patients.filter(p => !!p?.rawData?.[27]);
-    const outAllList    = patients.filter(p => isOutcomeClosed(p.rawData ||[])); // เคสปิด
+    const outAllList    = patients.filter(p => isOutcomeClosed(p.rawData ||[]));
     const eomList       = patients.filter(p => p.status === "ยังรักษาอยู่");
 
-    // patientDays = รวม LOS ของเคสปิด
     const patientDays = sumLos(outAllList);
 
-    // BOR
-    const bor = (bedDays > 0) ? (patientDays / bedDays * 100) : 0;
-
-    // dept rows
     const deptRows = {};
     inAllList.forEach(p=>{
       const r = p.rawData ||[];
@@ -2666,7 +2286,6 @@ async function showFullReport(btn) {
       deptRows[dept].PD += safeInt(p.displayLOS);
     });
 
-    // Top Dx5 (mapped)
     const counts = {};
     patients.forEach(p=>{
       const r = p.rawData ||[];
@@ -2676,21 +2295,18 @@ async function showFullReport(btn) {
     });
     const topDx5 = topEntries(counts, 5);
 
-    // KPI 11–27 from IncidentLog
     const pd = patientDays;
     const ratePer1000 = (n)=> (pd > 0 ? (n/pd*1000) : 0);
 
     const pressure = sumInc(incidents, "PRESSURE_ULCER");
     const fall     = sumInc(incidents, "FALL");
     const mederr   = sumInc(incidents, "MED_ERROR");
-
     const ph = phlebitisByGrade(incidents);
 
-    // GHI: เอา level ล่าสุด
     const ghiList = (incidents ||[]).filter(x => x.eventType === "GHI" && String(x.level||"").trim() !== "");
     const ghiLevel = ghiList.length ? String(ghiList[ghiList.length - 1].level).trim() : "-";
 
-    let kpi1127 = normalizeKpi11_27({
+    const kpi1127 = normalizeKpi11_27({
       k11_unplanned_et:        sumInc(incidents,"UNPLANNED_ET"),
       k12_vent_days:           sumInc(incidents,"VENT_DAYS"),
       k13_icd_displaced:       sumInc(incidents,"ICD_DISLODGE"),
@@ -2718,12 +2334,7 @@ async function showFullReport(btn) {
       k27_daycare:             sumInc(incidents,"DAYCARE"),
     });
 
-    const under6List = patients.filter(p => {
-      const r = p.rawData || [];
-      return String(r[22] || "").trim() !== "";
-    });
-    const under6Count = under6List.length;
-
+    const under6Count = patients.filter(p => String(p.rawData?.[22] || "").trim() !== "").length;
     const patientDaysOcc = sumLos(outAllList);
     const patientDaysUtil = patientDaysOcc + under6Count;
 
@@ -2731,67 +2342,392 @@ async function showFullReport(btn) {
     const borUtil = (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0;
 
     const ctx = {
-      sheet: currentSheet,
-      days, beds, bedDays, isMonthClosed, // ✅ ส่ง isMonthClosed ไปแสดงผลใน HTML
-
-      inAllG: countByGender(inAllList),
-      carryG: countByGender(carryList),
-      inNewG: countByGender(inNewList),
-      inTransferG: countByGender(inTransferList),
-      inReferG: countByGender(inReferList),
-
-      outAllG: countByGender(outAllList),
-      outDCG: countByGender(outDCList),
-      outDeathG: countByGender(outDeathList),
-      outTOG: countByGender(outTOList),
-      outROG: countByGender(outROList),
-      outAbsG: countByGender(outAbsList),
-      outRefuseG: countByGender(outRefuseList),
-
+      sheet: currentSheet, days, beds, isMonthClosed,
+      inAllG: countByGender(inAllList), carryG: countByGender(carryList),
+      inNewG: countByGender(inNewList), inTransferG: countByGender(inTransferList), inReferG: countByGender(inReferList),
+      outAllG: countByGender(outAllList), outDCG: countByGender(outDCList), outDeathG: countByGender(outDeathList),
+      outTOG: countByGender(outTOList), outROG: countByGender(outROList), outAbsG: countByGender(outAbsList), outRefuseG: countByGender(outRefuseList),
       eomG: countByGender(eomList),     
-
-      patientDays: patientDaysOcc,
-      patientDaysUtil,             
-      borOcc,                      
-      borUtil,                     
-      deptRows,
-      topDx5,
-      kpi1127
+      patientDays: patientDaysOcc, patientDaysUtil, borOcc, borUtil,                     
+      deptRows, topDx5, kpi1127
     };
 
+    currentReportCtx = ctx; // เก็บไว้สำหรับพิมพ์ PDF
+
     document.getElementById('reportMonthTitle').innerText = currentSheet;
-    document.getElementById('reportResult').innerHTML = buildOfficialMonthlyFormHTML(ctx);
+    document.getElementById('reportResult').innerHTML = buildModernReportHTML(ctx);
 
     Swal.close();
     bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show();
+    
+    // หน่วงเวลาเล็กน้อยเพื่อให้ Modal เปิดเสร็จแล้วค่อยวาดกราฟ
+    setTimeout(() => renderReportCharts(ctx), 250);
 
   } catch (err) {
     Swal.fire('ผิดพลาด', err.toString(), 'error');
   }
 }
+
+// --------------------------------------------------------------------------------
+// 1. หน้าต่าง Dashboard ทันสมัย (แสดงใน Modal)
+// --------------------------------------------------------------------------------
+function buildModernReportHTML(ctx){
+  const k = ctx.kpi1127;
+  const borOccText = ctx.isMonthClosed ? `${fmt2(ctx.borOcc)}%` : `<span class="text-danger" style="font-size:16px;">รอระบุเตียง</span>`;
+  const borUtilText = ctx.isMonthClosed ? `${fmt2(ctx.borUtil)}%` : `<span class="text-danger" style="font-size:16px;">รอระบุเตียง</span>`;
+
+  const dxHtml = (ctx.topDx5 && ctx.topDx5.length) 
+    ? ctx.topDx5.map(([dx, c], i) => `
+        <div class="d-flex justify-content-between border-bottom py-2">
+          <span><b>${i+1}.</b> ${escapeHtml(dx)}</span>
+          <span class="badge bg-primary rounded-pill">${c}</span>
+        </div>`).join("") 
+    : `<div class="text-muted text-center mt-3">ยังไม่มีข้อมูล Dx</div>`;
+
+  return `
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h5 class="fw-black mb-1 text-primary">📊 แดชบอร์ดสรุปผล Ward 9/2 (${ctx.sheet})</h5>
+      <div class="subtle">จำนวนวัน: <b>${ctx.days}</b> วัน | เตียง: <b>${ctx.isMonthClosed ? ctx.ctx : '<span class="text-danger">ยังไม่ปิดยอด</span>'}</b></div>
+    </div>
+    <button class="btn btn-danger rounded-pill shadow-sm px-4 fw-bold" onclick="printOfficialReport()">
+      🖨️ พิมพ์แบบฟอร์มทางการ (PDF)
+    </button>
+  </div>
+
+  <!-- แถว 1: KPI Cards -->
+  <div class="row g-2 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="kpi-card text-center border-primary border-start border-4">
+        <div class="kpi-label">รับเข้าทั้งหมด (รวมยอดยกมา)</div>
+        <div class="kpi-value text-primary">${ctx.inAllG.T}</div>
+        <div class="kpi-sub">ราย</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card text-center border-success border-start border-4">
+        <div class="kpi-label">จำหน่ายแล้ว (เคสปิด)</div>
+        <div class="kpi-value text-success">${ctx.outAllG.T}</div>
+        <div class="kpi-sub">ราย (รวมวันนอน: ${ctx.patientDays} วัน)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card text-center border-info border-start border-4">
+        <div class="kpi-label">อัตราครองเตียง (Official)</div>
+        <div class="kpi-value text-info">${borOccText}</div>
+        <div class="kpi-sub">ไม่รวมเคส < 6 ชม.</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card text-center border-warning border-start border-4">
+        <div class="kpi-label">อัตราการใช้เตียง (Util)</div>
+        <div class="kpi-value text-warning">${borUtilText}</div>
+        <div class="kpi-sub">รวมเคส < 6 ชม.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- แถว 2: Charts & Top Dx -->
+  <div class="row g-2 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="card p-3 h-100 shadow-sm border-0">
+        <div class="fw-bold mb-2 text-secondary">สัดส่วนการจำหน่าย (ราย)</div>
+        <div style="position: relative; height: 200px; width: 100%;">
+          <canvas id="chartOutcome"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card p-3 h-100 shadow-sm border-0">
+        <div class="fw-bold mb-2 text-secondary">ผู้ป่วยแบ่งตามแผนก (ราย)</div>
+        <div style="position: relative; height: 200px; width: 100%;">
+          <canvas id="chartDept"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card p-3 h-100 shadow-sm border-0">
+        <div class="fw-bold mb-2 text-secondary">สถิติ 5 โรคแรก (Top Dx)</div>
+        <div>${dxHtml}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- แถว 3: Incident / QA -->
+  <h6 class="fw-black text-danger mt-4 mb-2">📋 ตัวชี้วัดคุณภาพ และอุบัติการณ์ (QA / Incident)</h6>
+  <div class="row g-2">
+    <div class="col-12 col-md-4">
+      <div class="card p-3 h-100 border-0 shadow-sm bg-light">
+        <div class="fw-bold text-dark border-bottom pb-2 mb-2">อุปกรณ์ / หัตถการ</div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">Unplanned ET:</span> <b>${k.k11_unplanned_et} ราย</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">Ventilator days:</span> <b>${k.k12_vent_days} วัน</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">ICD Line หลุด:</span> <b>${k.k13_icd_displaced} ครั้ง</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">ICD Line days:</span> <b>${k.k14_icd_days} วัน</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">รอคอยกลับบ้านเฉลี่ย:</span> <b>${fmt2(k.k26_avg_wait_dc_min)} นาที</b></div>
+        <div class="fw-bold mt-2 pt-2 border-top text-dark">Phlebitis</div>
+        <div class="subtle text-end">
+          G1: <b>${k.k24_phlebitis_g1}</b> | G2: <b>${k.k24_phlebitis_g2}</b> | G3: <b>${k.k24_phlebitis_g3}</b> | G4: <b>${k.k24_phlebitis_g4}</b>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card p-3 h-100 border-0 shadow-sm bg-light">
+        <div class="fw-bold text-danger border-bottom pb-2 mb-2">อุบัติการณ์ความเสี่ยง (อัตรา/1000 วัน)</div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">แผลกดทับ:</span> <b class="text-danger">${k.k15_pressure_ulcer_rate}</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">พลัดตกหกล้ม:</span> <b class="text-danger">${k.k16_fall_rate}</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">คลาดเคลื่อนทางยา:</span> <b class="text-danger">${k.k17_med_error}</b></div>
+        <div class="d-flex justify-content-between mb-1 mt-2"><span class="subtle">Unplanned CPR:</span> <b>${k.k19_unplanned_cpr} ครั้ง</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">Unplanned ICU:</span> <b>${k.k20_unplanned_icu} ครั้ง</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">GHI Level ล่าสุด:</span> <b>${k.k18_ghi_level}</b></div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card p-3 h-100 border-0 shadow-sm bg-light">
+        <div class="fw-bold text-success border-bottom pb-2 mb-2">คุณภาพและ Refer</div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">หัตถการผิดคน/ข้าง:</span> <b>${k.k21_wrong_proc} ครั้ง</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">ผ่าตัดผิดคน/ข้าง:</span> <b>${k.k22_wrong_surgery} ครั้ง</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">ให้เลือดผิดคน:</span> <b>${k.k23_wrong_blood} ครั้ง</b></div>
+        <div class="d-flex justify-content-between mb-1 mt-2"><span class="subtle">บันทึกฯ เชิงปริมาณ:</span> <b class="text-success">${k.k25_note_qty}%</b></div>
+        <div class="d-flex justify-content-between mb-1"><span class="subtle">บันทึกฯ เชิงคุณภาพ:</span> <b class="text-success">${k.k25_note_qlt}%</b></div>
+        <div class="fw-bold mt-2 pt-2 border-top text-dark">Refer & DayCare</div>
+        <div class="subtle text-end">
+          IN: <b>${k.k27_refer_in}</b> | OUT: <b>${k.k27_refer_out}</b> | Back: <b>${k.k27_refer_back}</b> | DayCare: <b>${k.k27_daycare}</b>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+// --------------------------------------------------------------------------------
+// 2. ฟังก์ชันวาดกราฟใน Dashboard
+// --------------------------------------------------------------------------------
+function renderReportCharts(ctx) {
+  if (repChartOutcome) repChartOutcome.destroy();
+  if (repChartDept) repChartDept.destroy();
+
+  // กราฟสัดส่วนการจำหน่าย
+  const ctxOut = document.getElementById('chartOutcome');
+  if (ctxOut) {
+    repChartOutcome = new Chart(ctxOut, {
+      type: 'doughnut',
+      data: {
+        labels:['D/C', 'ย้าย', 'Refer', 'หนี/ปฏิเสธ', 'ตาย'],
+        datasets: [{
+          data:[
+            ctx.outDCG.T, ctx.outTOG.T, ctx.outROG.T, 
+            ctx.outAbsG.T + ctx.outRefuseG.T, ctx.outDeathG.T
+          ],
+          backgroundColor:['#198754', '#0dcaf0', '#0d6efd', '#ffc107', '#dc3545']
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels:{boxWidth:12, font:{size:11}} } } }
+    });
+  }
+
+  // กราฟผู้ป่วยตามแผนก
+  const ctxDept = document.getElementById('chartDept');
+  if (ctxDept) {
+    const deptLabels = Object.keys(ctx.deptRows);
+    const deptData = deptLabels.map(k => ctx.deptRows[k].T);
+    repChartDept = new Chart(ctxDept, {
+      type: 'bar',
+      data: {
+        labels: deptLabels,
+        datasets:[{ data: deptData, backgroundColor: '#6f42c1', borderRadius: 4 }]
+      },
+      options: { 
+        responsive: true, maintainAspectRatio: false, 
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks:{font:{size:10}} }, y: { beginAtZero: true, ticks:{stepSize:1} } }
+      }
+    });
+  }
+}
+
+// --------------------------------------------------------------------------------
+// 3. ฟังก์ชันสร้างหน้าต่างใหม่และพิมพ์ PDF (แบบฟอร์มทางการ)
+// --------------------------------------------------------------------------------
+function printOfficialReport() {
+  if (!currentReportCtx) return;
+  const html = buildTabularReportHTML(currentReportCtx);
+  
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  
+  // รอให้เบราว์เซอร์เรนเดอร์ CSS เสร็จแล้วค่อยเรียก Print
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
+}
+
+// --------------------------------------------------------------------------------
+// 4. HTML แบบฟอร์มทางการ (ตารางดั้งเดิม สำหรับการพิมพ์)
+// --------------------------------------------------------------------------------
+function buildTabularReportHTML(ctx) {
+  const {
+    sheet, days, beds, isMonthClosed,
+    inAllG, carryG, inNewG, inTransferG, inReferG,
+    outAllG, outDCG, outDeathG, outTOG, outROG, outAbsG, outRefuseG,
+    eomG, patientDays, patientDaysUtil, bedDays, borOcc, borUtil,   
+    deptRows, topDx5, kpi1127: k
+  } = ctx;
+
+  const td = (v) => `<td>${escapeHtml(v)}</td>`;
+  const tdn = (v) => `<td style="text-align: right;">${v}</td>`;
+
+  const deptOrder =["อายุรศาสตร์","ศัลยศาสตร์","กุมารเวชศาสตร์","สูติศาสตร์","นรีเวชวิทยา","จักษุ","โสต ศอ นาสิก","ศัลยกรรมกระดูกและข้อ"];
+  const extra = Object.keys(deptRows || {}).filter(k => !deptOrder.includes(k));
+  const deptList =[...deptOrder, ...extra.sort((a,b)=>a.localeCompare(b,'th'))];
+
+  const deptHtml = deptList.map(name=>{
+    const r = deptRows[name] || {F:0,M:0,T:0,PD:0};
+    return `
+      <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #ddd; padding:4px 0;">
+        <div style="width:40%">- ${escapeHtml(name)}</div>
+        <div style="width:30%; text-align:right;">ญ ${r.F} | ช ${r.M} | <b>รวม ${r.T}</b></div>
+        <div style="width:30%; text-align:right;">วันนอน <b>${r.PD}</b></div>
+      </div>
+    `;
+  }).join("");
+
+  const dx5 = (topDx5 && topDx5.length)
+    ? topDx5.map(([dx,c],i)=>`<div>${i+1}. ${escapeHtml(dx)} <b>(${c})</b></div>`).join("")
+    : `<div>- ยังไม่มีข้อมูล -</div>`;
+
+  const bedsText = isMonthClosed ? `${beds} เตียง` : `(รอระบุเตียง/ยังไม่ปิดยอด)`;
+  const borOccText = isMonthClosed ? `${fmt2(borOcc)}%` : `-`;
+  const borUtilText = isMonthClosed ? `${fmt2(borUtil)}%` : `-`;
+
+  return `
+  <!DOCTYPE html>
+  <html lang="th">
+  <head>
+    <meta charset="UTF-8">
+    <title>รายงานสถิติผู้ป่วยใน เดือน ${escapeHtml(sheet)}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Sarabun', sans-serif; font-size: 13px; color: #000; padding: 20px; line-height: 1.3; }
+      h3 { text-align: center; margin-bottom: 5px; font-weight: 700; }
+      .text-center { text-align: center; }
+      .header-sub { text-align: center; margin-bottom: 20px; font-size: 13px; color: #444; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 15px; page-break-inside: avoid; }
+      th, td { border: 1px solid #333; padding: 6px 8px; vertical-align: middle; }
+      th { background-color: #f2f2f2; font-weight: 600; }
+      .col-left { width: 55%; float: left; padding-right: 1%; }
+      .col-right { width: 44%; float: left; }
+      .clearfix::after { content: ""; clear: both; display: table; }
+      @media print {
+        @page { size: A4 portrait; margin: 1cm; }
+        body { padding: 0; }
+        .no-print { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <h3>ใบรายงานสถิติผู้ป่วยใน หน่วยงาน Ward 9/2</h3>
+    <div class="header-sub">
+      ประจำเดือน <b>${escapeHtml(sheet)}</b> | 
+      จำนวนวัน: <b>${days}</b> วัน | 
+      จำนวนเตียงที่เปิดจริง: <b>${bedsText}</b>
+    </div>
+
+    <div class="clearfix">
+      <!-- คอลัมน์ซ้าย (สถิติการรับเข้า/จำหน่าย) -->
+      <div class="col-left">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:5%">ลำดับ</th>
+              <th>รายการ</th>
+              <th style="width:12%" class="text-center">หญิง</th>
+              <th style="width:12%" class="text-center">ชาย</th>
+              <th style="width:12%" class="text-center">รวม</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>${td("1")}${td("จำนวนผู้ป่วยในทั้งหมด")}${tdn(inAllG.F)}${tdn(inAllG.M)}${tdn(`<b>${inAllG.T}</b>`)}</tr>
+            <tr>${td("")}${td(" - ยอดยกมาจากเดือนที่แล้ว")}${tdn(carryG.F)}${tdn(carryG.M)}${tdn(carryG.T)}</tr>
+            <tr>${td("")}${td(" - รับใหม่")}${tdn(inNewG.F)}${tdn(inNewG.M)}${tdn(inNewG.T)}</tr>
+            <tr>${td("")}${td(" - รับย้าย")}${tdn(inTransferG.F)}${tdn(inTransferG.M)}${tdn(inTransferG.T)}</tr>
+            <tr>${td("")}${td(" - รับ Refer")}${tdn(inReferG.F)}${tdn(inReferG.M)}${tdn(inReferG.T)}</tr>
+
+            <tr>${td("2")}${td("จำนวนผู้ป่วยที่จำหน่ายทั้งหมด")}${tdn(outAllG.F)}${tdn(outAllG.M)}${tdn(`<b>${outAllG.T}</b>`)}</tr>
+            <tr>${td("")}${td(" - กลับบ้าน (D/C)")}${tdn(outDCG.F)}${tdn(outDCG.M)}${tdn(outDCG.T)}</tr>
+            <tr>${td("")}${td(" - ตาย")}${tdn(outDeathG.F)}${tdn(outDeathG.M)}${tdn(outDeathG.T)}</tr>
+            <tr>${td("")}${td(" - ย้ายแผนก")}${tdn(outTOG.F)}${tdn(outTOG.M)}${tdn(outTOG.T)}</tr>
+            <tr>${td("")}${td(" - Refer Out")}${tdn(outROG.F)}${tdn(outROG.M)}${tdn(outROG.T)}</tr>
+            <tr>${td("")}${td(" - หนี")}${tdn(outAbsG.F)}${tdn(outAbsG.M)}${tdn(outAbsG.T)}</tr>
+            <tr>${td("")}${td(" - ไม่สมัครใจอยู่")}${tdn(outRefuseG.F)}${tdn(outRefuseG.M)}${tdn(outRefuseG.T)}</tr>
+
+            <tr>${td("3")}${td("จำนวนผู้ป่วย ยกยอดไปเดือนหน้า")}${tdn(eomG.F)}${tdn(eomG.M)}${tdn(`<b>${eomG.T}</b>`)}</tr>
+            
+            <tr>${td("4")}${td("จำนวนผู้ป่วยแยกตามภาควิชา")}<td colspan="3">${deptHtml}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- คอลัมน์ขวา (ตัวชี้วัด 6-27) -->
+      <div class="col-right">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:10%">ข้อ</th>
+              <th>รายการ</th>
+              <th style="width:25%" class="text-center">จำนวน/ร้อยละ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>${td("6")}${td("อัตราครองเตียง (ไม่นับ Admit < 6 ชม.)")}${tdn(`<b>${borOccText}</b>`)}</tr>
+            <tr>${td("7")}${td("อัตราการใช้เตียง (นับรวม < 6 ชม.)")}${tdn(`<b>${borUtilText}</b>`)}</tr>
+            <tr>${td("8")}${td("จำนวนวันนอนรวม (LOS เคสปิด)")}${tdn(patientDays)}</tr>
+            <tr>${td("9")}${td("จำนวนวันใช้เตียงรวม (รวม < 6 ชม.)")}${tdn(patientDaysUtil)}</tr>
+            <tr>${td("10")}${td("สถิติ 5 โรคแรก (Top 5 Dx)")}<td colspan="1">${dx5}</td></tr>
+
+            <tr>${td("11")}${td("Unplanned ET tube (ราย)")}${tdn(k.k11_unplanned_et)}</tr>
+            <tr>${td("12")}${td("Ventilator days (วัน)")}${tdn(k.k12_vent_days)}</tr>
+            <tr>${td("13")}${td("ICD Line หลุด (ครั้ง)")}${tdn(k.k13_icd_displaced)}</tr>
+            <tr>${td("14")}${td("ICD Line days (วัน)")}${tdn(k.k14_icd_days)}</tr>
+            <tr>${td("15")}${td("อัตราแผลกดทับ (/1000 วันนอน)")}${tdn(k.k15_pressure_ulcer_rate)}</tr>
+            <tr>${td("16")}${td("อัตราพลัดตกหกล้ม (/1000 วันนอน)")}${tdn(k.k16_fall_rate)}</tr>
+            <tr>${td("17")}${td("คลาดเคลื่อนทางยา (/1000 วันนอน)")}${tdn(k.k17_med_error)}</tr>
+            <tr>${td("18")}${td("อุบัติการณ์ GHI Level")}${tdn(k.k18_ghi_level)}</tr>
+            <tr>${td("19")}${td("Unplanned CPR (ครั้ง)")}${tdn(k.k19_unplanned_cpr)}</tr>
+            <tr>${td("20")}${td("Unplanned ICU (ครั้ง)")}${tdn(k.k20_unplanned_icu)}</tr>
+            <tr>${td("21")}${td("หัตถการผิดคน/ข้าง/ตำแหน่ง")}${tdn(k.k21_wrong_proc)}</tr>
+            <tr>${td("22")}${td("ผ่าตัดผิดคน/ข้าง/ตำแหน่ง")}${tdn(k.k22_wrong_surgery)}</tr>
+            <tr>${td("23")}${td("ให้เลือดผิดคน")}${tdn(k.k23_wrong_blood)}</tr>
+            <tr>${td("24")}${td("Phlebitis (G1 / G2 / G3 / G4)")}${tdn(`${k.k24_phlebitis_g1} / ${k.k24_phlebitis_g2} / ${k.k24_phlebitis_g3} / ${k.k24_phlebitis_g4}`)}</tr>
+            <tr>${td("25")}${td("บันทึกพยาบาล (ปริมาณ / คุณภาพ)")}${tdn(`${k.k25_note_qty}% / ${k.k25_note_qlt}%`)}</tr>
+            <tr>${td("26")}${td("ระยะเวลารอคอยกลับบ้านเฉลี่ย")}${tdn(fmt2(k.k26_avg_wait_dc_min) + " นาที")}</tr>
+            <tr>${td("27")}${td("Refer (IN/OUT/Back/Daycare)")}${tdn(`${k.k27_refer_in}/${k.k27_refer_out}/${k.k27_refer_back}/${k.k27_daycare}`)}</tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     
-    function sumInc(list, type){
-  return (list||[])
-    .filter(x=>x.eventType===type)
-    .reduce((s,x)=> s + (parseFloat(x.value)||0), 0);
+    <div style="margin-top: 30px; display: flex; justify-content: space-around; text-align: center;">
+      <div>
+        <br><br>
+        (......................................................)<br>
+        ผู้จัดทำรายงาน / พยาบาลประจำการ
+      </div>
+      <div>
+        <br><br>
+        (......................................................)<br>
+        หัวหน้าหอผู้ป่วย Ward 9/2
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
 }
-function countInc(list, type){
-  return (list||[]).filter(x=>x.eventType===type).length;
-}
-function avgInc(list, type){
-  const a = (list||[]).filter(x=>x.eventType===type).map(x=>parseFloat(x.value)||0);
-  if(a.length===0) return null;
-  return a.reduce((s,v)=>s+v,0)/a.length;
-}
-function phlebitisByGrade(list){
-  const out = {1:0,2:0,3:0,4:0};
-  (list||[]).filter(x=>x.eventType==="PHLEBITIS").forEach(x=>{
-    const g = parseInt(x.grade,10);
-    if(out[g]!==undefined) out[g] += (parseFloat(x.value)||1);
-  });
-  return out;
-}
+
+// ผูกฟังก์ชันเข้า Global Window
 window.showFullReport = showFullReport;
+window.printOfficialReport = printOfficialReport;
 </script>
 
 </body>
