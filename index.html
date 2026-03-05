@@ -2144,6 +2144,78 @@ async function delIncident(rowId){
   }
 }
 
+  async function closeMonthUI(){
+  try{
+    // กรณียังไม่มีชีทเลย → เริ่มเดือนแรก
+    if(!currentSheet){
+      const ok = await Swal.fire({
+        title: "เริ่มเดือนแรก?",
+        text: "ยังไม่มีข้อมูลเดือน ระบบจะสร้างชีทเดือนปัจจุบันจาก Template",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "สร้างเดือนแรก",
+        cancelButtonText: "ยกเลิก"
+      });
+      if(!ok.isConfirmed) return;
+
+      Swal.fire({ title:"กำลังสร้าง...", didOpen:()=>Swal.showLoading() });
+      await callApi("initFirstMonth");
+      Swal.close();
+      await initSheets();
+      Swal.fire("สำเร็จ", "", "success");
+      return;
+    }
+
+    // ขอจำนวนเตียง
+    const { value: bedCount } = await Swal.fire({
+      title: "ปิดยอดเดือน",
+      html: `
+        <div class="text-start small text-muted mb-2">
+          ระบบจะสร้าง Snapshot → สร้างชีทเดือนถัดไป → ย้ายยอดค้างเป็น “ยอดยกมา” และล็อกชีทเดือนเก่า
+        </div>
+      `,
+      input: "number",
+      inputLabel: "จำนวนเตียงที่เปิดจริง (ใช้คำนวณ BOR)",
+      inputValue: 21,
+      inputAttributes: { min: 1, step: 1 },
+      showCancelButton: true,
+      confirmButtonText: "ปิดยอด",
+      cancelButtonText: "ยกเลิก"
+    });
+    if(bedCount === undefined) return;
+
+    const confirm = await Swal.fire({
+      title: "ยืนยันปิดยอด?",
+      text: `เดือน ${currentSheet} จะถูกล็อก และสร้างเดือนถัดไปทันที`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc3545",
+      confirmButtonText: "ยืนยัน",
+      cancelButtonText: "ยกเลิก"
+    });
+    if(!confirm.isConfirmed) return;
+
+    Swal.fire({ title:"กำลังปิดยอด...", didOpen:()=>Swal.showLoading() });
+
+    await callApi("closeMonthAction", {
+      currentSheetName: currentSheet,
+      bedCount: Number(bedCount) || 0
+    });
+
+    Swal.close();
+    await initSheets();          // จะเลือกเดือนล่าสุดให้อัตโนมัติ
+    Swal.fire("ปิดยอดสำเร็จ", "", "success");
+  }catch(err){
+    Swal.fire("ผิดพลาด", err.toString(), "error");
+  }
+}
+
+// ✅ ผูกเป็น global ให้ onclick ใช้ได้แน่
+window.closeMonthUI = closeMonthUI;
+window.onSheetChange = onSheetChange;
+window.loadDashboard = loadDashboard;
+window.setNurseIdUI = setNurseIdUI;
+
   // ================== Report (PRO) ==================
   // *** ส่วน Report/closeMonthUI ของคุณยังใช้ได้ตามเดิม ***
   // (เพื่อย่อข้อความ ผมคงโค้ด report ของคุณไว้เหมือนเดิมทั้งหมด)
@@ -2222,6 +2294,11 @@ async function delIncident(rowId){
    ✅ กันใส่ผิดช่องด้วย object + normalize + render by key
    ✅ ใช้ข้อมูลจาก summary ก่อน (ถ้ามี) ถ้าไม่มีก็ fallback เป็นค่าเริ่มต้น
 ============================================================================== */
+function daysInThisMonth(d = new Date()){
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+}
+
+
 
 function daysInMonthFromSheet(sheetName){
   const d = sheetNameToDate(sheetName);
@@ -2777,7 +2854,6 @@ const borUtil = (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0; // ข้
   patientDaysUtil,                  // (วันใช้เตียงแบบรวม under6)
   borOcc,                           // ข้อ 6
   borUtil,                          // ข้อ 7,
-      bor,
       deptRows,
       topDx5,
 
