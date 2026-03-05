@@ -752,15 +752,19 @@
   let disItem = null;
 
   // ================== API ==================
-  async function callApi(action, data = null) {
-    const r = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action, data })
-    });
-    const res = await r.json();
-    if (res.status === 'success') return res.data;
-    throw new Error(res.message);
-  }
+ async function callApi(action, data = null) {
+  const r = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action,
+      data,
+      meta: { nurseId: getNurseId() || "" } // ✅ เพิ่มบรรทัดนี้
+    })
+  });
+  const res = await r.json();
+  if (res.status === 'success') return res.data;
+  throw new Error(res.message);
+}
 
   // ================== Nurse ID ==================
   function getNurseId() {
