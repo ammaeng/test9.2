@@ -2717,7 +2717,6 @@ async function showFullReport(btn) {
     const days = daysInMonthFromSheet(currentSheet);
 
     // beds: ถ้า summary ส่งมาใช้ summary, ไม่งั้น 21
-    const beds = parseInt(summary?.beds ?? 21, 10) || 21;
     const bedDays = beds * days;
 
     // group lists
