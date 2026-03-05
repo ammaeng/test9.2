@@ -2348,8 +2348,7 @@ function buildOfficialMonthlyFormHTML(ctx){
     inAllG, carryG, inNewG, inTransferG, inReferG,
     outAllG, outDCG, outDeathG, outTOG, outROG, outAbsG, outRefuseG,
     eomG,
-    patientDays, bedDays, bor,
-    deptRows,
+patientDays, patientDaysUtil, bedDays, borOcc, borUtil,    deptRows,
     topDx5,
     kpi1127
   } = ctx;
@@ -2543,10 +2542,10 @@ function buildOfficialMonthlyFormHTML(ctx){
               </tr>
             </thead>
             <tbody>
-              <tr>${td("6")}${td("อัตราครองเตียง")}${tdn(fmt2(bor) + "%")}</tr>
-              <tr>${td("7")}${td("อัตราการใช้เตียง")}${tdn(fmt2(bor) + "%")}</tr>
-              <tr>${td("8")}${td("จำนวนวันนอนรวม")}${tdn(patientDays)}</tr>
-              <tr>${td("9")}${td("จำนวนวันใช้เตียงรวม")}${tdn(bedDays)}</tr>
+<tr>${td("6")}${td("อัตราครองเตียง (ไม่นับ Admit < 6 ชม.)")}${tdn(fmt2(borOcc) + "%")}</tr>
+<tr>${td("7")}${td("อัตราการใช้เตียง (รวม Admit < 6 ชม. = 1)")}${tdn(fmt2(borUtil) + "%")}</tr>
+<tr>${td("8")}${td("จำนวนวันนอนรวม (LOS เคสปิด)")}${tdn(patientDays)}</tr>
+<tr>${td("9")}${td("จำนวนวันใช้เตียงรวม (วันนอน + เคส < 6 ชม.)")}${tdn(patientDaysUtil)}</tr>
 
               <tr>${td("10")}${td("สถิติผู้ป่วย 5 โรคแรก")}${tdn("")}</tr>
               <tr><td colspan="3">${dx5}</td></tr>
@@ -2737,6 +2736,23 @@ async function showFullReport(btn) {
       k27_daycare:             sumInc(incidents,"DAYCARE"),
     });
 
+    // ✅ under6 = เคสที่กรอก Admit < 6 ชม. (ถือว่าใช้เตียง 1)
+const under6List = patients.filter(p => {
+  const r = p.rawData || [];
+  return String(r[22] || "").trim() !== ""; // admitUnder6 มีค่า
+});
+const under6Count = under6List.length;
+
+// ✅ patientDaysจริง = LOS ของ “เคสปิด” (ตามที่คุณทำ)
+const patientDaysOcc = sumLos(outAllList);
+
+// ✅ patientDaysสำหรับการใช้เตียง = patientDaysจริง + under6Count
+const patientDaysUtil = patientDaysOcc + under6Count;
+
+// ✅ อัตรา
+const borOcc  = (bedDays > 0) ? (patientDaysOcc  / bedDays * 100) : 0; // ข้อ 6
+const borUtil = (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0; // ข้อ 7
+
     const ctx = {
       sheet: currentSheet,
       days, beds, bedDays,
@@ -2757,7 +2773,10 @@ async function showFullReport(btn) {
 
       eomG: countByGender(eomList),
 
-      patientDays,
+        patientDays: patientDaysOcc,      // ข้อ 8 (วันนอนจริง)
+  patientDaysUtil,                  // (วันใช้เตียงแบบรวม under6)
+  borOcc,                           // ข้อ 6
+  borUtil,                          // ข้อ 7,
       bor,
       deptRows,
       topDx5,
