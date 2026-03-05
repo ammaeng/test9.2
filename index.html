@@ -2435,7 +2435,7 @@ function buildOfficialMonthlyFormHTML(ctx){
   } = ctx;
 
   const td = (v, cls="") => `<td class="${cls}">${escapeHtml(v)}</td>`;
-  const tdn = (v, cls="text-end") => `<td class="${cls}">${v}</td>`; // แก้ให้รับ HTML แท็กได้
+  const tdn = (v, cls="text-end") => `<td class="${cls}">${v}</td>`;
 
   const deptOrder =[
     "อายุรศาสตร์","ศัลยศาสตร์","กุมารเวชศาสตร์","สูติศาสตร์","นรีเวชวิทยา",
@@ -2461,7 +2461,6 @@ function buildOfficialMonthlyFormHTML(ctx){
 
   const k = kpi1127; 
 
-  // ✅ เพิ่มเงื่อนไขการแสดงผลเตียงและอัตราครองเตียง
   const bedsText = isMonthClosed ? `${beds} เตียง` : `<span class="text-danger" style="font-size:13px;">(ต้องกดปิดยอดเดือนก่อน)</span>`;
   const borOccText = isMonthClosed ? `${fmt2(borOcc)}%` : `<span class="text-danger" style="font-size:12px;">รอระบุเตียง</span>`;
   const borUtilText = isMonthClosed ? `${fmt2(borUtil)}%` : `<span class="text-danger" style="font-size:12px;">รอระบุเตียง</span>`;
@@ -2495,122 +2494,28 @@ function buildOfficialMonthlyFormHTML(ctx){
               </tr>
             </thead>
             <tbody>
-              <tr>
-                ${td("1")}
-                ${td("จำนวนผู้ป่วยในทั้งหมด")}
-                ${tdn(inAllG.F)}
-                ${tdn(inAllG.M)}
-                ${tdn(inAllG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนยอดผู้ป่วย ยกมาจากเดือนที่แล้ว")}
-                ${tdn(carryG.F)}
-                ${tdn(carryG.M)}
-                ${tdn(carryG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยรับใหม่")}
-                ${tdn(inNewG.F)}
-                ${tdn(inNewG.M)}
-                ${tdn(inNewG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยรับย้าย")}
-                ${tdn(inTransferG.F)}
-                ${tdn(inTransferG.M)}
-                ${tdn(inTransferG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยรับ Refer")}
-                ${tdn(inReferG.F)}
-                ${tdn(inReferG.M)}
-                ${tdn(inReferG.T)}
-              </tr>
+              <tr>${td("1")}${td("จำนวนผู้ป่วยในทั้งหมด")}${tdn(inAllG.F)}${tdn(inAllG.M)}${tdn(inAllG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนยอดผู้ป่วย ยกมาจากเดือนที่แล้ว")}${tdn(carryG.F)}${tdn(carryG.M)}${tdn(carryG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยรับใหม่")}${tdn(inNewG.F)}${tdn(inNewG.M)}${tdn(inNewG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยรับย้าย")}${tdn(inTransferG.F)}${tdn(inTransferG.M)}${tdn(inTransferG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยรับ Refer")}${tdn(inReferG.F)}${tdn(inReferG.M)}${tdn(inReferG.T)}</tr>
 
-              <tr>
-                ${td("2")}
-                ${td("จำนวนผู้ป่วยที่จำหน่ายทั้งหมด")}
-                ${tdn(outAllG.F)}
-                ${tdn(outAllG.M)}
-                ${tdn(outAllG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการกลับบ้าน (D/C)")}
-                ${tdn(outDCG.F)}
-                ${tdn(outDCG.M)}
-                ${tdn(outDCG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการตาย")}
-                ${tdn(outDeathG.F)}
-                ${tdn(outDeathG.M)}
-                ${tdn(outDeathG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยที่จำหน่าย โดยการย้ายแผนก")}
-                ${tdn(outTOG.F)}
-                ${tdn(outTOG.M)}
-                ${tdn(outTOG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยที่จำหน่าย โดยการ Refer")}
-                ${tdn(outROG.F)}
-                ${tdn(outROG.M)}
-                ${tdn(outROG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการหนี")}
-                ${tdn(outAbsG.F)}
-                ${tdn(outAbsG.M)}
-                ${tdn(outAbsG.T)}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนผู้ป่วยที่ไม่สมัครใจอยู่")}
-                ${tdn(outRefuseG.F)}
-                ${tdn(outRefuseG.M)}
-                ${tdn(outRefuseG.T)}
-              </tr>
+              <tr>${td("2")}${td("จำนวนผู้ป่วยที่จำหน่ายทั้งหมด")}${tdn(outAllG.F)}${tdn(outAllG.M)}${tdn(outAllG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการกลับบ้าน (D/C)")}${tdn(outDCG.F)}${tdn(outDCG.M)}${tdn(outDCG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการตาย")}${tdn(outDeathG.F)}${tdn(outDeathG.M)}${tdn(outDeathG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่าย โดยการย้ายแผนก")}${tdn(outTOG.F)}${tdn(outTOG.M)}${tdn(outTOG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่าย โดยการ Refer")}${tdn(outROG.F)}${tdn(outROG.M)}${tdn(outROG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่จำหน่ายโดยการหนี")}${tdn(outAbsG.F)}${tdn(outAbsG.M)}${tdn(outAbsG.T)}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนผู้ป่วยที่ไม่สมัครใจอยู่")}${tdn(outRefuseG.F)}${tdn(outRefuseG.M)}${tdn(outRefuseG.T)}</tr>
 
-              <tr>
-                ${td("3")}
-                ${td("จำนวนผู้ป่วย ยกยอดไปเดือนหน้า")}
-                ${tdn(eomG.F)}
-                ${tdn(eomG.M)}
-                ${tdn(eomG.T)}
-              </tr>
+              <tr>${td("3")}${td("จำนวนผู้ป่วย ยกยอดไปเดือนหน้า")}${tdn(eomG.F)}${tdn(eomG.M)}${tdn(eomG.T)}</tr>
 
-              <tr>
-                ${td("4")}
-                ${td("จำนวนผู้ป่วยแยกตามภาควิชา")}
-                ${tdn("")}${tdn("")}${tdn("")}
-              </tr>
+              <tr>${td("4")}${td("จำนวนผู้ป่วยแยกตามภาควิชา")}${tdn("")}${tdn("")}${tdn("")}</tr>
               <tr><td colspan="5">${deptHtml}</td></tr>
 
-              <tr>
-                ${td("5")}
-                ${td("Newborn (ยังไม่ได้เก็บข้อมูลในชีทหลัก)")}
-                ${tdn("0")}${tdn("0")}${tdn("0")}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนทารกแรกเกิดทั้งหมดใน 1 เดือน")}
-                ${tdn("0")}${tdn("0")}${tdn("0")}
-              </tr>
-              <tr class="table-light">
-                ${td("")}
-                ${td(" - จำนวนวันนอนของทารกแรกเกิด")}
-                ${tdn("0")}${tdn("0")}${tdn("0")}
-              </tr>
+              <tr>${td("5")}${td("Newborn (ยังไม่ได้เก็บข้อมูลในชีทหลัก)")}${tdn("0")}${tdn("0")}${tdn("0")}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนทารกแรกเกิดทั้งหมดใน 1 เดือน")}${tdn("0")}${tdn("0")}${tdn("0")}</tr>
+              <tr class="table-light">${td("")}${td(" - จำนวนวันนอนของทารกแรกเกิด")}${tdn("0")}${tdn("0")}${tdn("0")}</tr>
             </tbody>
           </table>
         </div>
@@ -2618,7 +2523,7 @@ function buildOfficialMonthlyFormHTML(ctx){
 
       <!-- RIGHT -->
       <div class="col-12 col-lg-5">
-        <div class="table-wrap">
+        <div class="table-wrap mb-2">
           <table class="table table-sm table-bordered align-middle mb-0">
             <thead class="table-light">
               <tr>
@@ -2650,43 +2555,45 @@ function buildOfficialMonthlyFormHTML(ctx){
               <tr>${td("21")}${td("อุบัติการณ์หัตถการ ผิดคน/ผิดข้าง/ผิดตำแหน่ง (ครั้ง)")}${tdn(k.k21_wrong_proc)}</tr>
               <tr>${td("22")}${td("อุบัติการณ์การผ่าตัด ผิดคน/ผิดข้าง/ผิดตำแหน่ง (ครั้ง)")}${tdn(k.k22_wrong_surgery)}</tr>
               <tr>${td("23")}${td("อุบัติการณ์ให้เลือดผิดคนจากระบุตัวผิดพลาด (ครั้ง)")}${tdn(k.k23_wrong_blood)}</tr>
-              
-              <tr>
-                ${td("24")}
-                ${td("จำนวนการเกิด Phlebitis")}
-                ${tdn(`grade1=${k.k24_phlebitis_g1}, g2=${k.k24_phlebitis_g2}, g3=${k.k24_phlebitis_g3}, g4=${k.k24_phlebitis_g4}`)}
-              </tr>
-              
-              <tr>
-                ${td("25")}
-                ${td("ความสมบูรณ์ของบันทึกทางการพยาบาล")}
-                ${tdn(`เชิงปริมาณ ${k.k25_note_qty} | เชิงคุณภาพ ${k.k25_note_qlt}`)}
-              </tr>
-              
-              <tr>
-                ${td("26")}
-                ${td("ระยะเวลารอคอยกลับบ้านเฉลี่ย")}
-                ${tdn(fmt2(k.k26_avg_wait_dc_min) + " นาที")}
-              </tr>
-              
-              <tr>
-                ${td("27")}
-                ${td("Refer + Day Care")}
-                ${tdn(`IN ${k.k27_refer_in} | Out ${k.k27_refer_out} | Back ${k.k27_refer_back} | BackTo ${k.k27_refer_back_to} | DayCare ${k.k27_daycare}`)}
-              </tr>
+              <tr>${td("24")}${td("จำนวนการเกิด Phlebitis")}${tdn(`grade1=${k.k24_phlebitis_g1}, g2=${k.k24_phlebitis_g2}, g3=${k.k24_phlebitis_g3}, g4=${k.k24_phlebitis_g4}`)}</tr>
+              <tr>${td("25")}${td("ความสมบูรณ์ของบันทึกทางการพยาบาล")}${tdn(`ปริมาณ ${k.k25_note_qty} | คุณภาพ ${k.k25_note_qlt}`)}</tr>
+              <tr>${td("26")}${td("ระยะเวลารอคอยกลับบ้านเฉลี่ย")}${tdn(fmt2(k.k26_avg_wait_dc_min) + " นาที")}</tr>
+              <tr>${td("27")}${td("Refer + Day Care")}${tdn(`IN ${k.k27_refer_in} | Out ${k.k27_refer_out} | Back ${k.k27_refer_back} | BackTo ${k.k27_refer_back_to} | DayCare ${k.k27_daycare}`)}</tr>
             </tbody>
           </table>
         </div>
-
-        <div class="subtle mt-2">
+        <div class="subtle">
           * ข้อ 11–27: ถ้ายังไม่ได้กรอกใน Summary/QA ระบบจะแสดงค่าเริ่มต้นอัตโนมัติ (0 หรือ -)
         </div>
       </div>
     </div>
+
+    <!-- ✅ เพิ่มส่วนคู่มือเกร็ดความรู้ตรงนี้ -->
+    <hr class="my-3">
+    <div class="report-note" style="background-color: #f8fbfd; border-color: #b8daff;">
+      <div class="fw-bold mb-2 text-primary" style="font-size: 14px;">💡 เกร็ดความรู้ / คู่มือการคำนวณอัตราครองเตียง (อ้างอิงข้อ 6 และ 7)</div>
+      
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <p class="mb-1 fw-bold text-dark">1. อัตราครองเตียง (Bed Occupancy Rate - borOcc)</p>
+          <ul class="mb-0 ps-3" style="color: #495057;">
+            <li class="mb-1"><b>ความหมาย:</b> เป็นอัตราครองเตียงแบบ "เป็นทางการ (Official)" ตามหลักสถิติโรงพยาบาลทั่วไป ระบบจะนำผลรวมของวันนอน (LOS) ของผู้ป่วยทุกคนมาคำนวณรวมกัน</li>
+            <li><b>จุดสำคัญ:</b> ในฟังก์ชันคำนวณ LOS ถ้ามีการติ๊กว่าผู้ป่วยคนนี้ <span class="badge bg-warning text-dark">Admit &lt; 6 ชม.</span> ระบบจะปัดค่า LOS เป็น 0 ทันที ทำให้ผู้ป่วยกลุ่มนี้ไม่ถูกนำมาคิดในอัตราครองเตียง (เพราะถือว่าไม่ได้นอนค้างคืน หรือครองเตียงข้ามวันตามเกณฑ์)</li>
+          </ul>
+        </div>
+        <div class="col-12 col-md-6">
+          <p class="mb-1 fw-bold text-dark">2. อัตราการใช้เตียง (Bed Utilization Rate - borUtil)</p>
+          <ul class="mb-0 ps-3" style="color: #495057;">
+            <li class="mb-1"><b>ความหมาย:</b> ค่านี้สร้างขึ้นมาเพื่อ "สะท้อนภาระงานจริง (Workload) ของวอร์ด" เพราะในความเป็นจริง แม้ผู้ป่วยจะแอดมิทมาแค่ 2-3 ชั่วโมงแล้วจำหน่าย/เสียชีวิต/Refer แต่พยาบาลก็ต้องเตรียมเตียง ปูเตียง รับเวร และทำความสะอาดเตียงใหม่เมื่อผู้ป่วยกลับอยู่ดี</li>
+            <li><b>จุดสำคัญ:</b> ระบบจะทำการนับเคสที่ <span class="badge bg-warning text-dark">&lt; 6 ชม.</span> ทั้งหมดมาตีค่าให้เท่ากับ "1 วัน" (หรือการใช้งาน 1 เตียง) แล้วบวกเพิ่มเข้าไปในวันนอนรวม ทำให้ตัวเลข "อัตราการใช้เตียง" จะมีค่าสูงกว่าหรือเท่ากับอัตราครองเตียงเสมอ</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
   </div>
   `;
-}
-/* ================== PATCH showFullReport() ==================
+}/* ================== PATCH showFullReport() ==================
    ✅ ดึง patients + summary + dxMap เหมือนเดิม
    ✅ สร้าง ctx.kpi1127 จาก summary ก่อน แล้ว normalize กันผิดช่อง
 ================================================================ */
