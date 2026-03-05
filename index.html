@@ -43,6 +43,30 @@
       letter-spacing:.2px;
     }
 
+    /* Dx suggest dropdown */
+.dx-suggest{
+  position:absolute;
+  z-index: 9999;
+  left:0; right:0;
+  margin-top:4px;
+  max-height: 220px;
+  overflow:auto;
+  background:#fff;
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  display:none;
+}
+.dx-suggest .item{
+  padding:8px 10px;
+  cursor:pointer;
+  font-size:14px;
+}
+.dx-suggest .item:hover,
+.dx-suggest .item.active{
+  background: rgba(13,110,253,.10);
+}
+
     /* ===== Table UX ===== */
     .table thead th { white-space: nowrap; }
     .table-wrap { overflow:auto; border-radius: 14px; }
@@ -438,14 +462,21 @@
               <select id="sithi" class="form-select"></select>
             </div>
 
-            <div class="col-6 col-md-4">
-              <label class="form-label">Dx. แรก *</label>
-<input type="text" id="dx1" class="form-control" list="dxList" required onblur="normalizeDxInput('dx1')">
-            </div>
+       <div class="col-6 col-md-4 position-relative">
+  <label class="form-label">Dx. แรก *</label>
+  <input type="text" id="dx1" class="form-control" list="dxList" required
+         placeholder="พิมพ์แล้วกด Enter หรือ ; เพื่อเพิ่มโรค"
+         onblur="normalizeDxInput('dx1')">
+  <div class="dx-suggest" id="dx1Suggest"></div>
+</div>
 
-            <div class="col-6 col-md-4">
-              <label class="form-label">Dx. หลัง</label>
-<input type="text" id="dx2" class="form-control" list="dxList" onblur="normalizeDxInput('dx2')">            </div>
+<div class="col-6 col-md-4 position-relative">
+  <label class="form-label">Dx. หลัง</label>
+  <input type="text" id="dx2" class="form-control" list="dxList"
+         placeholder="พิมพ์แล้วกด Enter หรือ ; เพื่อเพิ่มโรค"
+         onblur="normalizeDxInput('dx2')">
+  <div class="dx-suggest" id="dx2Suggest"></div>
+</div>
 
             <div class="col-12">
               <label class="form-label">ที่อยู่</label>
@@ -619,6 +650,185 @@
       renderNurseId();
     }
   }
+
+  function getDxOptionsFromDatalist() {
+  return Array.from(document.querySelectorAll('#dxList option'))
+    .map(o => (o.value || '').trim())
+    .filter(Boolean);
+}
+
+function splitDxList(s) {
+  return String(s || "")
+    .split(/[;,\n\/|]+/g)
+    .map(x => x.trim())
+    .filter(Boolean);
+}
+
+function normalizeDxInput(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.value = String(el.value||"")
+    .replace(/[,\/|]+/g, ';')
+    .replace(/\s*;\s*/g, '; ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/;\s*$/,'; '); // ถ้าลงท้ายด้วย ; ให้มีช่องว่างต่อ
+}
+
+// คืน token ล่าสุด (หลัง ; ) เพื่อใช้ค้นหา
+function getLastDxToken(full) {
+  const v = String(full || "");
+  const parts = v.split(';');
+  return (parts[parts.length - 1] || '').trim();
+}
+
+// เอา token ล่าสุดออก แล้วใส่ token ใหม่แบบมาตรฐาน
+function setLastDxToken(full, newToken) {
+  const v = String(full || "");
+  const parts = v.split(';');
+  // ลบ token ล่าสุด
+  parts[parts.length - 1] = ` ${String(newToken || '').trim()}`.trimStart();
+  // รวมกลับให้สวย
+  let out = parts.join(';').replace(/\s*;\s*/g, '; ').trim();
+  // ถ้ายังมีหลายตัว ให้จัดช่องว่าง
+  out = out.replace(/;\s*$/,';');
+  return out;
+}
+
+// commit token ล่าสุด -> ใส่ ; ต่อท้าย (กันซ้ำ)
+function commitDxToken(inputEl, token) {
+  const current = String(inputEl.value || "");
+  const list = splitDxList(current); // โรคที่มีแล้ว (แตกตาม ;)
+  const t = String(token || getLastDxToken(current) || "").trim();
+  if (!t) return;
+
+  // กันซ้ำแบบง่าย (เทียบแบบตรง ๆ)
+  if (!list.includes(t)) list.push(t);
+
+  inputEl.value = list.join('; ') + '; ';
+}
+
+function initDxMultiSuggest(inputId) {
+  const inputEl = document.getElementById(inputId);
+  const box = document.getElementById(inputId + "Suggest");
+  if (!inputEl || !box) return;
+
+  let options = [];
+  let visible = [];
+  let activeIndex = -1;
+
+  const refreshOptions = () => { options = getDxOptionsFromDatalist(); };
+
+  function hide() {
+    box.style.display = "none";
+    box.innerHTML = "";
+    activeIndex = -1;
+  }
+
+  function show(items) {
+    visible = items;
+    activeIndex = items.length ? 0 : -1;
+
+    if (!items.length) { hide(); return; }
+
+    box.innerHTML = items.map((t, i) =>
+      `<div class="item ${i === activeIndex ? 'active' : ''}" data-i="${i}">${escapeHtml(t)}</div>`
+    ).join('');
+    box.style.display = "block";
+  }
+
+  function setActive(i) {
+    activeIndex = i;
+    const nodes = box.querySelectorAll('.item');
+    nodes.forEach(n => n.classList.remove('active'));
+    if (nodes[activeIndex]) {
+      nodes[activeIndex].classList.add('active');
+      nodes[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function updateSuggest() {
+    refreshOptions();
+
+    const token = getLastDxToken(inputEl.value);
+    if (!token) { hide(); return; }
+
+    const q = token.toLowerCase();
+    const picked = options
+      .filter(x => x.toLowerCase().includes(q))
+      .slice(0, 12);
+
+    show(picked);
+  }
+
+  function pickCurrent() {
+    if (activeIndex >= 0 && visible[activeIndex]) {
+      // เลือกจากรายการแนะนำ แล้ว commit
+      const chosen = visible[activeIndex];
+      commitDxToken(inputEl, chosen);
+      hide();
+      return true;
+    }
+    return false;
+  }
+
+  // คลิกเลือก
+  box.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    e.preventDefault();
+    const i = parseInt(item.getAttribute('data-i'), 10);
+    if (!isNaN(i) && visible[i]) {
+      commitDxToken(inputEl, visible[i]);
+    }
+    hide();
+    inputEl.focus();
+  });
+
+  // พิมพ์ -> อัปเดตแนะนำ
+  inputEl.addEventListener('input', () => {
+    // ถ้าผู้ใช้พิมพ์ ; เอง ให้ commit token ก่อนหน้า
+    if (String(inputEl.value || "").includes(';')) {
+      // ไม่ commit อัตโนมัติทุกครั้ง (กันกระตุก) — เราจะ commit ตอน keydown ';'
+      // แค่ update suggest ตาม token ล่าสุดพอ
+    }
+    updateSuggest();
+  });
+
+  // คีย์ลัด
+  inputEl.addEventListener('keydown', (e) => {
+    if (box.style.display === "block") {
+      if (e.key === "ArrowDown") { e.preventDefault(); setActive(Math.min(activeIndex + 1, visible.length - 1)); return; }
+      if (e.key === "ArrowUp")   { e.preventDefault(); setActive(Math.max(activeIndex - 1, 0)); return; }
+      if (e.key === "Escape")    { hide(); return; }
+    }
+
+    // Enter = เลือกที่แนะนำ (ถ้ามี) ไม่งั้น commit token ที่พิมพ์
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!pickCurrent()) commitDxToken(inputEl);
+      hide();
+      return;
+    }
+
+    // ; = commit token (ถ้ามีรายการแนะนำให้เลือกอัน active ก่อน)
+    if (e.key === ";") {
+      e.preventDefault();
+      if (!pickCurrent()) commitDxToken(inputEl);
+      hide();
+      return;
+    }
+  });
+
+  // โฟกัส/คลิก -> อัปเดต
+  inputEl.addEventListener('focus', updateSuggest);
+
+  // คลิกนอกกล่อง -> ปิด
+  document.addEventListener('click', (e) => {
+    if (e.target === inputEl || box.contains(e.target)) return;
+    hide();
+  });
+}
 
   // ================== Helpers ==================
   function splitDxList(s) {
@@ -1339,52 +1549,57 @@ async function confirmCancelDischarge(item) {
   }
 
   // ================== Load / Init ==================
-  document.addEventListener("DOMContentLoaded", () => {
-    renderNurseId();
+document.addEventListener("DOMContentLoaded", () => {
+  renderNurseId();
 
-    // dropdowns
-    callApi('getDropdownData').then(d => {
-      fillSelect('ward', d.ward);
-      fillSelect('sithi', d.sithi);
-      fillSelect('sai', d.sai);
-      document.getElementById('dxList').innerHTML =
-        (d.dx || []).map(x => `<option value="${escapeHtml(x)}">`).join('');
-    });
+  // dropdowns
+  callApi('getDropdownData').then(d => {
+    fillSelect('ward', d.ward);
+    fillSelect('sithi', d.sithi);
+    fillSelect('sai', d.sai);
 
-    // bind tables once
-    bindTableEvents();
+    document.getElementById('dxList').innerHTML =
+      (d.dx || []).map(x => `<option value="${escapeHtml(x)}">`).join('');
 
-    // modal change event (กัน null)
-    const disTypeEl = document.getElementById("disType");
-    if (disTypeEl) disTypeEl.addEventListener("change", toggleDisFields);
-
-    // modal shown focus
-    const disModalEl = document.getElementById("dischargeModal");
-    if (disModalEl) {
-      disModalEl.addEventListener("shown.bs.modal", () => {
-        toggleDisFields();
-        setTimeout(() => document.getElementById("disType")?.focus?.(), 150);
-      });
-    }
-
-    // report modal focus restore
-    const reportEl = document.getElementById('reportModal');
-    if (reportEl) {
-      reportEl.addEventListener('hidden.bs.modal', () => {
-        lastTriggerEl?.focus?.();
-      });
-    }
-
-    // time
-    setInterval(() => {
-      const el = document.getElementById('currentTime');
-      if (el) el.innerText = new Date().toLocaleString('th-TH');
-    }, 1000);
-
-    // init sheets last (หลัง DOM พร้อม)
-    initSheets();
+    // ✅ init Dx multi-suggest หลัง dxList พร้อมแล้ว
+    initDxMultiSuggest('dx1');
+    initDxMultiSuggest('dx2');
   });
 
+  // bind tables once
+  bindTableEvents();
+
+  // modal change event (กัน null)
+  const disTypeEl = document.getElementById("disType");
+  if (disTypeEl) disTypeEl.addEventListener("change", toggleDisFields);
+
+  // modal shown focus
+  const disModalEl = document.getElementById("dischargeModal");
+  if (disModalEl) {
+    disModalEl.addEventListener("shown.bs.modal", () => {
+      toggleDisFields();
+      setTimeout(() => document.getElementById("disType")?.focus?.(), 150);
+    });
+  }
+
+  // report modal focus restore
+  const reportEl = document.getElementById('reportModal');
+  if (reportEl) {
+    reportEl.addEventListener('hidden.bs.modal', () => {
+      lastTriggerEl?.focus?.();
+    });
+  }
+
+  // time
+  setInterval(() => {
+    const el = document.getElementById('currentTime');
+    if (el) el.innerText = new Date().toLocaleString('th-TH');
+  }, 1000);
+
+  // init sheets last (หลัง DOM พร้อม)
+  initSheets();
+});
+  
   async function initSheets() {
     const names = await callApi('getSheetNames');
     const selector = document.getElementById('sheetSelector');
