@@ -440,13 +440,12 @@
 
             <div class="col-6 col-md-4">
               <label class="form-label">Dx. แรก *</label>
-              <input type="text" id="dx1" class="form-control" list="dxList" required>
+<input type="text" id="dx1" class="form-control" list="dxList" required onblur="normalizeDxInput('dx1')">
             </div>
 
             <div class="col-6 col-md-4">
               <label class="form-label">Dx. หลัง</label>
-              <input type="text" id="dx2" class="form-control" list="dxList">
-            </div>
+<input type="text" id="dx2" class="form-control" list="dxList" onblur="normalizeDxInput('dx2')">            </div>
 
             <div class="col-12">
               <label class="form-label">ที่อยู่</label>
@@ -622,6 +621,30 @@
   }
 
   // ================== Helpers ==================
+  function splitDxList(s) {
+  // รองรับ ; , / | และขึ้นบรรทัดใหม่
+  return String(s || "")
+    .split(/[;,\n\/|]+/g)
+    .map(x => x.trim())
+    .filter(Boolean);
+}
+
+function primaryDxFromDx1(rawDx1) {
+  // Primary = ตัวแรกของ Dx1
+  const arr = splitDxList(rawDx1);
+  return arr.length ? arr[0] : "";
+}
+
+// (แนะนำ) normalize ตอนผู้ใช้พิมพ์ให้เป็นมาตรฐาน ;
+function normalizeDxInput(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.value = String(el.value||"")
+    .replace(/[,\/|]+/g, ';')
+    .replace(/\s*;\s*/g, '; ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
   function fillSelect(id, items) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1928,13 +1951,16 @@ async function showFullReport(btn) {
     });
 
     // ================= Dx Summary (Dx1 + Dx2) =================
-    const counts = {};
-    patients.forEach(p => {
-      const r = p.rawData || [];
-      const dx1 = mapDx(r[18]);
-      const dx2 = mapDx(r[19]);
-      [dx1, dx2].forEach(dx => addCount(counts, dx, 1));
-    });
+   // ================= Dx Summary (Dx1 + Dx2) =================
+const counts = {};
+patients.forEach(p => {
+  const r = p.rawData || [];
+
+  const dx1List = splitDxList(r[18]).map(mapDx);
+  const dx2List = splitDxList(r[19]).map(mapDx);
+
+  [...dx1List, ...dx2List].forEach(dx => addCount(counts, dx, 1));
+});
 
     const top = topEntries(counts, 10);
     const body = document.getElementById('dxSummaryBody');
@@ -1966,8 +1992,8 @@ async function showFullReport(btn) {
       const r = p.rawData || [];
       const y = parseAgeYears(r[12]);
       const g = ageGroups.find(x => x.test(y))?.key || "13-15y";
-      const dx1 = mapDx(r[18]);
-      addCount(ageDx[g], dx1, 1);
+  const dx1Primary = mapDx(primaryDxFromDx1(r[18]));
+addCount(ageDx[g], dx1Primary, 1);
     });
 
     const ageHtml = ageGroups.map(g => {
@@ -1993,8 +2019,8 @@ async function showFullReport(btn) {
       const r = p.rawData || [];
       const out = getOutcomeType(r);
       if (!outDx[out]) return;
-      const dx1 = mapDx(r[18]);
-      addCount(outDx[out], dx1, 1);
+const dx1Primary = mapDx(primaryDxFromDx1(r[18]));
+addCount(outDx[out], dx1Primary, 1);
     });
 
     const outHtml = outcomeKeys.map(k => {
@@ -2017,10 +2043,10 @@ async function showFullReport(btn) {
     const dxLos = {}; // dx -> {sum,n}
     patients.forEach(p => {
       const r = p.rawData || [];
-      const dx1 = mapDx(r[18]);
+const dx1Primary = mapDx(primaryDxFromDx1(r[18]));
       const los = safeInt(p.displayLOS);
       if (!dx1) return;
-      addSum(dxLos, dx1, los);
+addSum(dxLos, dx1Primary, los);
     });
 
     const avgList = Object.entries(dxLos)
@@ -2061,8 +2087,8 @@ async function showFullReport(btn) {
       const los = safeInt(p.displayLOS);
       if (los < 30) return;
       const r = p.rawData || [];
-      const dx1 = mapDx(r[18]);
-      addCount(longDx, dx1, 1);
+      const dx1Primary = mapDx(primaryDxFromDx1(r[18]));
+addCount(longDx, dx1Primary, 1);
     });
 
     const longTop = topEntries(longDx, 10);
