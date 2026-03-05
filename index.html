@@ -2550,48 +2550,52 @@ function buildModernReportHTML(ctx) {
 // 2. ฟังก์ชันวาดกราฟใน Dashboard
 // --------------------------------------------------------------------------------
 function renderReportCharts(ctx) {
-  if (repChartOutcome) repChartOutcome.destroy();
-  if (repChartDept) repChartDept.destroy();
+  // ทำลายกราฟเดิมทิ้งเพื่อวาดใหม่ (ป้องกัน Error ซ้อน)
+  Chart.helpers.each(Chart.instances, (instance) => instance.destroy());
 
-  // กราฟสัดส่วนการจำหน่าย
-  const ctxOut = document.getElementById('chartOutcome');
-  if (ctxOut) {
-    repChartOutcome = new Chart(ctxOut, {
-      type: 'doughnut',
-      data: {
-        labels:['D/C', 'ย้าย', 'Refer', 'หนี/ปฏิเสธ', 'ตาย'],
-        datasets: [{
-          data:[
-            ctx.outDCG.T, ctx.outTOG.T, ctx.outROG.T, 
-            ctx.outAbsG.T + ctx.outRefuseG.T, ctx.outDeathG.T
-          ],
-          backgroundColor:['#198754', '#0dcaf0', '#0d6efd', '#ffc107', '#dc3545']
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels:{boxWidth:12, font:{size:11}} } } }
-    });
-  }
+  // 1. Half-Doughnut สำหรับ BOR (ดูโปรมาก)
+  const ctxGauge = document.getElementById('chartBOR');
+  new Chart(ctxGauge, {
+    type: 'doughnut',
+    data: {
+      labels: ['Occupied', 'Available'],
+      datasets: [{
+        data: [ctx.borOcc, 100 - ctx.borOcc],
+        backgroundColor: (ctx.borOcc > 80 ? ['#dc3545', '#eee'] : ['#0d6efd', '#eee']),
+        borderWidth: 0,
+        circumference: 180, rotation: 270
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } }
+    }
+  });
 
-  // กราฟผู้ป่วยตามแผนก
+  // 2. Bar Chart สำหรับแยกเพศรายแผนก (ใช้ไล่เฉดสี)
   const ctxDept = document.getElementById('chartDept');
-  if (ctxDept) {
-    const deptLabels = Object.keys(ctx.deptRows);
-    const deptData = deptLabels.map(k => ctx.deptRows[k].T);
-    repChartDept = new Chart(ctxDept, {
-      type: 'bar',
-      data: {
-        labels: deptLabels,
-        datasets:[{ data: deptData, backgroundColor: '#6f42c1', borderRadius: 4 }]
-      },
-      options: { 
-        responsive: true, maintainAspectRatio: false, 
-        plugins: { legend: { display: false } },
-        scales: { x: { ticks:{font:{size:10}} }, y: { beginAtZero: true, ticks:{stepSize:1} } }
-      }
-    });
-  }
-}
+  const gradientF = ctxDept.getContext('2d').createLinearGradient(0, 0, 0, 200);
+  gradientF.addColorStop(0, '#ff7878'); gradientF.addColorStop(1, '#ff4d4d');
+  
+  const gradientM = ctxDept.getContext('2d').createLinearGradient(0, 0, 0, 200);
+  gradientM.addColorStop(0, '#74c0fc'); gradientM.addColorStop(1, '#339af0');
 
+  new Chart(ctxDept, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(ctx.deptRows),
+      datasets: [
+        { label: 'หญิง', data: Object.values(ctx.deptRows).map(d => d.F), backgroundColor: gradientF },
+        { label: 'ชาย', data: Object.values(ctx.deptRows).map(d => d.M), backgroundColor: gradientM }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { grid: { display: false } }, y: { stacked: true, beginAtZero: true } },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+}
 // --------------------------------------------------------------------------------
 // 3. ฟังก์ชันสร้างหน้าต่างใหม่และพิมพ์ PDF (แบบฟอร์มทางการ)
 // --------------------------------------------------------------------------------
@@ -2614,40 +2618,157 @@ function printOfficialReport() {
 // 4. HTML แบบฟอร์มทางการ (ตารางดั้งเดิม สำหรับการพิมพ์)
 // --------------------------------------------------------------------------------
 function buildTabularReportHTML(ctx) {
-  const k = ctx.kpi1127;
-  const isC = ctx.isMonthClosed;
-  const borOcc = isC ? `${fmt2(ctx.borOcc)}%` : "-";
-  const borUtil = isC ? `${fmt2(ctx.borUtil)}%` : "-";
+  const { sheet, days, beds, isMonthClosed, kpi1127: k } = ctx;
+  const isC = isMonthClosed;
+  const borOccText = isC ? `${fmt2(ctx.borOcc)}%` : "-";
+  const borUtilText = isC ? `${fmt2(ctx.borUtil)}%` : "-";
+
+  // Helper สำหรับสร้างแถวตารางแยกเพศ
+  const rowG = (label, gData, isBold = false) => `
+    <tr style="${isBold ? 'font-weight:bold; background:#f9f9f9;' : ''}">
+      <td style="text-align:left; padding-left:15px;">${label}</td>
+      <td style="width:50px;">${gData.F}</td>
+      <td style="width:50px;">${gData.M}</td>
+      <td style="width:50px; background:#f0f0f0;">${gData.T}</td>
+    </tr>`;
+
+  // รายการแผนก (ข้อ 4)
+  const deptRowsHtml = Object.keys(ctx.deptRows).map(d => `
+    <tr>
+      <td style="text-align:left; font-size:11px;">- ${d} (วันนอน: ${ctx.deptRows[d].PD})</td>
+      <td>${ctx.deptRows[d].F}</td>
+      <td>${ctx.deptRows[d].M}</td>
+      <td style="background:#f0f0f0;">${ctx.deptRows[d].T}</td>
+    </tr>`).join('');
 
   return `
   <!DOCTYPE html>
-  <html lang="th"><head><style>
-    body{font-family:'Sarabun'; font-size:12px; padding:20px;}
-    table{width:100%; border-collapse:collapse; margin-bottom:15px;}
-    th,td{border:1px solid #000; padding:5px; text-align:center;}
-    .head{background:#eee; font-weight:bold;}
-  </style></head><body>
-    <h3 style="text-align:center;">รายงานสรุปผล Ward 9/2 ประจำเดือน ${ctx.sheet}</h3>
-    <p>จำนวนเตียงที่เปิดจริง: <b>${isC ? ctx.beds : "ยังไม่ระบุ"}</b> | อัตราครองเตียง(BOR): <b>${borOcc}</b></p>
-    
-    <table>
-      <tr class="head"><th>กลุ่มรับเข้า</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr>
-      <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td>${ctx.carryG.T}</td></tr>
-      <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td>${ctx.inNewG.T}</td></tr>
-      <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td>${ctx.inTransferG.T}</td></tr>
-      <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td>${ctx.inReferG.T}</td></tr>
+  <html lang="th">
+  <head>
+    <meta charset="UTF-8">
+    <title>Official_Report_${sheet}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+      @media print { @page { size: A4 portrait; margin: 1cm; } }
+      body { font-family: 'Sarabun', sans-serif; font-size: 12px; color: #000; line-height: 1.4; padding: 0; margin: 0; }
+      .header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 15px; padding-bottom: 5px; }
+      .header h2 { margin: 0; font-size: 18px; font-weight: 700; }
+      .meta-grid { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 600; font-size: 13px; }
       
-      <tr class="head"><th>กลุ่มจำหน่าย</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr>
-      <tr><td>กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td>${ctx.outDCG.T}</td></tr>
-      <tr><td>ย้ายแผนก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td>${ctx.outTOG.T}</td></tr>
-      <tr><td>Refer Out</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td>${ctx.outROG.T}</td></tr>
-      <tr><td>ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td>${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
-    </table>
-    
-    <p><b>ตัวชี้วัดคุณภาพ (KPI 11-27):</b> Unplanned ET:${k.k11_unplanned_et}, Ventilator Days:${k.k12_vent_days}, แผลกดทับ:${k.k15_pressure_ulcer_rate}, พลัดตกหกล้ม:${k.k16_fall_rate}</p>
-  </body></html>`;
-}
-// ผูกฟังก์ชันเข้า Global Window
+      .main-grid { display: flex; gap: 15px; }
+      .col-left { flex: 1.2; }
+      .col-right { flex: 1; }
+      
+      table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; }
+      th, td { border: 1px solid #333; padding: 4px 2px; text-align: center; overflow: hidden; }
+      th { background: #eee; font-weight: 700; font-size: 11px; }
+      
+      .section-title { background: #444; color: #fff; text-align: left; padding-left: 5px; font-weight: bold; border: 1px solid #000; }
+      .sub-label { text-align: left; padding-left: 10px; font-weight: 600; background: #f2f2f2; }
+      .footer-sign { margin-top: 30px; display: flex; justify-content: space-around; text-align: center; }
+      .dx-list { text-align: left; padding: 5px; border: 1px solid #333; font-size: 11px; min-height: 60px; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h2>ใบรายงานสถิติผู้ป่วยใน หน่วยงาน Ward 9/2</h2>
+    </div>
+
+    <div class="meta-grid">
+      <span>ประจำเดือน: ${sheet}</span>
+      <span>จำนวนวัน: ${days} วัน</span>
+      <span>เตียงเปิดจริง: ${isC ? beds : "(ยังไม่ระบุ)"} เตียง</span>
+    </div>
+
+    <div class="main-grid">
+      <!-- ฝั่งซ้าย: ข้อมูลปริมาณคนไข้ (1-5) -->
+      <div class="col-left">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:auto;">ลำดับ / รายการ</th>
+              <th style="width:45px;">หญิง</th>
+              <th style="width:45px;">ชาย</th>
+              <th style="width:45px;">รวม</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="section-title" colspan="4">1. จำนวนผู้ป่วยรับเข้าทั้งหมด</td></tr>
+            ${rowG("ยอดผู้ป่วยยกมาจากเดือนก่อน", ctx.carryG)}
+            ${rowG("ผู้ป่วยรับใหม่", ctx.inNewG)}
+            ${rowG("ผู้ป่วยรับย้าย", ctx.inTransferG)}
+            ${rowG("ผู้ป่วยรับ Refer", ctx.inReferG)}
+            ${rowG("รวมรับเข้าทั้งสิ้น", ctx.inAllG, true)}
+
+            <tr><td class="section-title" colspan="4">2. จำนวนผู้ป่วยจำหน่ายทั้งหมด</td></tr>
+            ${rowG("กลับบ้าน (D/C)", ctx.outDCG)}
+            ${rowG("ตาย (Death)", ctx.outDeathG)}
+            ${rowG("ย้ายแผนก (Transfer Out)", ctx.outTOG)}
+            ${rowG("ส่งต่อ (Refer Out)", ctx.outROG)}
+            ${rowG("หนี/ไม่สมัครใจ (Abscond/Refuse)", {F: ctx.outAbsG.F+ctx.outRefuseG.F, M: ctx.outAbsG.M+ctx.outRefuseG.M, T: ctx.outAbsG.T+ctx.outRefuseG.T})}
+            ${rowG("รวมจำหน่ายทั้งสิ้น", ctx.outAllG, true)}
+
+            <tr><td class="section-title" colspan="4">3. จำนวนผู้ป่วยยกยอดไปเดือนหน้า</td></tr>
+            ${rowG("คงพยาบาลปลายเดือน", ctx.eomG, true)}
+
+            <tr><td class="section-title" colspan="4">4. แยกตามภาควิชา</td></tr>
+            ${deptRowsHtml || '<tr><td colspan="4">ไม่มีข้อมูล</td></tr>'}
+
+            <tr><td class="section-title" colspan="4">5. Newborn (ทารกแรกเกิด)</td></tr>
+            ${rowG("จำนวนทารกในเดือนนี้", {F:0, M:0, T:0})}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ฝั่งขวา: ตัวชี้วัดคุณภาพ (6-27) -->
+      <div class="col-right">
+        <table>
+          <thead>
+            <tr><th style="width:40px;">ข้อ</th><th>รายการตัวชี้วัด</th><th style="width:80px;">ผลลัพธ์</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>6</td><td style="text-align:left;">อัตราครองเตียง (Official)</td><td style="font-weight:bold;">${borOccText}</td></tr>
+            <tr><td>7</td><td style="text-align:left;">อัตราการใช้เตียง (Util)</td><td style="font-weight:bold;">${borUtilText}</td></tr>
+            <tr><td>8</td><td style="text-align:left;">จำนวนวันนอนรวม (LOS)</td><td>${ctx.patientDays}</td></tr>
+            <tr><td>9</td><td style="text-align:left;">วันใช้เตียงรวม (+&lt;6ชม.)</td><td>${ctx.patientDays + (ctx.under6Count || 0)}</td></tr>
+            <tr><td colspan="3" class="sub-label">10. สถิติ 5 โรคแรก (Top Diagnoses)</td></tr>
+            <tr><td colspan="3"><div class="dx-list">
+              ${ctx.topDx5.map((d, i) => `<div>${i + 1}. ${d[0]} (${d[1]})</div>`).join('') || 'ไม่มีข้อมูล'}
+            </div></td></tr>
+            <tr><td>11</td><td style="text-align:left;">Unplanned ET tube</td><td>${k.k11_unplanned_et} ราย</td></tr>
+            <tr><td>12</td><td style="text-align:left;">Ventilator days</td><td>${k.k12_vent_days} วัน</td></tr>
+            <tr><td>13</td><td style="text-align:left;">ICD Line หลุด</td><td>${k.k13_icd_displaced} ครั้ง</td></tr>
+            <tr><td>15</td><td style="text-align:left;">อัตราแผลกดทับ (/1000)</td><td style="color:red;">${k.k15_pressure_ulcer_rate}</td></tr>
+            <tr><td>16</td><td style="text-align:left;">อัตราพลัดตกหกล้ม (/1000)</td><td style="color:red;">${k.k16_fall_rate}</td></tr>
+            <tr><td>24</td><td style="text-align:left;">Phlebitis (G1-G4)</td><td>${k.k24_phlebitis_g1+k.k24_phlebitis_g2+k.k24_phlebitis_g3+k.k24_phlebitis_g4} ครั้ง</td></tr>
+            <tr><td>25</td><td style="text-align:left;">บันทึกการพยาบาล (คุณภาพ)</td><td style="font-weight:bold;">${k.k25_note_qlt}%</td></tr>
+            <tr><td>26</td><td style="text-align:left;">รอคอยกลับบ้านเฉลี่ย</td><td>${fmt2(k.k26_avg_wait_dc_min)} นาที</td></tr>
+            <tr><td colspan="3" class="sub-label">27. การส่งต่อและบริการอื่น</td></tr>
+            <tr><td>Ref</td><td style="text-align:left;">Refer IN / OUT</td><td>${k.k27_refer_in} / ${k.k27_refer_out}</td></tr>
+            <tr><td>DC</td><td style="text-align:left;">ผู้ป่วย Day Care</td><td>${k.k27_daycare} case</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer-sign">
+      <div>
+        <br>ลงชื่อ......................................................<br>
+        (......................................................)<br>
+        ผู้รายงาน / พยาบาลประจำการ
+      </div>
+      <div>
+        <br>ลงชื่อ......................................................<br>
+        (......................................................)<br>
+        หัวหน้าหอผู้ป่วย Ward 9/2
+      </div>
+    </div>
+    <div style="text-align:center; margin-top:10px; font-size:10px; color:#666;">
+      พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')} | ระบบทะเบียนผู้ป่วย Cloud V.Ultimate
+    </div>
+  </body>
+  </html>`;
+}// ผูกฟังก์ชันเข้า Global Window
 window.showFullReport = showFullReport;
 window.printOfficialReport = printOfficialReport;
 </script>
