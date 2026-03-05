@@ -209,6 +209,100 @@
     }
     .nurse-chip .muted{ opacity:.85; font-weight:700; }
   </style>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap');
+
+    * { font-family: 'Sarabun', sans-serif !important; transition: all 0.2s ease-in-out; }
+    
+    body { 
+        background-color: #f0f4f8; 
+        background-image: radial-gradient(#d1e3f3 1px, transparent 1px);
+        background-size: 25px 25px;
+        color: #455a64; 
+        padding-bottom: 50px;
+    }
+
+    /* Header ก้อนเมฆ */
+    .bg-grad { 
+        background: white !important; 
+        border: 4px solid #e3f2fd !important;
+        border-radius: 40px !important;
+        box-shadow: 0 15px 35px rgba(189, 211, 230, 0.4) !important;
+        color: #455a64 !important;
+        margin-top: 15px;
+        position: relative;
+        overflow: hidden;
+    }
+    .bg-grad::before {
+        content: "☁️"; position: absolute; font-size: 80px; opacity: 0.05; right: -10px; top: -10px;
+    }
+
+    /* การ์ดตัวเลข (Bubble Card) */
+    .card { 
+        border: 4px solid #ffffff !important; 
+        border-radius: 35px !important; 
+        box-shadow: 10px 10px 25px rgba(0, 0, 0, 0.03) !important;
+        background: white;
+    }
+    .card:hover { transform: translateY(-5px); box-shadow: 15px 15px 35px rgba(0, 0, 0, 0.06) !important; }
+
+    /* สรุปตัวเลข */
+    .mini { 
+        background: #ffffff; 
+        border-radius: 30px; 
+        padding: 20px; 
+        border: 2px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .mini .label { font-size: 12px; font-weight: 800; color: #90a4ae; margin-bottom: 5px; }
+    .mini .value { font-size: 42px; font-weight: 900; margin: 0; line-height: 1; }
+
+    /* Census Card พิเศษ */
+    .census-card {
+        background: linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%) !important;
+        border: 4px solid #b2dfdb !important;
+    }
+
+    /* แท็บเมนูแบบแคปซูล */
+    .nav-pills { 
+        background: #e9eff5; 
+        padding: 8px !important; 
+        border-radius: 50px !important; 
+        border: 2px solid #fff;
+    }
+    .nav-link { border-radius: 50px !important; font-weight: 800; color: #78909c !important; padding: 10px 25px !important; }
+    .nav-link.active { 
+        background: #5c6bc0 !important; 
+        color: white !important; 
+        box-shadow: 0 8px 20px rgba(92, 107, 192, 0.3) !important; 
+    }
+
+    /* ตารางสะอาดตา */
+    .table-wrap { border-radius: 30px; overflow: hidden; border: 4px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+    .table thead th { 
+        background: #f8fafd !important; 
+        color: #90a4ae !important; 
+        font-size: 11px; 
+        border: none !important; 
+        padding: 18px !important;
+        letter-spacing: 1px;
+    }
+    .table tbody td { border-bottom: 1px solid #f1f5f9 !important; padding: 15px !important; font-weight: 600; }
+    
+    /* สติกเกอร์สถานะ */
+    .badge { border-radius: 15px; padding: 10px 15px; font-weight: 800; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .bg-primary { background-color: #bbdefb !important; color: #1976d2 !important; }
+    .bg-success { background-color: #c8e6c9 !important; color: #388e3c !important; }
+    .bg-warning { background-color: #fff9c4 !important; color: #fbc02d !important; }
+
+    /* ปุ่มการกระทำ */
+    .seg-btn { border: 2px solid #f1f5f9; background: white; border-radius: 20px; padding: 8px 20px; font-size: 12px; font-weight: 800; }
+    .seg-btn.active { background: #5c6bc0; color: white; border-color: #5c6bc0; }
+
+    .btn-icon { width: 40px; height: 40px; border-radius: 15px; margin: 0 2px; }
+</style>
 </head>
 
 <body>
@@ -236,71 +330,64 @@
     </div>
   </div>
 
-  <!-- Summary -->
-  <div class="row g-2 mb-3">
+  <!-- Summary Section -->
+<div class="row g-4 mb-4">
     <div class="col-12 col-lg-8">
-      <div class="card p-3">
-        <div class="row g-2 text-center">
+      <div class="card p-4">
+        <div class="row g-3 text-center">
           <div class="col-4">
             <div class="mini">
-              <div class="label">ยอดยกมา</div>
-              <p class="value text-secondary" id="sumCarry">0</p>
+              <div class="label">📦 ยอดยกมา</div>
+              <p class="value text-muted" id="sumCarry">0</p>
             </div>
           </div>
           <div class="col-4">
-            <div class="mini">
-              <div class="label">รับใหม่เดือนนี้</div>
-              <p class="value text-primary" id="sumNew">0</p>
+            <div class="mini" style="background: #e3f2fd;">
+              <div class="label" style="color:#1e88e5">✨ รับใหม่เดือนนี้</div>
+              <p class="value" style="color:#1e88e5" id="sumNew">0</p>
             </div>
           </div>
           <div class="col-4">
-            <div class="mini">
-              <div class="label">รวมทั้งหมด</div>
-              <p class="value text-success" id="sumTotal">0</p>
+            <div class="mini" style="background: #e8f5e9;">
+              <div class="label" style="color:#43a047">🌈 รวมทั้งหมด</div>
+              <p class="value" style="color:#43a047" id="sumTotal">0</p>
             </div>
           </div>
         </div>
-
-        <hr class="my-3">
-
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-          <span class="chip bg-light border"><b>Active:</b> <span id="sumActive">0</span></span>
-          <span class="chip bg-light border"><b>D/C:</b> <span id="sumDC">0</span></span>
-          <span class="chip bg-light border"><b>แถวทั้งหมด:</b> <span id="sumRows">0</span></span>
-
-          <button class="btn btn-sm btn-outline-dark ms-auto" onclick="exportCSV('ALL')">Export CSV (ทั้งหมด)</button>
-        </div>
-
-        <div class="subtle mt-2">
-          * LOS แบบเวชระเบียน: เดือนเปิดคิดถึง “วันนี้”; เดือนปิดคิดถึง “สิ้นเดือน”
+        <div class="d-flex flex-wrap gap-2 mt-4 px-2">
+           <div class="sticker-badge bg-white border px-3 py-2 rounded-pill small fw-bold">🏠 Active: <span id="sumActive">0</span></div>
+           <div class="sticker-badge bg-white border px-3 py-2 rounded-pill small fw-bold">✅ D/C: <span id="sumDC">0</span></div>
+           <button class="btn btn-sm btn-light rounded-pill ms-auto fw-bold" onclick="exportCSV('ALL')">📥 Export CSV</button>
         </div>
       </div>
     </div>
 
     <div class="col-12 col-lg-4">
-      <div class="card p-3 h-100">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="section-title">Census เดือนปัจจุบัน</div>
-          <span class="chip bg-light border" id="sheetStatusChip">-</span>
+      <div class="card p-4 h-100 census-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="fw-black h5 m-0" style="color:#00796b">📋 Census วันนี้</div>
+          <span class="badge bg-white text-dark" id="sheetStatusChip">โหลดแล้ว</span>
         </div>
-        <div id="censusContent" class="mt-2">กำลังโหลด...</div>
+        <div id="censusContent" class="mt-3 text-center">
+            <!-- ตัวเลขขนาดใหญ่จะถูกใส่ที่นี่จาก JS -->
+        </div>
       </div>
     </div>
-  </div>
+</div>
 
-  <!-- Charts -->
-  <div class="row g-2 mb-3">
-    <div class="col-12 col-lg-6">
-      <div class="card p-3">
-        <canvas id="chartSithi" style="max-height: 200px;"></canvas>
+<!-- Charts Section -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-6">
+      <div class="card p-4">
+        <canvas id="chartSithi" style="max-height: 220px;"></canvas>
       </div>
     </div>
-    <div class="col-12 col-lg-6">
-      <div class="card p-3">
-        <canvas id="chartSai" style="max-height: 200px;"></canvas>
+    <div class="col-12 col-md-6">
+      <div class="card p-4">
+        <canvas id="chartSai" style="max-height: 220px;"></canvas>
       </div>
     </div>
-  </div>
+</div>
 
   <!-- Tabs -->
   <ul class="nav nav-pills nav-fill mb-3 bg-white p-1 rounded-pill shadow-sm" id="mainTab">
@@ -1195,25 +1282,42 @@
   }
 
   // ================== Charts (dashboard) ==================
-  function updateCharts(sMap, saMap) {
+function updateCharts(sMap, saMap) {
     if (sithiChart) sithiChart.destroy();
     if (saiChart) saiChart.destroy();
 
-    const cfg = (t, m, color) => ({
-      type: 'bar',
-      data: { labels: Object.keys(m), datasets: [{ data: Object.values(m), backgroundColor: color, borderRadius: 8 }] },
-      options: {
+    const chartOptions = {
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { title: { display: true, text: t, align: 'start' }, legend: { display: false } },
-        scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
-      }
+        plugins: { 
+            legend: { display: false },
+            title: { display: true, align: 'start', font: { size: 14, weight: 'bold' } }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { family: 'Sarabun' } } },
+            y: { grid: { display: false }, ticks: { font: { family: 'Sarabun', weight: 'bold' } } }
+        }
+    };
+
+    sithiChart = new Chart(document.getElementById('chartSithi'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(sMap),
+            datasets: [{ data: Object.values(sMap), backgroundColor: '#81d4fa', borderRadius: 15, barThickness: 20 }]
+        },
+        options: { ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: '🏷️ สิทธิการรักษา' } } }
     });
 
-    sithiChart = new Chart(document.getElementById('chartSithi'), cfg('สิทธิการรักษา', sMap, '#0d6efd'));
-    saiChart = new Chart(document.getElementById('chartSai'), cfg('สายการแพทย์', saMap, '#198754'));
-  }
+    saiChart = new Chart(document.getElementById('chartSai'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(saMap),
+            datasets: [{ data: Object.values(saMap), backgroundColor: '#b39ddb', borderRadius: 15, barThickness: 20 }]
+        },
+        options: { ...chartOptions, plugins: { ...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: '📍 สายการแพทย์' } } }
+    });
+}
 
   // ================== Summary / Render ==================
   function isCarryRow(x) {
@@ -1358,8 +1462,17 @@
     document.getElementById('carryBody').innerHTML = carry.map(buildRowHtml).join('');
     document.getElementById('newBody').innerHTML = nnew.map(buildRowHtml).join('');
 
-    const activeAll = lastData.filter(x => x.status === 'ยังรักษาอยู่').length;
+  const activeAll = lastData.filter(x => x.status === 'ยังรักษาอยู่').length;
     const dcAll = lastData.filter(x => x.status === 'จำหน่ายแล้ว').length;
+    
+    document.getElementById('censusContent').innerHTML = `
+        <div class="py-2">
+            <div style="font-size: 60px; font-weight: 900; color: #00796b; line-height: 1;">${activeAll}</div>
+            <div class="fw-bold text-muted text-uppercase small mt-2">คนไข้ Active ในตึก</div>
+            <div class="mt-3 p-2 rounded-pill bg-white border small fw-bold text-success">
+                จำหน่ายแล้ววันนี้: ${dcAll} ราย
+            </div>
+        </div>
     document.getElementById('censusContent').innerHTML =
       `<div class="d-flex justify-content-between align-items-end">
          <div>
@@ -1371,7 +1484,8 @@
            <div style="font-size:20px;font-weight:900">${dcAll}</div>
            <div class="subtle mt-1">รวมทั้งหมด: <b>${lastData.length}</b></div>
          </div>
-       </div>`;
+       </div>`
+      ;
 
     const sMap = {}, saMap = {};
     lastData.forEach(item => {
