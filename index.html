@@ -444,10 +444,17 @@
               <label class="form-label">วันที่รับ *</label>
               <input type="date" class="form-control" id="inDate" required onchange="calculateLOSPreview()">
             </div>
-            <div class="col-6 col-md-2">
-              <label class="form-label">เวลา *</label>
-              <input type="time" class="form-control" id="inTime" required>
-            </div>
+       <!-- ค้นหาบรรทัดนี้ในส่วนลงทะเบียนใหม่ (form-pane) -->
+<div class="col-6 col-md-2">
+  <label class="form-label">เวลา (24 ชม.) *</label>
+  <input type="text" 
+         class="form-control" 
+         id="inTime" 
+         placeholder="00:00" 
+         maxlength="5" 
+         required 
+         oninput="validateAndFormatTime(this)">
+</div>
             <div class="col-12 col-md-2">
               <label class="form-label">ต้นทาง</label>
               <input type="text" class="form-control" id="inDept">
@@ -1734,6 +1741,46 @@
 
     initSheets();
   });
+
+  // ฟังก์ชันจัดรูปแบบและตรวจสอบเวลา 24 ชม. อัตโนมัติ
+function validateAndFormatTime(el) {
+    // ลบตัวอักษรที่ไม่ใช่ตัวเลขออก
+    let v = el.value.replace(/\D/g, '');
+    
+    // จำกัดความยาวไม่เกิน 4 ตัวเลข
+    if (v.length > 4) v = v.slice(0, 4);
+    
+    // ตรวจสอบหลักชั่วโมง (00-23)
+    if (v.length >= 2) {
+        let hour = parseInt(v.slice(0, 2));
+        if (hour > 23) v = '23' + v.slice(2);
+    }
+    
+    // ตรวจสอบหลักนาที (00-59)
+    if (v.length >= 4) {
+        let min = parseInt(v.slice(2, 4));
+        if (min > 59) v = v.slice(0, 2) + '59';
+    }
+
+    // ใส่เครื่องหมาย : เมื่อพิมพ์ถึงหลักที่ 3
+    if (v.length >= 3) {
+        el.value = v.slice(0, 2) + ':' + v.slice(2);
+    } else {
+        el.value = v;
+    }
+}
+
+// ตรวจสอบความถูกต้องอีกครั้งเมื่อออกจากช่อง (Blur)
+document.getElementById('inTime').addEventListener('blur', function() {
+    let v = this.value;
+    if (v.length > 0 && v.length < 5) {
+        // ถ้าพิมพ์ไม่ครบ เช่น 9:0 ให้แก้เป็น 09:00
+        let parts = v.split(':');
+        let h = parts[0].padStart(2, '0');
+        let m = (parts[1] || '0').padEnd(2, '0');
+        this.value = h + ':' + m;
+    }
+});
 
   async function initSheets() {
     const names = await callApi('getSheetNames');
