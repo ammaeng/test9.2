@@ -447,13 +447,18 @@
        <!-- ค้นหาบรรทัดนี้ในส่วนลงทะเบียนใหม่ (form-pane) -->
 <div class="col-6 col-md-2">
   <label class="form-label">เวลา (24 ชม.) *</label>
-  <input type="text" 
-         class="form-control" 
-         id="inTime" 
-         placeholder="00:00" 
-         maxlength="5" 
-         required 
-         oninput="validateAndFormatTime(this)">
+  <input
+    type="text"
+    class="form-control"
+    id="inTime"
+    placeholder="HH:MM เช่น 21:10"
+    maxlength="5"
+    inputmode="numeric"
+    pattern="^([01]\d|2[0-3]):[0-5]\d$"
+    autocomplete="off"
+    required
+    oninput="validateAndFormatTime(this)">
+  <div class="subtle mt-1">พิมพ์ 4 ตัวเลขได้ เช่น 2110 → 21:10</div>
 </div>
             <div class="col-12 col-md-2">
               <label class="form-label">ต้นทาง</label>
