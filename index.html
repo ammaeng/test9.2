@@ -2221,7 +2221,128 @@ window.loadDashboard = loadDashboard;
 window.setNurseIdUI = setNurseIdUI;
 
  /* ================== Report (PRO) Modern Dashboard + PDF ================== */
-
+// ========================================================================
+// ฟังก์ชันเสริม (Helper Functions) ที่จำเป็นสำหรับคำนวณ Report
+// ========================================================================
+function daysInThisMonth(d = new Date()){
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+}
+function daysInMonthFromSheet(sheetName){
+  const d = sheetNameToDate(sheetName);
+  if(!d) return new Date().getDate();
+  return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+}
+function fmt2(n){ return (isNaN(n)?0:n).toFixed(2); }
+function safeNum(v, def=0){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : def;
+}
+function safeText(v, def="-"){
+  const s = String(v ?? "").trim();
+  return s ? s : def;
+}
+function genderOf(p){
+  const g = String(p?.rawData?.[33] || "").trim();
+  if (g.includes("หญิง")) return "F";
+  if (g.includes("ชาย")) return "M";
+  return "U";
+}
+function typeOf(p){
+  return String(p?.patientStatus || p?.rawData?.[0] || "").trim();
+}
+function isOutcomeClosed(r){
+  return !!(r?.[20] || r?.[25] || r?.[26] || r?.[27] || r?.[28] || r?.[30]);
+}
+function deptFromRow(r){
+  const ward = String(r?.[15] || "").trim();
+  const sai  = String(r?.[16] || "").trim();
+  const s = (ward || sai).toLowerCase();
+  if(!s) return "ไม่ระบุ";
+  if (s.includes("med") || s.includes("อายุร")) return "อายุรศาสตร์";
+  if (s.includes("surg") || s.includes("ศัลย")) return "ศัลยศาสตร์";
+  if (s.includes("ped") || s.includes("กุมาร")) return "กุมารเวชศาสตร์";
+  if (s.includes("obs") || s.includes("สูติ")) return "สูติศาสตร์";
+  if (s.includes("gyn") || s.includes("นรี")) return "นรีเวชวิทยา";
+  if (s.includes("oph") || s.includes("eye") || s.includes("จักษุ")) return "จักษุ";
+  if (s.includes("ent") || s.includes("โสต") || s.includes("หู") || s.includes("คอ") || s.includes("นาสิก")) return "โสต ศอ นาสิก";
+  if (s.includes("ortho") || s.includes("กระดูก")) return "ศัลยกรรมกระดูกและข้อ";
+  return ward || sai || "ไม่ระบุ";
+}
+function countByGender(list){
+  let F=0,M=0;
+  list.forEach(p=>{
+    const g = genderOf(p);
+    if(g==="F") F++;
+    else if(g==="M") M++;
+  });
+  return {F,M,T:F+M};
+}
+function sumLos(list){
+  return list.reduce((s,p)=>s + safeInt(p.displayLOS), 0);
+}
+const KPI_SCHEMA_11_27 = {
+  k11_unplanned_et:        { label:"จำนวนผู้ป่วย Unplanned ET tube", type:"int", def:0 },
+  k12_vent_days:           { label:"จำนวนวันนอนรวมของผู้ป่วยที่ใส่ท่อเครื่องช่วยหายใจ", type:"int", def:0 },
+  k13_icd_displaced:       { label:"จำนวนครั้งที่เกิดการเลื่อนหลุดของ ICD Line", type:"int", def:0 },
+  k14_icd_days:            { label:"จำนวนวันนอนรวมของผู้ป่วยที่ On ICD Line", type:"int", def:0 },
+  k15_pressure_ulcer_rate: { label:"อัตราการเกิดแผลกดทับ", type:"text", def:"-" },
+  k16_fall_rate:           { label:"อัตราการเกิดพลัดตกหกล้ม", type:"text", def:"-" },
+  k17_med_error:           { label:"ความคลาดเคลื่อนทางยา", type:"text", def:"-" },
+  k18_ghi_level:           { label:"อุบัติการณ์เฉพาะโรคระดับ GHI", type:"text", def:"-" },
+  k19_unplanned_cpr:       { label:"อุบัติการณ์ Unplanned CPR", type:"int", def:0 },
+  k20_unplanned_icu:       { label:"อุบัติการณ์ Unplanned ICU", type:"int", def:0 },
+  k21_wrong_proc:          { label:"อุบัติการณ์หัตถการ ผิดคน/ผิดข้าง/ผิดตำแหน่ง", type:"int", def:0 },
+  k22_wrong_surgery:       { label:"อุบัติการณ์การผ่าตัด ผิดคน/ผิดข้าง/ผิดตำแหน่ง", type:"int", def:0 },
+  k23_wrong_blood:         { label:"อุบัติการณ์ให้เลือดผิดคน", type:"int", def:0 },
+  k24_phlebitis_g1:        { label:"Phlebitis grade 1", type:"int", def:0 },
+  k24_phlebitis_g2:        { label:"Phlebitis grade 2", type:"int", def:0 },
+  k24_phlebitis_g3:        { label:"Phlebitis grade 3", type:"int", def:0 },
+  k24_phlebitis_g4:        { label:"Phlebitis grade 4", type:"int", def:0 },
+  k25_note_qty:            { label:"ความสมบูรณ์บันทึกฯ เชิงปริมาณ", type:"int", def:0 },
+  k25_note_qlt:            { label:"ความสมบูรณ์บันทึกฯ เชิงคุณภาพ", type:"int", def:0 },
+  k26_avg_wait_dc_min:     { label:"ระยะเวลารอคอยกลับบ้านเฉลี่ย (นาที)", type:"float1", def:0 },
+  k27_refer_in:            { label:"Refer IN", type:"int", def:0 },
+  k27_refer_out:           { label:"Refer Out", type:"int", def:0 },
+  k27_refer_back:          { label:"Refer Back", type:"int", def:0 },
+  k27_refer_back_to:       { label:"Refer Back To", type:"int", def:0 },
+  k27_daycare:             { label:"ผู้ป่วย Day Care", type:"int", def:0 },
+};
+function normalizeKpi11_27(raw){
+  const out = {};
+  const src = raw || {};
+  for(const key in KPI_SCHEMA_11_27){
+    const rule = KPI_SCHEMA_11_27[key];
+    const v = src[key];
+    if(rule.type === "int"){
+      out[key] = Math.max(0, parseInt(v,10) || rule.def);
+    } else if(rule.type === "float1"){
+      const n = safeNum(v, rule.def);
+      out[key] = Number.isFinite(n) ? n : rule.def;
+    } else {
+      out[key] = safeText(v, rule.def);
+    }
+  }
+  return out;
+}
+function sumInc(list, type){
+  return (list||[])
+    .filter(x=>x.eventType===type)
+    .reduce((s,x)=> s + (parseFloat(x.value)||0), 0);
+}
+function avgInc(list, type){
+  const a = (list||[]).filter(x=>x.eventType===type).map(x=>parseFloat(x.value)||0);
+  if(a.length===0) return null;
+  return a.reduce((s,v)=>s+v,0)/a.length;
+}
+function phlebitisByGrade(list){
+  const out = {1:0,2:0,3:0,4:0};
+  (list||[]).filter(x=>x.eventType==="PHLEBITIS").forEach(x=>{
+    const g = parseInt(x.grade,10);
+    if(out[g]!==undefined) out[g] += (parseFloat(x.value)||1);
+  });
+  return out;
+}
+// ========================================================================
 // ตัวแปรเก็บกราฟและข้อมูลชั่วคราว
 let currentReportCtx = null;
 let repChartOutcome = null;
