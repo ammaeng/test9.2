@@ -2714,9 +2714,10 @@ async function showFullReport(btn) {
       return String(dxMap[raw] || raw).trim().replace(/\s+/g, " ");
     };
 
-    const days = daysInMonthFromSheet(currentSheet);
+const days = daysInMonthFromSheet(currentSheet);
 
     // beds: ถ้า summary ส่งมาใช้ summary, ไม่งั้น 21
+    const beds = summary && summary.beds ? Number(summary.beds) : 21; // เพิ่มบรรทัดนี้เพื่อประกาศตัวแปร beds
     const bedDays = beds * days;
 
     // group lists
