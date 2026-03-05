@@ -2460,8 +2460,7 @@ async function showFullReport(btn) {
     Swal.fire('ผิดพลาด', err.toString(), 'error');
   }
 }
-window.showFullReport = showFullReport;
-window.closeMonthUI = closeMonthUI;
+
 // ------------------ closeMonthUI ------------------
 async function closeMonthUI() {
   if (!currentSheet) {
@@ -2505,10 +2504,23 @@ async function closeMonthUI() {
     Swal.fire('ผิดพลาด', err.toString(), 'error');
   }
 }
-
+window.showFullReport = showFullReport;
+window.closeMonthUI = closeMonthUI;
 // ------------------ expose for onclick ------------------
 
+// ✅ expose functions used by inline onclick / html attributes
+window.setNurseIdUI = setNurseIdUI;
+window.onSheetChange = onSheetChange;
+window.loadDashboard = loadDashboard;
+window.prepareNewForm = prepareNewForm;
 
+window.exportCSV = exportCSV;
+window.setTableFilter = setTableFilter;
+window.quickSearch = quickSearch;
+
+window.saveDischarge = saveDischarge;   // ปุ่มใน discharge modal ใช้ onclick
+window.editPatient = editPatient;
+window.printPDF = printPDF;
 </script>
 
 </body>
