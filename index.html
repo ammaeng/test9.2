@@ -2494,89 +2494,58 @@ async function showFullReport(btn) {
 // --------------------------------------------------------------------------------
 function buildModernReportHTML(ctx) {
   const k = ctx.kpi1127;
-  const borOccText = ctx.isMonthClosed ? `${fmt2(ctx.borOcc)}%` : `<span class="text-danger" style="font-size:16px;">รอระบุเตียง</span>`;
-  const borUtilText = ctx.isMonthClosed ? `${fmt2(ctx.borUtil)}%` : `<span class="text-danger" style="font-size:16px;">รอระบุเตียง</span>`;
+  const borOccText = ctx.isMonthClosed ? `${fmt2(ctx.borOcc)}%` : `<span class="text-danger">ยังไม่ปิดยอด</span>`;
+  const borUtilText = ctx.isMonthClosed ? `${fmt2(ctx.borUtil)}%` : `<span class="text-danger">ยังไม่ปิดยอด</span>`;
 
   return `
-  <div class="row g-2 mb-3">
-    <!-- Card รับเข้าแบบละเอียด -->
-    <div class="col-12 col-md-6">
-      <div class="card p-3 shadow-sm border-0 h-100">
-        <div class="card-title text-primary"><i class="bi bi-box-in"></i> สรุปการรับเข้าแยกเพศ (Admissions)</div>
-        <table class="table table-sm table-striped align-middle" style="font-size: 13px;">
-          <thead class="table-primary"><tr><th>ประเภท</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr></thead>
-          <tbody>
-            <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td><b>${ctx.carryG.T}</b></td></tr>
-            <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td><b>${ctx.inNewG.T}</b></td></tr>
-            <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td><b>${ctx.inTransferG.T}</b></td></tr>
-            <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td><b>${ctx.inReferG.T}</b></td></tr>
-          </tbody>
-        </table>
-      </div>
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="fw-black text-primary mb-0">📊 รายงานสรุปผล Ward 9/2 : ${ctx.sheet}</h5>
+        <button class="btn btn-danger rounded-pill shadow-sm fw-bold" onclick="printOfficialReport()">🖨️ พิมพ์ PDF ทางการ</button>
     </div>
-    <!-- Card จำหน่ายแบบละเอียด -->
-    <div class="col-12 col-md-6">
-      <div class="card p-3 shadow-sm border-0 h-100">
-        <div class="card-title text-success"><i class="bi bi-box-out"></i> สรุปการจำหน่ายแยกเพศ (Discharges)</div>
-        <table class="table table-sm table-striped align-middle" style="font-size: 13px;">
-          <thead class="table-success"><tr><th>ประเภท</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr></thead>
-          <tbody>
-            <tr><td>กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td><b>${ctx.outDCG.T}</b></td></tr>
-            <tr><td>ย้ายแผนก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td><b>${ctx.outTOG.T}</b></td></tr>
-            <tr><td>Refer Out</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td><b>${ctx.outROG.T}</b></td></tr>
-            <tr><td>ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td><b>${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</b></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <div class="subtle">จำนวนเตียงที่เปิดจริง: <b>${ctx.isMonthClosed ? ctx.beds : 'รอการปิดยอด'} เตียง</b></div>
   </div>
 
-  <!-- แถว 3: Incident / QA -->
-  <h6 class="fw-black text-danger mt-4 mb-2">📋 ตัวชี้วัดคุณภาพ และอุบัติการณ์ (QA / Incident)</h6>
-  <div class="row g-2">
-    <div class="col-12 col-md-4">
-      <div class="card p-3 h-100 border-0 shadow-sm bg-light">
-        <div class="fw-bold text-dark border-bottom pb-2 mb-2">อุปกรณ์ / หัตถการ</div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">Unplanned ET:</span> <b>${k.k11_unplanned_et} ราย</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">Ventilator days:</span> <b>${k.k12_vent_days} วัน</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">ICD Line หลุด:</span> <b>${k.k13_icd_displaced} ครั้ง</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">ICD Line days:</span> <b>${k.k14_icd_days} วัน</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">รอคอยกลับบ้านเฉลี่ย:</span> <b>${fmt2(k.k26_avg_wait_dc_min)} นาที</b></div>
-        <div class="fw-bold mt-2 pt-2 border-top text-dark">Phlebitis</div>
-        <div class="subtle text-end">
-          G1: <b>${k.k24_phlebitis_g1}</b> | G2: <b>${k.k24_phlebitis_g2}</b> | G3: <b>${k.k24_phlebitis_g3}</b> | G4: <b>${k.k24_phlebitis_g4}</b>
-        </div>
+  <div class="row g-3">
+    <!-- ตารางแยกเพศ รับเข้า -->
+    <div class="col-12 col-md-6">
+      <div class="card p-3 shadow-sm border-0">
+        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-box-in"></i> สรุปการรับเข้า (แยกเพศ)</h6>
+        <table class="table table-bordered table-sm text-center">
+          <thead class="table-light"><tr><th>ประเภท</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr></thead>
+          <tbody>
+            <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td class="fw-bold">${ctx.carryG.T}</td></tr>
+            <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td class="fw-bold">${ctx.inNewG.T}</td></tr>
+            <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td class="fw-bold">${ctx.inTransferG.T}</td></tr>
+            <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td class="fw-bold">${ctx.inReferG.T}</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="col-12 col-md-4">
-      <div class="card p-3 h-100 border-0 shadow-sm bg-light">
-        <div class="fw-bold text-danger border-bottom pb-2 mb-2">อุบัติการณ์ความเสี่ยง (อัตรา/1000 วัน)</div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">แผลกดทับ:</span> <b class="text-danger">${k.k15_pressure_ulcer_rate}</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">พลัดตกหกล้ม:</span> <b class="text-danger">${k.k16_fall_rate}</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">คลาดเคลื่อนทางยา:</span> <b class="text-danger">${k.k17_med_error}</b></div>
-        <div class="d-flex justify-content-between mb-1 mt-2"><span class="subtle">Unplanned CPR:</span> <b>${k.k19_unplanned_cpr} ครั้ง</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">Unplanned ICU:</span> <b>${k.k20_unplanned_icu} ครั้ง</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">GHI Level ล่าสุด:</span> <b>${k.k18_ghi_level}</b></div>
+    <!-- ตารางแยกเพศ จำหน่าย -->
+    <div class="col-12 col-md-6">
+      <div class="card p-3 shadow-sm border-0">
+        <h6 class="text-success fw-bold mb-3"><i class="bi bi-box-out"></i> สรุปการจำหน่าย (แยกเพศ)</h6>
+        <table class="table table-bordered table-sm text-center">
+          <thead class="table-light"><tr><th>ประเภท</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr></thead>
+          <tbody>
+            <tr><td>กลับบ้าน</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td class="fw-bold">${ctx.outDCG.T}</td></tr>
+            <tr><td>ย้ายแผนก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td class="fw-bold">${ctx.outTOG.T}</td></tr>
+            <tr><td>Refer Out</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td class="fw-bold">${ctx.outROG.T}</td></tr>
+            <tr><td>ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td class="fw-bold">${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="col-12 col-md-4">
-      <div class="card p-3 h-100 border-0 shadow-sm bg-light">
-        <div class="fw-bold text-success border-bottom pb-2 mb-2">คุณภาพและ Refer</div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">หัตถการผิดคน/ข้าง:</span> <b>${k.k21_wrong_proc} ครั้ง</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">ผ่าตัดผิดคน/ข้าง:</span> <b>${k.k22_wrong_surgery} ครั้ง</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">ให้เลือดผิดคน:</span> <b>${k.k23_wrong_blood} ครั้ง</b></div>
-        <div class="d-flex justify-content-between mb-1 mt-2"><span class="subtle">บันทึกฯ เชิงปริมาณ:</span> <b class="text-success">${k.k25_note_qty}%</b></div>
-        <div class="d-flex justify-content-between mb-1"><span class="subtle">บันทึกฯ เชิงคุณภาพ:</span> <b class="text-success">${k.k25_note_qlt}%</b></div>
-        <div class="fw-bold mt-2 pt-2 border-top text-dark">Refer & DayCare</div>
-        <div class="subtle text-end">
-          IN: <b>${k.k27_refer_in}</b> | OUT: <b>${k.k27_refer_out}</b> | Back: <b>${k.k27_refer_back}</b> | DayCare: <b>${k.k27_daycare}</b>
-        </div>
-      </div>
-    </div>
-  </div>
-  `;
+    <!-- KPI ส่วนเหลือ -->
+    <div class="col-12"><div class="card p-3 shadow-sm border-0"><div class="row text-center">
+       <div class="col-6 col-md-3"><div>BOR Official</div><div class="h4 text-info">${borOccText}</div></div>
+       <div class="col-6 col-md-3"><div>BOR Utilization</div><div class="h4 text-warning">${borUtilText}</div></div>
+       <div class="col-6 col-md-3"><div>วันนอนรวม</div><div class="h4">${ctx.patientDays}</div></div>
+       <div class="col-6 col-md-3"><div>คงค้างปลายเดือน</div><div class="h4">${ctx.eomG.T}</div></div>
+    </div></div></div>
+  </div>`;
 }
-
 // --------------------------------------------------------------------------------
 // 2. ฟังก์ชันวาดกราฟใน Dashboard
 // --------------------------------------------------------------------------------
@@ -2645,125 +2614,39 @@ function printOfficialReport() {
 // 4. HTML แบบฟอร์มทางการ (ตารางดั้งเดิม สำหรับการพิมพ์)
 // --------------------------------------------------------------------------------
 function buildTabularReportHTML(ctx) {
-  const {
-    sheet, days, beds, isMonthClosed,
-    inAllG, carryG, inNewG, inTransferG, inReferG,
-    outAllG, outDCG, outDeathG, outTOG, outROG, outAbsG, outRefuseG,
-    eomG, patientDays, patientDaysUtil, bedDays, borOcc, borUtil,   
-    deptRows, topDx5, kpi1127: k
-  } = ctx;
-
-  const bedsText = isMonthClosed ? `${beds} เตียง` : `(รอระบุเตียง)`;
-  const borOccText = isMonthClosed ? `${fmt2(borOcc)}%` : `-`;
-  const borUtilText = isMonthClosed ? `${fmt2(borUtil)}%` : `-`;
+  const k = ctx.kpi1127;
+  const isC = ctx.isMonthClosed;
+  const borOcc = isC ? `${fmt2(ctx.borOcc)}%` : "-";
+  const borUtil = isC ? `${fmt2(ctx.borUtil)}%` : "-";
 
   return `
   <!DOCTYPE html>
-  <html lang="th">
-  <head>
-    <meta charset="UTF-8">
-    <title>Report_${sheet}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-      body { font-family: 'Sarabun', sans-serif; font-size: 12px; color: #333; background: #fff; padding: 30px; }
-      .header { border-bottom: 2px solid #0d6efd; margin-bottom: 20px; padding-bottom: 10px; }
-      .report-title { font-size: 20px; font-weight: 800; color: #0d6efd; margin: 0; }
-      .report-meta { color: #666; font-size: 13px; }
+  <html lang="th"><head><style>
+    body{font-family:'Sarabun'; font-size:12px; padding:20px;}
+    table{width:100%; border-collapse:collapse; margin-bottom:15px;}
+    th,td{border:1px solid #000; padding:5px; text-align:center;}
+    .head{background:#eee; font-weight:bold;}
+  </style></head><body>
+    <h3 style="text-align:center;">รายงานสรุปผล Ward 9/2 ประจำเดือน ${ctx.sheet}</h3>
+    <p>จำนวนเตียงที่เปิดจริง: <b>${isC ? ctx.beds : "ยังไม่ระบุ"}</b> | อัตราครองเตียง(BOR): <b>${borOcc}</b></p>
+    
+    <table>
+      <tr class="head"><th>กลุ่มรับเข้า</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr>
+      <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td>${ctx.carryG.T}</td></tr>
+      <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td>${ctx.inNewG.T}</td></tr>
+      <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td>${ctx.inTransferG.T}</td></tr>
+      <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td>${ctx.inReferG.T}</td></tr>
       
-      .grid-container { display: flex; flex-wrap: wrap; gap: 15px; }
-      .card { border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; flex: 1; min-width: 300px; page-break-inside: avoid; }
-      .card-title { font-weight: 700; color: #495057; border-bottom: 1px solid #eee; margin-bottom: 8px; padding-bottom: 5px; font-size: 13px; }
-      
-      .data-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-      .val { font-weight: 600; }
-      
-      .sign-area { margin-top: 40px; display: flex; justify-content: space-between; }
-      .sign-box { border-top: 1px solid #333; width: 220px; text-align: center; padding-top: 5px; }
-      
-      @media print { .no-print { display: none; } }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <div class="report-title">รายงานสรุปผลการปฏิบัติงานหอผู้ป่วย Ward 9/2</div>
-      <div class="report-meta">ประจำเดือน <b>${escapeHtml(sheet)}</b> | ข้อมูล ณ วันที่ ${new Date().toLocaleDateString('th-TH')} | เตียงที่เปิดจริง: <b>${bedsText}</b></div>
-    </div>
-
-<div class="grid-container">
-    <div class="card" style="width: 100%;">
-      <div class="card-title">สรุปสถิติผู้ป่วยจำแนกตามประเภทและเพศ</div>
-      <table style="width: 100%; border: 1px solid #ccc; font-size: 12px;">
-        <thead>
-          <tr style="background:#f8f9fa;">
-            <th>รายการ</th><th>หญิง</th><th>ชาย</th><th>รวม</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td colspan="4" style="background:#eee; font-weight:bold;">กลุ่มรับเข้า</td></tr>
-          <tr><td>ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td>${ctx.carryG.T}</td></tr>
-          <tr><td>รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td>${ctx.inNewG.T}</td></tr>
-          <tr><td>รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td>${ctx.inTransferG.T}</td></tr>
-          <tr><td>รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td>${ctx.inReferG.T}</td></tr>
-          <tr><td colspan="4" style="background:#eee; font-weight:bold;">กลุ่มจำหน่าย</td></tr>
-          <tr><td>กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td>${ctx.outDCG.T}</td></tr>
-          <tr><td>ย้ายแผนก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td>${ctx.outTOG.T}</td></tr>
-          <tr><td>Refer Out</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td>${ctx.outROG.T}</td></tr>
-          <tr><td>ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td>${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>      <!-- Card 1: สรุปภาพรวม -->
-      <div class="card">
-        <div class="card-title">1. สรุปรับเข้าและจำหน่าย (ราย)</div>
-        <div class="data-row"><span>รับเข้าทั้งหมด</span> <span class="val">${inAllG.T}</span></div>
-        <div class="data-row"><span>จำหน่ายแล้ว</span> <span class="val">${outAllG.T}</span></div>
-        <div class="data-row"><span>คงค้างปลายเดือน</span> <span class="val">${eomG.T}</span></div>
-      </div>
-
-      <!-- Card 2: ประสิทธิภาพการครองเตียง -->
-      <div class="card">
-        <div class="card-title">2. สถิติเตียงและ LOS</div>
-        <div class="data-row"><span>อัตราครองเตียง (Official)</span> <span class="val">${borOccText}</span></div>
-        <div class="data-row"><span>อัตราการใช้เตียง (Util)</span> <span class="val">${borUtilText}</span></div>
-        <div class="data-row"><span>วันนอนรวม (เคสปิด)</span> <span class="val">${patientDays} วัน</span></div>
-      </div>
-
-      <!-- Card 3: อุปกรณ์/หัตถการ -->
-      <div class="card">
-        <div class="card-title">3. สถิติอุปกรณ์/หัตถการ (ข้อ 11-14, 26)</div>
-        <div class="data-row"><span>Unplanned ET</span> <span class="val">${k.k11_unplanned_et} ราย</span></div>
-        <div class="data-row"><span>Ventilator days</span> <span class="val">${k.k12_vent_days} วัน</span></div>
-        <div class="data-row"><span>ICD Line หลุด</span> <span class="val">${k.k13_icd_displaced} ครั้ง</span></div>
-        <div class="data-row"><span>รอคอยกลับบ้านเฉลี่ย</span> <span class="val">${fmt2(k.k26_avg_wait_dc_min)} นาที</span></div>
-      </div>
-
-      <!-- Card 4: ความปลอดภัย (QA) -->
-      <div class="card">
-        <div class="card-title">4. ความปลอดภัย/ความเสี่ยง (ข้อ 15-17, 19-20)</div>
-        <div class="data-row"><span>แผลกดทับ (/1000วัน)</span> <span class="val">${k.k15_pressure_ulcer_rate}</span></div>
-        <div class="data-row"><span>พลัดตกหกล้ม (/1000วัน)</span> <span class="val">${k.k16_fall_rate}</span></div>
-        <div class="data-row"><span>คลาดเคลื่อนทางยา (/1000วัน)</span> <span class="val">${k.k17_med_error}</span></div>
-        <div class="data-row"><span>Unplanned CPR/ICU</span> <span class="val">${k.k19_unplanned_cpr} / ${k.k20_unplanned_icu}</span></div>
-      </div>
-      
-      <!-- Card 5: พยาบาล/บันทึก -->
-      <div class="card">
-        <div class="card-title">5. คุณภาพการบันทึกฯ & อื่นๆ</div>
-        <div class="data-row"><span>บันทึกฯ เชิงปริมาณ</span> <span class="val">${k.k25_note_qty}%</span></div>
-        <div class="data-row"><span>บันทึกฯ เชิงคุณภาพ</span> <span class="val">${k.k25_note_qlt}%</span></div>
-        <div class="data-row"><span>Refer IN/OUT</span> <span class="val">${k.k27_refer_in} / ${k.k27_refer_out}</span></div>
-      </div>
-    </div>
-
-    <div class="sign-area">
-      <div class="sign-box">ผู้สรุปรายงาน</div>
-      <div class="sign-box">หัวหน้าหอผู้ป่วย</div>
-    </div>
-  </body>
-  </html>
-  `;
+      <tr class="head"><th>กลุ่มจำหน่าย</th><th>หญิง</th><th>ชาย</th><th>รวม</th></tr>
+      <tr><td>กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td>${ctx.outDCG.T}</td></tr>
+      <tr><td>ย้ายแผนก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td>${ctx.outTOG.T}</td></tr>
+      <tr><td>Refer Out</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td>${ctx.outROG.T}</td></tr>
+      <tr><td>ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td>${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
+    </table>
+    
+    <p><b>ตัวชี้วัดคุณภาพ (KPI 11-27):</b> Unplanned ET:${k.k11_unplanned_et}, Ventilator Days:${k.k12_vent_days}, แผลกดทับ:${k.k15_pressure_ulcer_rate}, พลัดตกหกล้ม:${k.k16_fall_rate}</p>
+  </body></html>`;
 }
-
 // ผูกฟังก์ชันเข้า Global Window
 window.showFullReport = showFullReport;
 window.printOfficialReport = printOfficialReport;
