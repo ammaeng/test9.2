@@ -2696,29 +2696,7 @@ function buildTabularReportHTML(ctx) {
     deptRows, topDx5, kpi1127: k
   } = ctx;
 
-  const td = (v) => `<td>${escapeHtml(v)}</td>`;
-  const tdn = (v) => `<td style="text-align: right;">${v}</td>`;
-
-  const deptOrder =["อายุรศาสตร์","ศัลยศาสตร์","กุมารเวชศาสตร์","สูติศาสตร์","นรีเวชวิทยา","จักษุ","โสต ศอ นาสิก","ศัลยกรรมกระดูกและข้อ"];
-  const extra = Object.keys(deptRows || {}).filter(k => !deptOrder.includes(k));
-  const deptList =[...deptOrder, ...extra.sort((a,b)=>a.localeCompare(b,'th'))];
-
-  const deptHtml = deptList.map(name=>{
-    const r = deptRows[name] || {F:0,M:0,T:0,PD:0};
-    return `
-      <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #ddd; padding:4px 0;">
-        <div style="width:40%">- ${escapeHtml(name)}</div>
-        <div style="width:30%; text-align:right;">ญ ${r.F} | ช ${r.M} | <b>รวม ${r.T}</b></div>
-        <div style="width:30%; text-align:right;">วันนอน <b>${r.PD}</b></div>
-      </div>
-    `;
-  }).join("");
-
-  const dx5 = (topDx5 && topDx5.length)
-    ? topDx5.map(([dx,c],i)=>`<div>${i+1}. ${escapeHtml(dx)} <b>(${c})</b></div>`).join("")
-    : `<div>- ยังไม่มีข้อมูล -</div>`;
-
-  const bedsText = isMonthClosed ? `${beds} เตียง` : `(รอระบุเตียง/ยังไม่ปิดยอด)`;
+  const bedsText = isMonthClosed ? `${beds} เตียง` : `(รอระบุเตียง)`;
   const borOccText = isMonthClosed ? `${fmt2(borOcc)}%` : `-`;
   const borUtilText = isMonthClosed ? `${fmt2(borUtil)}%` : `-`;
 
@@ -2727,119 +2705,80 @@ function buildTabularReportHTML(ctx) {
   <html lang="th">
   <head>
     <meta charset="UTF-8">
-    <title>รายงานสถิติผู้ป่วยใน เดือน ${escapeHtml(sheet)}</title>
+    <title>Report_${sheet}</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-      body { font-family: 'Sarabun', sans-serif; font-size: 13px; color: #000; padding: 20px; line-height: 1.3; }
-      h3 { text-align: center; margin-bottom: 5px; font-weight: 700; }
-      .text-center { text-align: center; }
-      .header-sub { text-align: center; margin-bottom: 20px; font-size: 13px; color: #444; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 15px; page-break-inside: avoid; }
-      th, td { border: 1px solid #333; padding: 6px 8px; vertical-align: middle; }
-      th { background-color: #f2f2f2; font-weight: 600; }
-      .col-left { width: 55%; float: left; padding-right: 1%; }
-      .col-right { width: 44%; float: left; }
-      .clearfix::after { content: ""; clear: both; display: table; }
-      @media print {
-        @page { size: A4 portrait; margin: 1cm; }
-        body { padding: 0; }
-        .no-print { display: none; }
-      }
+      body { font-family: 'Sarabun', sans-serif; font-size: 12px; color: #333; background: #fff; padding: 30px; }
+      .header { border-bottom: 2px solid #0d6efd; margin-bottom: 20px; padding-bottom: 10px; }
+      .report-title { font-size: 20px; font-weight: 800; color: #0d6efd; margin: 0; }
+      .report-meta { color: #666; font-size: 13px; }
+      
+      .grid-container { display: flex; flex-wrap: wrap; gap: 15px; }
+      .card { border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; flex: 1; min-width: 300px; page-break-inside: avoid; }
+      .card-title { font-weight: 700; color: #495057; border-bottom: 1px solid #eee; margin-bottom: 8px; padding-bottom: 5px; font-size: 13px; }
+      
+      .data-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+      .val { font-weight: 600; }
+      
+      .sign-area { margin-top: 40px; display: flex; justify-content: space-between; }
+      .sign-box { border-top: 1px solid #333; width: 220px; text-align: center; padding-top: 5px; }
+      
+      @media print { .no-print { display: none; } }
     </style>
   </head>
   <body>
-    <h3>ใบรายงานสถิติผู้ป่วยใน หน่วยงาน Ward 9/2</h3>
-    <div class="header-sub">
-      ประจำเดือน <b>${escapeHtml(sheet)}</b> | 
-      จำนวนวัน: <b>${days}</b> วัน | 
-      จำนวนเตียงที่เปิดจริง: <b>${bedsText}</b>
+    <div class="header">
+      <div class="report-title">รายงานสรุปผลการปฏิบัติงานหอผู้ป่วย Ward 9/2</div>
+      <div class="report-meta">ประจำเดือน <b>${escapeHtml(sheet)}</b> | ข้อมูล ณ วันที่ ${new Date().toLocaleDateString('th-TH')} | เตียงที่เปิดจริง: <b>${bedsText}</b></div>
     </div>
 
-    <div class="clearfix">
-      <!-- คอลัมน์ซ้าย (สถิติการรับเข้า/จำหน่าย) -->
-      <div class="col-left">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:5%">ลำดับ</th>
-              <th>รายการ</th>
-              <th style="width:12%" class="text-center">หญิง</th>
-              <th style="width:12%" class="text-center">ชาย</th>
-              <th style="width:12%" class="text-center">รวม</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>${td("1")}${td("จำนวนผู้ป่วยในทั้งหมด")}${tdn(inAllG.F)}${tdn(inAllG.M)}${tdn(`<b>${inAllG.T}</b>`)}</tr>
-            <tr>${td("")}${td(" - ยอดยกมาจากเดือนที่แล้ว")}${tdn(carryG.F)}${tdn(carryG.M)}${tdn(carryG.T)}</tr>
-            <tr>${td("")}${td(" - รับใหม่")}${tdn(inNewG.F)}${tdn(inNewG.M)}${tdn(inNewG.T)}</tr>
-            <tr>${td("")}${td(" - รับย้าย")}${tdn(inTransferG.F)}${tdn(inTransferG.M)}${tdn(inTransferG.T)}</tr>
-            <tr>${td("")}${td(" - รับ Refer")}${tdn(inReferG.F)}${tdn(inReferG.M)}${tdn(inReferG.T)}</tr>
-
-            <tr>${td("2")}${td("จำนวนผู้ป่วยที่จำหน่ายทั้งหมด")}${tdn(outAllG.F)}${tdn(outAllG.M)}${tdn(`<b>${outAllG.T}</b>`)}</tr>
-            <tr>${td("")}${td(" - กลับบ้าน (D/C)")}${tdn(outDCG.F)}${tdn(outDCG.M)}${tdn(outDCG.T)}</tr>
-            <tr>${td("")}${td(" - ตาย")}${tdn(outDeathG.F)}${tdn(outDeathG.M)}${tdn(outDeathG.T)}</tr>
-            <tr>${td("")}${td(" - ย้ายแผนก")}${tdn(outTOG.F)}${tdn(outTOG.M)}${tdn(outTOG.T)}</tr>
-            <tr>${td("")}${td(" - Refer Out")}${tdn(outROG.F)}${tdn(outROG.M)}${tdn(outROG.T)}</tr>
-            <tr>${td("")}${td(" - หนี")}${tdn(outAbsG.F)}${tdn(outAbsG.M)}${tdn(outAbsG.T)}</tr>
-            <tr>${td("")}${td(" - ไม่สมัครใจอยู่")}${tdn(outRefuseG.F)}${tdn(outRefuseG.M)}${tdn(outRefuseG.T)}</tr>
-
-            <tr>${td("3")}${td("จำนวนผู้ป่วย ยกยอดไปเดือนหน้า")}${tdn(eomG.F)}${tdn(eomG.M)}${tdn(`<b>${eomG.T}</b>`)}</tr>
-            
-            <tr>${td("4")}${td("จำนวนผู้ป่วยแยกตามภาควิชา")}<td colspan="3">${deptHtml}</td></tr>
-          </tbody>
-        </table>
+    <div class="grid-container">
+      <!-- Card 1: สรุปภาพรวม -->
+      <div class="card">
+        <div class="card-title">1. สรุปรับเข้าและจำหน่าย (ราย)</div>
+        <div class="data-row"><span>รับเข้าทั้งหมด</span> <span class="val">${inAllG.T}</span></div>
+        <div class="data-row"><span>จำหน่ายแล้ว</span> <span class="val">${outAllG.T}</span></div>
+        <div class="data-row"><span>คงค้างปลายเดือน</span> <span class="val">${eomG.T}</span></div>
       </div>
 
-      <!-- คอลัมน์ขวา (ตัวชี้วัด 6-27) -->
-      <div class="col-right">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:10%">ข้อ</th>
-              <th>รายการ</th>
-              <th style="width:25%" class="text-center">จำนวน/ร้อยละ</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>${td("6")}${td("อัตราครองเตียง (ไม่นับ Admit < 6 ชม.)")}${tdn(`<b>${borOccText}</b>`)}</tr>
-            <tr>${td("7")}${td("อัตราการใช้เตียง (นับรวม < 6 ชม.)")}${tdn(`<b>${borUtilText}</b>`)}</tr>
-            <tr>${td("8")}${td("จำนวนวันนอนรวม (LOS เคสปิด)")}${tdn(patientDays)}</tr>
-            <tr>${td("9")}${td("จำนวนวันใช้เตียงรวม (รวม < 6 ชม.)")}${tdn(patientDaysUtil)}</tr>
-            <tr>${td("10")}${td("สถิติ 5 โรคแรก (Top 5 Dx)")}<td colspan="1">${dx5}</td></tr>
+      <!-- Card 2: ประสิทธิภาพการครองเตียง -->
+      <div class="card">
+        <div class="card-title">2. สถิติเตียงและ LOS</div>
+        <div class="data-row"><span>อัตราครองเตียง (Official)</span> <span class="val">${borOccText}</span></div>
+        <div class="data-row"><span>อัตราการใช้เตียง (Util)</span> <span class="val">${borUtilText}</span></div>
+        <div class="data-row"><span>วันนอนรวม (เคสปิด)</span> <span class="val">${patientDays} วัน</span></div>
+      </div>
 
-            <tr>${td("11")}${td("Unplanned ET tube (ราย)")}${tdn(k.k11_unplanned_et)}</tr>
-            <tr>${td("12")}${td("Ventilator days (วัน)")}${tdn(k.k12_vent_days)}</tr>
-            <tr>${td("13")}${td("ICD Line หลุด (ครั้ง)")}${tdn(k.k13_icd_displaced)}</tr>
-            <tr>${td("14")}${td("ICD Line days (วัน)")}${tdn(k.k14_icd_days)}</tr>
-            <tr>${td("15")}${td("อัตราแผลกดทับ (/1000 วันนอน)")}${tdn(k.k15_pressure_ulcer_rate)}</tr>
-            <tr>${td("16")}${td("อัตราพลัดตกหกล้ม (/1000 วันนอน)")}${tdn(k.k16_fall_rate)}</tr>
-            <tr>${td("17")}${td("คลาดเคลื่อนทางยา (/1000 วันนอน)")}${tdn(k.k17_med_error)}</tr>
-            <tr>${td("18")}${td("อุบัติการณ์ GHI Level")}${tdn(k.k18_ghi_level)}</tr>
-            <tr>${td("19")}${td("Unplanned CPR (ครั้ง)")}${tdn(k.k19_unplanned_cpr)}</tr>
-            <tr>${td("20")}${td("Unplanned ICU (ครั้ง)")}${tdn(k.k20_unplanned_icu)}</tr>
-            <tr>${td("21")}${td("หัตถการผิดคน/ข้าง/ตำแหน่ง")}${tdn(k.k21_wrong_proc)}</tr>
-            <tr>${td("22")}${td("ผ่าตัดผิดคน/ข้าง/ตำแหน่ง")}${tdn(k.k22_wrong_surgery)}</tr>
-            <tr>${td("23")}${td("ให้เลือดผิดคน")}${tdn(k.k23_wrong_blood)}</tr>
-            <tr>${td("24")}${td("Phlebitis (G1 / G2 / G3 / G4)")}${tdn(`${k.k24_phlebitis_g1} / ${k.k24_phlebitis_g2} / ${k.k24_phlebitis_g3} / ${k.k24_phlebitis_g4}`)}</tr>
-            <tr>${td("25")}${td("บันทึกพยาบาล (ปริมาณ / คุณภาพ)")}${tdn(`${k.k25_note_qty}% / ${k.k25_note_qlt}%`)}</tr>
-            <tr>${td("26")}${td("ระยะเวลารอคอยกลับบ้านเฉลี่ย")}${tdn(fmt2(k.k26_avg_wait_dc_min) + " นาที")}</tr>
-            <tr>${td("27")}${td("Refer (IN/OUT/Back/Daycare)")}${tdn(`${k.k27_refer_in}/${k.k27_refer_out}/${k.k27_refer_back}/${k.k27_daycare}`)}</tr>
-          </tbody>
-        </table>
+      <!-- Card 3: อุปกรณ์/หัตถการ -->
+      <div class="card">
+        <div class="card-title">3. สถิติอุปกรณ์/หัตถการ (ข้อ 11-14, 26)</div>
+        <div class="data-row"><span>Unplanned ET</span> <span class="val">${k.k11_unplanned_et} ราย</span></div>
+        <div class="data-row"><span>Ventilator days</span> <span class="val">${k.k12_vent_days} วัน</span></div>
+        <div class="data-row"><span>ICD Line หลุด</span> <span class="val">${k.k13_icd_displaced} ครั้ง</span></div>
+        <div class="data-row"><span>รอคอยกลับบ้านเฉลี่ย</span> <span class="val">${fmt2(k.k26_avg_wait_dc_min)} นาที</span></div>
+      </div>
+
+      <!-- Card 4: ความปลอดภัย (QA) -->
+      <div class="card">
+        <div class="card-title">4. ความปลอดภัย/ความเสี่ยง (ข้อ 15-17, 19-20)</div>
+        <div class="data-row"><span>แผลกดทับ (/1000วัน)</span> <span class="val">${k.k15_pressure_ulcer_rate}</span></div>
+        <div class="data-row"><span>พลัดตกหกล้ม (/1000วัน)</span> <span class="val">${k.k16_fall_rate}</span></div>
+        <div class="data-row"><span>คลาดเคลื่อนทางยา (/1000วัน)</span> <span class="val">${k.k17_med_error}</span></div>
+        <div class="data-row"><span>Unplanned CPR/ICU</span> <span class="val">${k.k19_unplanned_cpr} / ${k.k20_unplanned_icu}</span></div>
+      </div>
+      
+      <!-- Card 5: พยาบาล/บันทึก -->
+      <div class="card">
+        <div class="card-title">5. คุณภาพการบันทึกฯ & อื่นๆ</div>
+        <div class="data-row"><span>บันทึกฯ เชิงปริมาณ</span> <span class="val">${k.k25_note_qty}%</span></div>
+        <div class="data-row"><span>บันทึกฯ เชิงคุณภาพ</span> <span class="val">${k.k25_note_qlt}%</span></div>
+        <div class="data-row"><span>Refer IN/OUT</span> <span class="val">${k.k27_refer_in} / ${k.k27_refer_out}</span></div>
       </div>
     </div>
-    
-    <div style="margin-top: 30px; display: flex; justify-content: space-around; text-align: center;">
-      <div>
-        <br><br>
-        (......................................................)<br>
-        ผู้จัดทำรายงาน / พยาบาลประจำการ
-      </div>
-      <div>
-        <br><br>
-        (......................................................)<br>
-        หัวหน้าหอผู้ป่วย Ward 9/2
-      </div>
+
+    <div class="sign-area">
+      <div class="sign-box">ผู้สรุปรายงาน</div>
+      <div class="sign-box">หัวหน้าหอผู้ป่วย</div>
     </div>
   </body>
   </html>
