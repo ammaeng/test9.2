@@ -382,17 +382,17 @@
     <label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label>
     <input type="number" id="disWaitMin" class="form-control">
   </div>
-  <div class="mb-3">
-    <label class="form-label">วันที่</label>
-    <input type="date" id="disDate" class="form-control">
-  </div>
+ 
   <!-- ค้นหาในส่วน modal-body ของ dischargeModal -->
 <div class="mb-3">
-  <label class="form-label">วันที่</label>
+  <label class="form-label">วันที่ / เวลา</label>
   <div class="input-group">
     <input type="date" id="disDate" class="form-control">
     <input type="text" id="disTime" class="form-control" placeholder="เวลา (20:25)">
-    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('disTime').value=new Date().toLocaleTimeString('th-TH',{hour12:false,hour:'2-digit',minute:'2-digit'})">NOW</button>
+    <button class="btn btn-outline-secondary" type="button"
+      onclick="document.getElementById('disTime').value=new Date().toLocaleTimeString('th-TH',{hour12:false,hour:'2-digit',minute:'2-digit'})">
+      NOW
+    </button>
   </div>
 </div>
   <div id="fuBox" style="display:none;" class="mb-3">
