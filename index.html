@@ -2016,6 +2016,50 @@ function buildTabularReportHTML(ctx) {
       <td style="width:50px; background:#f0f0f0;">${gData.T}</td>
     </tr>`;
 
+  let sumF = 0;
+let sumM = 0;
+let sumT = 0;
+let sumPDF = 0;
+let sumPDM = 0;
+let sumPD = 0;
+
+Object.values(ctx.deptRows).forEach(r => {
+  sumF += r.F || 0;
+  sumM += r.M || 0;
+  sumT += r.T || 0;
+  sumPDF += r.PDF || 0;
+  sumPDM += r.PDM || 0;
+  sumPD += r.PD || 0;
+});
+const deptRowsHtml = `
+${Object.keys(ctx.deptRows).map(d => `
+<tr>
+<td style="text-align:left; font-size:11px;">
+- ${d}
+<br>
+<small>
+วันนอน: หญิง ${ctx.deptRows[d].PDF} | ชาย ${ctx.deptRows[d].PDM} | รวม ${ctx.deptRows[d].PD}
+</small>
+</td>
+<td>${ctx.deptRows[d].F}</td>
+<td>${ctx.deptRows[d].M}</td>
+<td style="background:#f0f0f0;">${ctx.deptRows[d].T}</td>
+</tr>
+`).join('')}
+
+<tr style="font-weight:bold; background:#fff3cd;">
+<td style="text-align:left;">
+รวมทุกภาควิชา
+<br>
+<small>
+วันนอน: หญิง ${sumPDF} | ชาย ${sumPDM} | รวม ${sumPD}
+</small>
+</td>
+<td>${sumF}</td>
+<td>${sumM}</td>
+<td>${sumT}</td>
+</tr>
+`;
   const deptRowsHtml = Object.keys(ctx.deptRows).map(d => `
     <tr>
       <td style="text-align:left; font-size:11px;">- ${d} (วันนอน: ${ctx.deptRows[d].PD})</td>
