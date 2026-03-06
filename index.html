@@ -447,17 +447,11 @@
        <!-- ค้นหาบรรทัดนี้ในส่วนลงทะเบียนใหม่ (form-pane) -->
 <div class="col-6 col-md-2">
   <label class="form-label">เวลา (24 ชม.) *</label>
-  <input
-    type="text"
-    class="form-control"
-    id="inTime"
-    placeholder="HH:MM"
-    maxlength="5"
-    inputmode="numeric"
-    autocomplete="off"
-    required
-    oninput="validateAndFormatTime(this)">
-  <div class="subtle mt-1">เช่น 21:10</div>
+  <div class="input-group">
+    <input type="text" class="form-control" id="inTime" ... >
+    <button class="btn btn-outline-secondary" type="button" onclick="setCurrentTime()">NOW</button>
+  </div>
+  <div class="subtle mt-1">พิมพ์ 2110 → 21:10</div>
 </div>
             <div class="col-12 col-md-2">
               <label class="form-label">ต้นทาง</label>
@@ -1572,6 +1566,13 @@ const admitTime = formatTimeForInput(r[3] || r[6] || r[9] || "");
     }
   }
 
+  function setCurrentTime() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('inTime').value = `${hh}:${mm}`;
+}
+
   // ================== Quick Discharge ==================
   async function dischargeUI(item) {
     disItem = item;
@@ -1825,6 +1826,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function prepareNewForm() {
     document.getElementById('dataForm').reset();
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('inTime').value = `${hh}:${mm}`;
 
     dxTagState.dx1.tags = [];
     dxTagState.dx2.tags = [];
