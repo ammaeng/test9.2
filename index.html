@@ -730,6 +730,53 @@
 </div>
 
 <datalist id="dxList"></datalist>
+  <!-- Discharge Modal -->
+<div class="modal fade" id="dischargeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">จำหน่ายผู้ป่วย</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="disRowId">
+        <div class="mb-3">
+          <label class="form-label">ประเภทการจำหน่าย</label>
+          <select id="disType" class="form-select">
+            <option value="">-- เลือก --</option>
+            <option value="dc">กลับบ้าน (D/C)</option>
+            <option value="transfer">ย้ายแผนก</option>
+            <option value="refer">Refer Out</option>
+            <option value="death">เสียชีวิต</option>
+            <option value="abscond">หนี</option>
+            <option value="refuse">ปฏิเสธ</option>
+          </select>
+        </div>
+        
+        <!-- ช่องที่เพิ่มขึ้นมาตามที่เราตกลงกันไว้ -->
+        <div class="mb-3" id="waitBox" style="display:none;">
+          <label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label>
+          <input type="number" id="disWaitMin" class="form-control" placeholder="เช่น 60">
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label">วันที่</label>
+          <input type="date" id="disDate" class="form-control">
+        </div>
+        
+        <div id="fuBox" style="display:none;" class="mb-3">
+          <label class="form-label">F/U</label>
+          <input type="text" id="disFU" class="form-control">
+        </div>
+        <!-- (ใส่ส่วนเพิ่มอื่นตามโค้ดเดิมของคุณ เช่น transferBox, referBox) -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+        <button type="button" class="btn btn-primary" onclick="saveDischarge()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   // ================== CONFIG ==================
