@@ -1658,6 +1658,8 @@ const admitTime = formatTimeForInput(r[3] || r[6] || r[9] || "");
     const rowId = document.getElementById("disRowId").value;
     const type = document.getElementById("disType").value;
     const date = document.getElementById("disDate").value;
+        const waitMin = document.getElementById("disWaitMin").value; // ดึงค่าจากช่อง
+
 
     if (!type) return Swal.fire("เลือกประเภทก่อน");
     if (!date) return Swal.fire("เลือกวันที่");
@@ -1679,7 +1681,9 @@ const admitTime = formatTimeForInput(r[3] || r[6] || r[9] || "");
       abscondDate: "",
       refuseDate: "",
       fu: "",
-      nurseId: getNurseId()
+      nurseId: getNurseId(),
+       waitTime: waitMin // เพิ่มค่านี้เข้าไป
+
     };
 
     if (type === "dc") {
@@ -2484,6 +2488,13 @@ async function showFullReport(btn) {
       const raw = String(s || "").trim().replace(/\s+/g, " ");
       return String(dxMap[raw] || raw).trim().replace(/\s+/g, " ") || "";
     };
+    const waitList = patients
+  .map(p => Number(p.rawData[COL.WAIT_TIME]))
+  .filter(v => v > 0);
+
+const avgWait = waitList.length > 0 
+  ? waitList.reduce((a, b) => a + b, 0) / waitList.length 
+  : 0;
 
     const days = daysInMonthFromSheet(currentSheet);
     const isMonthClosed = !!(summary && summary.beds);
