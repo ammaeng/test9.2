@@ -1391,13 +1391,28 @@ async function showFullReport(btn) {
     });
 
     const counts = {};
-    patients.forEach(p => {
-      const r = p.rawData || [];
-      [...splitDxList(r[18]).map(mapDx), ...splitDxList(r[19]).map(mapDx)]
-        .forEach(dx => addCount(counts, dx, 1));
-    });
 
-    const topDx5 = topEntries(counts, 5);
+// นับเฉพาะผู้ป่วยที่ admit ในเดือนนี้
+const dxSourceList = patients.filter(p => {
+  const t = typeOf(p);
+  return t === "รับใหม่" || t === "รับย้าย" || t === "รับ Refer";
+});
+
+dxSourceList.forEach(p => {
+  const r = p.rawData || [];
+
+  // ใช้ Dx แรก เป็นหลัก
+  let mainDx = splitDxList(r[COL.DX1]).map(mapDx).filter(Boolean)[0] || "";
+
+  // ถ้า Dx แรกว่าง ค่อยใช้ Dx หลัง
+  if (!mainDx) {
+    mainDx = splitDxList(r[COL.DX2]).map(mapDx).filter(Boolean)[0] || "";
+  }
+
+  if (mainDx) addCount(counts, mainDx, 1);
+});
+
+const topDx5 = topEntries(counts, 5);
 
     const ratePer1000 = (n) =>
       (patientDaysOcc > 0 ? (n / patientDaysOcc * 1000) : 0);
