@@ -2050,35 +2050,33 @@ function buildTabularReportHTML(ctx) {
     sumPD += r.PD || 0;
   });
 
-const deptRowsHtml = `
-${Object.keys(ctx.deptRows).map(d => `
+  const deptRowsHtml = `
+${Object.keys(ctx.deptRows || {}).map(d => `
 <tr>
-<td style="text-align:left;">- ${d}</td>
-<td>${ctx.deptRows[d].F}</td>
-<td>${ctx.deptRows[d].M}</td>
-<td style="background:#f0f0f0;">${ctx.deptRows[d].T}</td>
+  <td style="text-align:left; font-size:11px; font-weight:bold;">- ${d}</td>
+  <td>${ctx.deptRows[d].F || 0}</td>
+  <td>${ctx.deptRows[d].M || 0}</td>
+  <td style="background:#f0f0f0;">${ctx.deptRows[d].T || 0}</td>
 </tr>
-
 <tr style="background:#e3f2fd; font-weight:bold;">
-<td style="text-align:left;">วันนอน (LOS)</td>
-<td style="font-size:14px;">${ctx.deptRows[d].PDF}</td>
-<td style="font-size:14px;">${ctx.deptRows[d].PDM}</td>
-<td style="font-size:14px;">${ctx.deptRows[d].PD}</td>
+  <td style="text-align:left; padding-left:20px;">วันนอน (LOS)</td>
+  <td style="font-size:16px; color:#0d47a1;">${ctx.deptRows[d].PDF || 0}</td>
+  <td style="font-size:16px; color:#1b5e20;">${ctx.deptRows[d].PDM || 0}</td>
+  <td style="font-size:18px; background:#bbdefb; color:#000;">${ctx.deptRows[d].PD || 0}</td>
 </tr>
 `).join('')}
-`;
 
-<tr style="font-weight:bold; background:#fff3cd;">
-  <td style="text-align:left;">
-    รวมทุกภาควิชา
-    <br>
-    <small>
-      วันนอน: หญิง ${sumPDF} | ชาย ${sumPDM} | รวม ${sumPD}
-    </small>
-  </td>
+<tr style="font-weight:bold; background:#ffe082; border-top:2px solid #000;">
+  <td style="text-align:left;">รวมทุกภาควิชา</td>
   <td>${sumF}</td>
   <td>${sumM}</td>
-  <td>${sumT}</td>
+  <td style="background:#ffd54f;">${sumT}</td>
+</tr>
+<tr style="font-weight:bold; background:#fff8e1; border-bottom:2px solid #000;">
+  <td style="text-align:left; padding-left:20px;">วันนอนรวมทุกภาควิชา</td>
+  <td style="font-size:16px; color:#0d47a1;">${sumPDF}</td>
+  <td style="font-size:16px; color:#1b5e20;">${sumPDM}</td>
+  <td style="font-size:18px; background:#ffe082;">${sumPD}</td>
 </tr>
 `;
 
@@ -2104,7 +2102,6 @@ th { background: #eee; font-weight: 700; font-size: 11px; }
 .sub-label { text-align: left; padding-left: 10px; font-weight: 600; background: #f2f2f2; }
 .footer-sign { margin-top: 30px; display: flex; justify-content: space-around; text-align: center; }
 .dx-list { text-align: left; padding: 5px; border: 1px solid #333; font-size: 11px; min-height: 60px; }
-small { font-size: 10px; color: #444; }
 </style>
 </head>
 <body>
