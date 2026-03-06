@@ -1796,19 +1796,18 @@ function calculateUtilDaysClient(inDateStr, inTimeStr, outDateStr, outTimeStr, p
 // 1. หน้าต่าง Dashboard ทันสมัย (แสดงใน Modal) - ✨ Premium Redesign
 // --------------------------------------------------------------------------------
 function buildModernReportHTML(ctx) {
-  const k = ctx.kpi1127;
+  const k = ctx.kpi1127 || {};
   const isC = ctx.isMonthClosed;
-  
-  // สร้างรายการ 5 อันดับโรคแบบ Modern List ที่มี Hover Effect
-  const dxHtml = (ctx.topDx5 && ctx.topDx5.length) 
+
+  const dxHtml = (ctx.topDx5 && ctx.topDx5.length)
     ? ctx.topDx5.map(([dx, count], i) => {
-        const medalColors =['#ffd700', '#c0c0c0', '#cd7f32', '#e2e8f0', '#e2e8f0']; // สีเหรียญทอง เงิน ทองแดง
+        const medalColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#e2e8f0', '#e2e8f0'];
         const isTop3 = i < 3;
         return `
           <div class="dx-item d-flex align-items-center p-2 mb-2 bg-white rounded-3 border-0 shadow-sm" style="transition: transform 0.2s, box-shadow 0.2s; cursor: default;">
-            <div class="dx-rank rounded-circle d-flex justify-content-center align-items-center me-3 shadow-sm" 
+            <div class="dx-rank rounded-circle d-flex justify-content-center align-items-center me-3 shadow-sm"
                  style="width: 35px; height: 35px; background: ${medalColors[i]}; color: ${isTop3 ? '#fff' : '#64748b'}; font-weight: 900; font-size: 14px;">
-              ${i+1}
+              ${i + 1}
             </div>
             <div class="flex-grow-1 fw-bold text-secondary text-truncate" style="font-size: 13.5px;" title="${escapeHtml(dx)}">
               ${escapeHtml(dx)}
@@ -1817,12 +1816,11 @@ function buildModernReportHTML(ctx) {
               ${count} <span style="font-weight:400; opacity:0.8;">ราย</span>
             </div>
           </div>`;
-      }).join("") 
+      }).join("")
     : `<div class="text-muted text-center py-4"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>ไม่มีข้อมูลการวินิจฉัย</div>`;
 
   return `
   <style>
-    /* Animations */
     @keyframes slideUpFade {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -1840,7 +1838,6 @@ function buildModernReportHTML(ctx) {
       animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Glass Cards */
     .glass-card {
       background: #ffffff;
       border: 1px solid rgba(226, 232, 240, 0.8);
@@ -1853,7 +1850,6 @@ function buildModernReportHTML(ctx) {
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
 
-    /* Metric Pills */
     .metric-icon {
       width: 48px; height: 48px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center; font-size: 24px;
@@ -1861,19 +1857,38 @@ function buildModernReportHTML(ctx) {
     .metric-value { font-size: 26px; font-weight: 900; line-height: 1; letter-spacing: -0.5px; color: #1e293b; }
     .metric-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 4px; }
 
-    /* Interactive Top 5 Dx */
+    .flow-chip {
+      background:#fff;
+      border:1px solid rgba(226,232,240,.9);
+      border-radius:16px;
+      padding:12px;
+      text-align:center;
+      box-shadow:0 2px 8px rgba(0,0,0,.04);
+      height:100%;
+    }
+    .flow-chip .label {
+      font-size:11px;
+      color:#64748b;
+      font-weight:800;
+      text-transform:uppercase;
+    }
+    .flow-chip .value {
+      font-size:24px;
+      font-weight:900;
+      line-height:1.1;
+      margin-top:6px;
+      color:#0f172a;
+    }
+
     .dx-item:hover { transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; }
 
-    /* Modern Tables */
     .modern-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
     .modern-table th { border: none; font-size: 11px; color: #64748b; font-weight: 800; padding: 0 12px 8px 12px; text-transform: uppercase; }
     .modern-table td { padding: 12px; background: #f8fafc; font-weight: 600; font-size: 13px; color: #334155; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
     .modern-table tr td:first-child { border-radius: 12px 0 0 12px; border-left: 1px solid #e2e8f0; }
     .modern-table tr td:last-child { border-radius: 0 12px 12px 0; border-right: 1px solid #e2e8f0; }
-    .modern-table tbody tr { transition: transform 0.2s; }
-    .modern-table tbody tr:hover td { background: #f1f5f9; transform: scale(1.01); }
+    .modern-table tbody tr:hover td { background: #f1f5f9; }
 
-    /* QA Badges */
     .qa-chip {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;
@@ -1883,7 +1898,6 @@ function buildModernReportHTML(ctx) {
     .qa-chip:hover { border-color: #cbd5e1; background: #f8fafc; transform: translateY(-2px); }
     .qa-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; }
 
-    /* Action Button */
     .btn-action-pdf {
       background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;
       padding: 10px 24px; border-radius: 999px; font-weight: 800; font-size: 14px;
@@ -1910,7 +1924,35 @@ function buildModernReportHTML(ctx) {
       </button>
     </div>
 
-    <!-- 4 Metrics (KPI) -->
+    <!-- Flow Summary -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="flow-chip">
+          <div class="label">ยอดยกมา</div>
+          <div class="value">${ctx.carryG?.T || 0}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="flow-chip">
+          <div class="label">รับเข้าเดือนนี้</div>
+          <div class="value">${ctx.inAllG?.T || 0}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="flow-chip">
+          <div class="label">จำหน่ายเดือนนี้</div>
+          <div class="value">${ctx.outAllG?.T || 0}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="flow-chip">
+          <div class="label">คงพยาบาลปลายเดือน</div>
+          <div class="value">${ctx.eomG?.T || 0}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI -->
     <div class="row g-3 mb-4">
       <div class="col-6 col-md-3">
         <div class="glass-card p-3 d-flex align-items-center gap-3">
@@ -1927,13 +1969,13 @@ function buildModernReportHTML(ctx) {
       <div class="col-6 col-md-3">
         <div class="glass-card p-3 d-flex align-items-center gap-3">
           <div class="metric-icon" style="background: #ecfdf5; color: #8b5cf6;"><i class="bi bi-calendar2-check-fill"></i></div>
-          <div><div class="metric-value">${ctx.patientDays}</div><div class="metric-label">วันนอนรวม (Day)</div></div>
+          <div><div class="metric-value">${ctx.patientDays || 0}</div><div class="metric-label">วันนอนรวม</div></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="glass-card p-3 d-flex align-items-center gap-3">
-          <div class="metric-icon" style="background: #fff7ed; color: #10b981;"><i class="bi bi-people-fill"></i></div>
-          <div><div class="metric-value">${ctx.eomG.T}</div><div class="metric-label">คนไข้คงค้าง (ราย)</div></div>
+          <div class="metric-icon" style="background: #fff7ed; color: #10b981;"><i class="bi bi-hospital-fill"></i></div>
+          <div><div class="metric-value">${ctx.patientDaysUtil || 0}</div><div class="metric-label">วันใช้เตียงรวม</div></div>
         </div>
       </div>
     </div>
@@ -1956,7 +1998,7 @@ function buildModernReportHTML(ctx) {
       </div>
       <div class="col-12 col-lg-4">
         <div class="glass-card p-4 h-100 d-flex flex-column">
-          <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-bar-chart-steps me-2 text-info"></i>ผู้ป่วยแยกตามแผนก</h6>
+          <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-bar-chart-steps me-2 text-info"></i>วันนอนตามภาควิชา</h6>
           <div class="flex-grow-1 position-relative" style="min-height: 180px;">
             <canvas id="chartDept"></canvas>
           </div>
@@ -1972,10 +2014,11 @@ function buildModernReportHTML(ctx) {
           <table class="modern-table text-center">
             <thead><tr><th class="text-start">ประเภท</th><th>หญิง 👩</th><th>ชาย 👨</th><th>รวม 📊</th></tr></thead>
             <tbody>
-              <tr><td class="text-start">ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td class="text-primary fw-bold">${ctx.carryG.T}</td></tr>
-              <tr><td class="text-start">รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td class="text-primary fw-bold">${ctx.inNewG.T}</td></tr>
-              <tr><td class="text-start">รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td class="text-primary fw-bold">${ctx.inTransferG.T}</td></tr>
-              <tr><td class="text-start">รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td class="text-primary fw-bold">${ctx.inReferG.T}</td></tr>
+              <tr><td class="text-start">ยอดยกมา</td><td>${ctx.carryG?.F || 0}</td><td>${ctx.carryG?.M || 0}</td><td class="text-primary fw-bold">${ctx.carryG?.T || 0}</td></tr>
+              <tr><td class="text-start">รับใหม่</td><td>${ctx.inNewG?.F || 0}</td><td>${ctx.inNewG?.M || 0}</td><td class="text-primary fw-bold">${ctx.inNewG?.T || 0}</td></tr>
+              <tr><td class="text-start">รับย้าย</td><td>${ctx.inTransferG?.F || 0}</td><td>${ctx.inTransferG?.M || 0}</td><td class="text-primary fw-bold">${ctx.inTransferG?.T || 0}</td></tr>
+              <tr><td class="text-start">รับ Refer</td><td>${ctx.inReferG?.F || 0}</td><td>${ctx.inReferG?.M || 0}</td><td class="text-primary fw-bold">${ctx.inReferG?.T || 0}</td></tr>
+              <tr><td class="text-start fw-bold">รวมรับเข้า</td><td>${ctx.inAllG?.F || 0}</td><td>${ctx.inAllG?.M || 0}</td><td class="text-primary fw-bold">${ctx.inAllG?.T || 0}</td></tr>
             </tbody>
           </table>
         </div>
@@ -1986,35 +2029,93 @@ function buildModernReportHTML(ctx) {
           <table class="modern-table text-center">
             <thead><tr><th class="text-start">ประเภท</th><th>หญิง 👩</th><th>ชาย 👨</th><th>รวม 📊</th></tr></thead>
             <tbody>
-              <tr><td class="text-start">กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td class="text-danger fw-bold">${ctx.outDCG.T}</td></tr>
-              <tr><td class="text-start">ส่งต่อ (Refer Out)</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td class="text-danger fw-bold">${ctx.outROG.T}</td></tr>
-              <tr><td class="text-start">ย้ายแผนก/ตึก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td class="text-danger fw-bold">${ctx.outTOG.T}</td></tr>
-              <tr><td class="text-start">ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td class="text-danger fw-bold">${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
+              <tr><td class="text-start">กลับบ้าน (D/C)</td><td>${ctx.outDCG?.F || 0}</td><td>${ctx.outDCG?.M || 0}</td><td class="text-danger fw-bold">${ctx.outDCG?.T || 0}</td></tr>
+              <tr><td class="text-start">ส่งต่อ (Refer Out)</td><td>${ctx.outROG?.F || 0}</td><td>${ctx.outROG?.M || 0}</td><td class="text-danger fw-bold">${ctx.outROG?.T || 0}</td></tr>
+              <tr><td class="text-start">ย้ายแผนก/ตึก</td><td>${ctx.outTOG?.F || 0}</td><td>${ctx.outTOG?.M || 0}</td><td class="text-danger fw-bold">${ctx.outTOG?.T || 0}</td></tr>
+              <tr><td class="text-start">ตาย/หนี/ปฏิเสธ</td><td>${(ctx.outDeathG?.F || 0) + (ctx.outAbsG?.F || 0) + (ctx.outRefuseG?.F || 0)}</td><td>${(ctx.outDeathG?.M || 0) + (ctx.outAbsG?.M || 0) + (ctx.outRefuseG?.M || 0)}</td><td class="text-danger fw-bold">${(ctx.outDeathG?.T || 0) + (ctx.outAbsG?.T || 0) + (ctx.outRefuseG?.T || 0)}</td></tr>
+              <tr><td class="text-start fw-bold">รวมจำหน่าย</td><td>${ctx.outAllG?.F || 0}</td><td>${ctx.outAllG?.M || 0}</td><td class="text-danger fw-bold">${ctx.outAllG?.T || 0}</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- แถบตัวชี้วัดคุณภาพ (QA Indicators) -->
+    <!-- QA -->
     <div class="glass-card p-4 bg-white border-0 shadow-sm">
       <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-shield-check me-2 text-success"></i>ตัวชี้วัดคุณภาพงานพยาบาล (QA)</h6>
       <div class="d-flex flex-wrap gap-2">
-        <div class="qa-chip"><div class="qa-icon bg-danger"><i class="bi bi-lungs"></i></div> Unplanned ET: <span class="text-danger">${k.k11_unplanned_et}</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-warning"><i class="bi bi-bandaid"></i></div> แผลกดทับ: <span class="text-warning text-dark">${k.k15_pressure_ulcer_rate}</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-orange" style="background:#f97316;"><i class="bi bi-person-falling"></i></div> หกล้ม: <span style="color:#f97316;">${k.k16_fall_rate}</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-info"><i class="bi bi-journal-check"></i></div> บันทึกการพยาบาล: <span class="text-info text-dark">${k.k25_note_qlt}%</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-success"><i class="bi bi-clock-history"></i></div> รอ D/C เฉลี่ย: <span class="text-success">${fmt2(k.k26_avg_wait_dc_min)} นาที</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-primary"><i class="bi bi-capsule"></i></div> คลาดเคลื่อนทางยา: <span class="text-primary">${k.k17_med_error}</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-danger"><i class="bi bi-lungs"></i></div> Unplanned ET: <span class="text-danger">${k.k11_unplanned_et || 0}</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-warning"><i class="bi bi-bandaid"></i></div> แผลกดทับ: <span class="text-warning text-dark">${k.k15_pressure_ulcer_rate || 0}</span></div>
+        <div class="qa-chip"><div class="qa-icon" style="background:#f97316;"><i class="bi bi-person-falling"></i></div> หกล้ม: <span style="color:#f97316;">${k.k16_fall_rate || 0}</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-info"><i class="bi bi-journal-check"></i></div> บันทึกการพยาบาล: <span class="text-info text-dark">${k.k25_note_qlt || 0}%</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-success"><i class="bi bi-clock-history"></i></div> รอ D/C เฉลี่ย: <span class="text-success">${fmt2(k.k26_avg_wait_dc_min || 0)} นาที</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-primary"><i class="bi bi-capsule"></i></div> คลาดเคลื่อนทางยา: <span class="text-primary">${k.k17_med_error || 0}</span></div>
       </div>
     </div>
   </div>`;
 }
-  function renderReportCharts(ctx) {
-    Chart.helpers.each(Chart.instances, (instance) => instance.destroy());
-    const elBOR = document.getElementById('chartBOR'); if (elBOR) { new Chart(elBOR, { type: 'doughnut', data: { labels: ['ครองเตียง', 'ว่าง'], datasets: [{ data:[ctx.borOcc || 0.1, 100 - (ctx.borOcc || 0)], backgroundColor:['#80cbc4', '#eceff1'], borderWidth: 0, borderRadius: 15, cutout: '80%' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, animation: { duration: 2000, easing: 'easeOutBounce' } } }); }
-    const elDept = document.getElementById('chartDept'); if (elDept) { const deptLabels = Object.keys(ctx.deptRows); new Chart(elDept, { type: 'bar', data: { labels: deptLabels, datasets:[ { label: 'คนไข้หญิง', data: deptLabels.map(d => ctx.deptRows[d].F), backgroundColor: '#ffccbc', borderRadius: 10 }, { label: 'คนไข้ชาย', data: deptLabels.map(d => ctx.deptRows[d].M), backgroundColor: '#b2ebf2', borderRadius: 10 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { weight: 'bold', family: 'Sarabun' } } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { borderDash: [5, 5] } } } } }); }
+  
+function renderReportCharts(ctx) {
+  if (window._reportCharts && Array.isArray(window._reportCharts)) {
+    window._reportCharts.forEach(c => {
+      try { c.destroy(); } catch (e) {}
+    });
   }
+  window._reportCharts = [];
+
+  const elBOR = document.getElementById('chartBOR');
+  if (elBOR) {
+    const c1 = new Chart(elBOR, {
+      type: 'doughnut',
+      data: {
+        labels: ['ครองเตียง', 'ว่าง'],
+        datasets: [{
+          data: [ctx.borOcc || 0.1, Math.max(0, 100 - (ctx.borOcc || 0))],
+          backgroundColor: ['#80cbc4', '#eceff1'],
+          borderWidth: 0,
+          borderRadius: 15,
+          cutout: '80%'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        animation: { duration: 1200, easing: 'easeOutBounce' }
+      }
+    });
+    window._reportCharts.push(c1);
+  }
+
+  const elDept = document.getElementById('chartDept');
+  if (elDept) {
+    const deptLabels = Object.keys(ctx.deptRows || {});
+    const c2 = new Chart(elDept, {
+      type: 'bar',
+      data: {
+        labels: deptLabels,
+        datasets: [{
+          label: 'วันนอนรวม',
+          data: deptLabels.map(d => ctx.deptRows[d]?.PD || 0),
+          backgroundColor: '#93c5fd',
+          borderRadius: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, grid: { borderDash: [5, 5] } }
+        }
+      }
+    });
+    window._reportCharts.push(c2);
+  }
+}
 
   function printOfficialReport() {
     if (!currentReportCtx) return; const html = buildTabularReportHTML(currentReportCtx); const printWindow = window.open('', '_blank'); printWindow.document.write(html); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 500);
