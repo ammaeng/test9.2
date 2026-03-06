@@ -1173,19 +1173,32 @@ async function showFullReport(btn) {
 
         // --- จุดสำคัญ: คำนวณวันนอน (Occupancy) และ วันใช้เตียง (Utilization) ---
         // 1. Occupancy (นับตาม LOS ที่เวชระเบียนคิด: เคส < 6 ชม. = 0 วัน)
-        const patientDaysOcc = sumLos(outAllList); 
+      const patientDaysOcc = sumLos(outAllList);
 
-        // 2. หาจำนวนเคสที่ Admit < 6 ชม. (LOS เป็น 0 แต่มีการจำหน่ายจริง)
-        const under6Count = patients.filter(p => {
-            const isClosed = isOutcomeClosed(p.rawData || []);
-            const losValue = Number(p.displayLOS || 0);
-            const manualUnder6 = String(p.rawData?.[22] || "").trim() !== ""; // ดูจากช่อง Admit < 6 ชม.
-            // ถ้าเคสปิดแล้ว และ (มีเครื่องหมาย < 6 ชม. หรือ LOS คำนวณได้ 0)
-            return isClosed && (manualUnder6 || losValue === 0);
-        }).length;
+const period = {
+  start: getMonthStartFromSheet(),
+  end: (() => {
+    const s = getMonthStartFromSheet();
+    if (!s) return null;
+    const e = new Date(s.getFullYear(), s.getMonth() + 1, 0, 23, 59, 59, 999);
+    return e;
+  })()
+};
 
-        // 3. Utilization (วันใช้เตียง = วันนอนรวม + เคสที่อยู่ไม่ถึง 6 ชม. นับเป็น 1 วัน)
-        const patientDaysUtil = patientDaysOcc + under6Count;
+const asOfDate = new Date();
+
+const patientDaysUtil = patients.reduce((sum, p) => {
+  const r = p.rawData || [];
+  const inDateStr = r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE] || "";
+  const inTimeStr = r[COL.ADMIT_TIME] || r[COL.TRANSFER_IN_TIME] || r[COL.REFER_IN_TIME] || "";
+  const outDateStr = r[COL.DC_DATE] || r[COL.TRANSFER_OUT_DATE] || r[COL.ABSCOND_DATE] || r[COL.REFUSE_DATE] || r[COL.REFER_OUT_DATE] || r[COL.DEATH_DATE] || "";
+  const outTimeStr = r[COL.OUT_TIME] || "";
+
+  if (!inDateStr || !period.start || !period.end) return sum;
+
+  const utilDays = calculateUtilDaysClient(inDateStr, inTimeStr, outDateStr, outTimeStr, period, asOfDate);
+  return sum + utilDays;
+}, 0);
 
         // คำนวณข้อมูลตามแผนก
         const deptRows = {};
@@ -1244,6 +1257,60 @@ async function showFullReport(btn) {
     } catch (err) { 
         Swal.fire('ผิดพลาด', err.toString(), 'error'); 
     }
+}
+
+
+  function parseThaiDateClient(dStr) {
+  if (!dStr) return null;
+  const p = String(dStr).split('/');
+  if (p.length < 3) return null;
+  const d = new Date(parseInt(p[2], 10) - 543, parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function parseTimeHMClient(t) {
+  const s = String(t || "").trim();
+  if (!s || !s.includes(':')) return { h: 0, m: 0 };
+  const a = s.split(':');
+  return { h: parseInt(a[0], 10) || 0, m: parseInt(a[1], 10) || 0 };
+}
+
+function calculateUtilDaysClient(inDateStr, inTimeStr, outDateStr, outTimeStr, period, asOfDate) {
+  if (!inDateStr || !period || !period.start || !period.end) return 0;
+
+  const start = parseThaiDateClient(inDateStr);
+  if (!start) return 0;
+
+  const inHM = parseTimeHMClient(inTimeStr);
+  start.setHours(inHM.h, inHM.m, 0, 0);
+
+  let end;
+  if (outDateStr) {
+    end = parseThaiDateClient(outDateStr);
+    if (!end) return 0;
+
+    const outHM = parseTimeHMClient(outTimeStr);
+    if (String(outTimeStr || "").includes(':')) {
+      end.setHours(outHM.h, outHM.m, 0, 0);
+    } else {
+      end.setHours(23, 59, 0, 0);
+    }
+  } else {
+    end = new Date(asOfDate);
+    end.setHours(23, 59, 0, 0);
+  }
+
+  const calcStart = (start < period.start) ? new Date(period.start) : new Date(start);
+  const calcEnd = (end > period.end) ? new Date(period.end) : new Date(end);
+
+  if (calcEnd < calcStart) return 0;
+
+  const d1 = new Date(calcStart.getFullYear(), calcStart.getMonth(), calcStart.getDate());
+  const d2 = new Date(calcEnd.getFullYear(), calcEnd.getMonth(), calcEnd.getDate());
+  const diffDays = Math.round((d2 - d1) / 86400000);
+
+  return diffDays + 1;
 }
 // --------------------------------------------------------------------------------
 // 1. หน้าต่าง Dashboard ทันสมัย (แสดงใน Modal) - ✨ Premium Redesign
