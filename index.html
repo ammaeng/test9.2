@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <title>ทะเบียนผู้ป่วย</title>
+  <title>ทะเบียนผู้ป่วย (Premium Dashboard)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -21,200 +21,282 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <style>
+    /* ================== GLOBAL TYPOGRAPHY & BG ================== */
     * { font-family: 'Sarabun', sans-serif !important; }
-    body { background: #f4f7f6; color: #263238; }
-
-    .card { border: 0; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
-    .top-title { font-weight: 900; letter-spacing: 0.2px; }
-    .chip { padding: 6px 10px; border-radius: 999px; font-size: 12px; }
-    .mini { background: #f8f9fa; border-radius: 14px; padding: 10px; }
-    .mini .label { font-size: 12px; color: #6c757d; }
-    .mini .value { font-size: 28px; font-weight: 900; margin: 0; }
-    .section-title { font-weight: 900; }
-    .subtle { color: #6c757d; font-size: 12px; }
-
-    .bg-grad { background: linear-gradient(135deg, #0d6efd, #00bcd4); color: white; }
-    .sticky-actions { position: sticky; bottom: 12px; z-index: 2; }
-
-    .badge{
-      font-size:13px;
-      padding:6px 10px;
-      border-radius:8px;
-      font-weight:800;
-      letter-spacing:.2px;
+    body { 
+      background: #f1f5f9; 
+      background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+      background-size: 20px 20px;
+      color: #334155; 
     }
 
+    /* ================== ANIMATIONS ================== */
+    @keyframes slideUpFade {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .slide-up { animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+
+    /* ================== GLASS & MODERN CARDS ================== */
+    .glass-card {
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      border-radius: 20px;
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+    }
+    
+    .header-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: white; border-radius: 24px; border: none;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.4);
+    }
+
+    /* ================== DASHBOARD METRICS ================== */
+    .metric-icon-main {
+      width: 56px; height: 56px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center; font-size: 28px;
+    }
+    .metric-val { font-size: 32px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+
+    /* ================== MODERN TABS ================== */
+    .modern-tab {
+      background: #ffffff; border-radius: 100px; padding: 8px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid #e2e8f0;
+    }
+    .modern-tab .nav-link {
+      border-radius: 100px; font-weight: 700; color: #64748b; padding: 12px 24px; transition: all 0.3s;
+    }
+    .modern-tab .nav-link:hover { color: #3b82f6; background: #f8fafc; }
+    .modern-tab .nav-link.active {
+      background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; 
+      box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+    }
+
+    /* ================== BUTTONS & CHIPS ================== */
     .btn-modern {
-      width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
-      padding: 0; border-radius: 12px; border: none; background: #f1f5f9; color: #64748b;
+      width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+      padding: 0; border-radius: 10px; border: none; background: #f1f5f9; color: #64748b;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-size: 16px;
     }
     .btn-modern:hover { transform: translateY(-2px); background: #e2e8f0; }
-    .btn-modern.edit:hover { background: #dbeafe; color: #2563eb; }
-    .btn-modern.dis:hover { background: #fef3c7; color: #d97706; }
+    .btn-modern.dis:hover { background: #fef3c7; color: #d97706; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.2); }
 
-    /* ===== Dx Tag Input ===== */
-    .dx-tagbox{ min-height: 42px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:6px 10px; border:1px solid rgba(0,0,0,.12); border-radius:12px; background:#fff; }
-    .dx-tagbox:focus-within{ border-color:#0d6efd; box-shadow:0 0 0 .2rem rgba(13,110,253,.15); }
-    .dx-tag{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid rgba(0,0,0,.10); background:#f8f9fa; font-size:12px; font-weight:800; color:#263238; }
-    .dx-tag.primary{ background: rgba(13,110,253,.10); border-color: rgba(13,110,253,.35); }
-    .dx-tag .x{ cursor:pointer; font-weight:900; opacity:.65; }
-    .dx-tag .x:hover{ opacity:1; }
-    .dx-taginput{ border:0; outline:none; min-width:180px; flex:1; padding:6px 4px; font-size:14px; background:transparent; }
-    .dx-suggest{ position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:10; background:#fff; border:1px solid rgba(0,0,0,.12); border-radius:12px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,.10); }
-    .dx-suggest .item{ padding:10px 12px; cursor:pointer; font-size:13px; }
-    .dx-suggest .item:hover, .dx-suggest .item.active{ background:#f1f5ff; }
-    .dx-suggest .muted{ color:#6c757d; font-size:12px; }
+    .seg-btn {
+      border: 1px solid #e2e8f0; background: #fff; color: #64748b; border-radius: 999px;
+      padding: 6px 14px; font-size: 13px; font-weight: 700; transition: all 0.2s;
+    }
+    .seg-btn:hover { background: #f8fafc; color: #334155; }
+    .seg-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
+    .seg-btn.seg-danger.active { background: #ef4444; border-color: #ef4444; color: #fff; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
 
-    /* ===== Table UX ===== */
-    .table thead th { white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+    .nurse-chip {
+      display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.15); padding: 8px 14px; border-radius: 999px; 
+      color: #fff; font-size: 13px; font-weight: 700; transition: background 0.2s; cursor: pointer;
+    }
+    .nurse-chip:hover { background: rgba(255,255,255,.2); }
+    .badge { padding: 6px 12px; border-radius: 8px; font-weight: 800; letter-spacing: .2px; }
+
+    /* ================== TABLES ================== */
+    .table thead th { white-space: nowrap; position: sticky; top: 0; z-index: 2; background: #f8fafc; color: #64748b; border-bottom: 2px solid #e2e8f0; font-size: 13px; text-transform: uppercase; }
+    .table tbody td { vertical-align: middle; font-size: 14px; font-weight: 600; color: #334155; border-bottom: 1px solid #f1f5f9; }
+    .table tbody tr { transition: background 0.2s; }
+    .table tbody tr:hover { background: #f8fafc !important; }
     .table-wrap { overflow:auto; border-radius: 14px; }
     .row-clickable { cursor: pointer; }
-    .row-longstay { background: rgba(220,53,69,.07) !important; }
-    .row-longstay:hover { background: rgba(220,53,69,.10) !important; }
-
-    .filters-bar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; margin: 8px 0 12px 0; }
-    .filters-left{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-    .filters-right{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-    .seg-btn{ border:1px solid rgba(0,0,0,.12); background:#fff; color:#263238; border-radius:999px; padding:6px 10px; font-size:12px; font-weight:800; }
-    .seg-btn.active{ background:#0d6efd; border-color:#0d6efd; color:#fff; }
-    .seg-btn.seg-danger.active{ background:#dc3545; border-color:#dc3545; color:#fff; }
-
-    /* ===== Report Pro UI ===== */
-    .kpi-card{ background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:14px; height:100%; }
-    .kpi-label{ color:#6c757d; font-size:12px; }
-    .kpi-value{ font-size:30px; font-weight:900; line-height:1.1; margin-top:4px; }
-    .kpi-sub{ font-size:12px; color:#6c757d; margin-top:6px; }
-    .report-note{ background:#f8f9fa; border:1px dashed rgba(0,0,0,.15); border-radius:12px; padding:10px 12px; font-size:12px; color:#546e7a; }
-    .report-block{ background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:14px; }
-    .fw-black{ font-weight:900; }
-    .pill{ display:inline-flex; gap:6px; align-items:center; padding:4px 10px; border-radius:999px; border:1px solid rgba(0,0,0,.10); font-size:12px; color:#37474f; background:#fff; }
-
-    /* Nurse ID chip */
-    .nurse-chip{ display:flex; gap:8px; align-items:center; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); padding: 6px 10px; border-radius: 999px; color:#fff; font-size:12px; font-weight:800; }
-    .nurse-chip .muted{ opacity:.85; font-weight:700; }
+    .row-longstay td { background: rgba(239, 68, 68, 0.04); }
+    
+    /* Dx Tag (คงเดิม) */
+    .dx-tagbox{ min-height:42px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:6px 10px; border:1px solid #cbd5e1; border-radius:12px; background:#fff; }
+    .dx-tagbox:focus-within{ border-color:#3b82f6; box-shadow:0 0 0 .2rem rgba(59,130,246,.15); }
+    .dx-tag{ display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; border:1px solid #e2e8f0; background:#f8fafc; font-size:12px; font-weight:800; color:#334155; }
+    .dx-tag.primary{ background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+    .dx-tag .x{ cursor:pointer; opacity:.6; font-size:14px; } .dx-tag .x:hover{ opacity:1; color:red; }
+    .dx-taginput{ border:0; outline:none; min-width:180px; flex:1; font-size:14px; background:transparent; }
+    .dx-suggest{ position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:10; background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,.1); }
+    .dx-suggest .item{ padding:10px 14px; cursor:pointer; font-size:13px; font-weight:600; border-bottom:1px solid #f1f5f9; }
+    .dx-suggest .item:hover, .dx-suggest .item.active{ background:#eff6ff; color:#2563eb; }
+    
+    /* Utility */
+    .subtle-title { font-size: 13px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
   </style>
 </head>
 
 <body>
 <div class="container-fluid p-2 p-md-4">
 
-  <!-- Top Bar -->
-  <div class="card p-3 mb-3 bg-grad">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <div class="top-title h4 m-0">ทะเบียนผู้ป่วย 9/2</div>
-        <div id="currentTime" class="subtle text-white-50"></div>
-      </div>
-      <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-        <div class="nurse-chip" role="button" tabindex="0" onclick="setNurseIdUI()">
-          <span>👩‍⚕️ Nurse ID:</span>
-          <span class="muted" id="nurseIdText">ยังไม่ตั้งค่า</span>
+  <!-- Top Header Bar -->
+  <div class="header-card p-4 mb-4 slide-up">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+          🏥
         </div>
-        <select id="sheetSelector" class="form-select form-select-sm" style="width: 180px;" onchange="onSheetChange()"></select>
-        <button class="btn btn-sm btn-light rounded-pill px-3" onclick="showFullReport(this)">รายงานสรุปเดือน</button>
-        <button class="btn btn-sm btn-danger rounded-pill px-3" onclick="closeMonthUI()">ปิดยอดเดือน</button>
+        <div>
+          <h3 class="m-0 fw-black text-white" style="letter-spacing: -0.5px;">ทะเบียนผู้ป่วยใน (Ward 9/2)</h3>
+          <div id="currentTime" class="fw-bold" style="color: #94a3b8; font-size: 13px;">กำลังโหลดเวลา...</div>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="nurse-chip shadow-sm" onclick="setNurseIdUI()">
+          <i class="bi bi-person-badge"></i>
+          <span id="nurseIdText">ยังไม่ตั้งค่า</span>
+        </div>
+        <select id="sheetSelector" class="form-select form-select-sm fw-bold border-0 shadow-sm" style="width: 150px; height: 36px; border-radius: 10px;" onchange="onSheetChange()"></select>
+        <button class="btn btn-sm btn-light fw-bold shadow-sm" style="height: 36px; border-radius: 10px; padding: 0 16px;" onclick="showFullReport(this)"><i class="bi bi-bar-chart-fill me-1"></i> รายงานเดือน</button>
+        <button class="btn btn-sm btn-danger fw-bold shadow-sm" style="height: 36px; border-radius: 10px; padding: 0 16px;" onclick="closeMonthUI()"><i class="bi bi-lock-fill me-1"></i> ปิดยอด</button>
       </div>
     </div>
   </div>
 
-  <!-- Summary -->
-  <div class="row g-2 mb-3">
-    <div class="col-12 col-lg-8">
-      <div class="card p-3">
-        <div class="row g-2 text-center">
-          <div class="col-4"><div class="mini"><div class="label">ยอดยกมา</div><p class="value text-secondary" id="sumCarry">0</p></div></div>
-          <div class="col-4"><div class="mini"><div class="label">รับใหม่เดือนนี้</div><p class="value text-primary" id="sumNew">0</p></div></div>
-          <div class="col-4"><div class="mini"><div class="label">รวมทั้งหมด</div><p class="value text-success" id="sumTotal">0</p></div></div>
+  <!-- Summary Stats -->
+  <div class="row g-4 mb-4 slide-up delay-1">
+    <div class="col-12 col-xl-8">
+      <div class="row g-3">
+        <div class="col-4">
+          <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="metric-icon-main mb-3" style="background: #f1f5f9; color: #64748b;"><i class="bi bi-inbox-fill"></i></div>
+            <div class="subtle-title mb-1">ยอดยกมา</div>
+            <div class="metric-val text-dark" id="sumCarry">0</div>
+          </div>
         </div>
-        <hr class="my-3">
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-          <span class="chip bg-light border"><b>Active:</b> <span id="sumActive">0</span></span>
-          <span class="chip bg-light border"><b>D/C:</b> <span id="sumDC">0</span></span>
-          <span class="chip bg-light border"><b>แถวทั้งหมด:</b> <span id="sumRows">0</span></span>
-          <button class="btn btn-sm btn-outline-dark ms-auto" onclick="exportCSV('ALL')">Export CSV (ทั้งหมด)</button>
+        <div class="col-4">
+          <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="metric-icon-main mb-3" style="background: #eff6ff; color: #3b82f6;"><i class="bi bi-person-plus-fill"></i></div>
+            <div class="subtle-title mb-1 text-primary">รับใหม่เดือนนี้</div>
+            <div class="metric-val text-primary" id="sumNew">0</div>
+          </div>
         </div>
-        <div class="subtle mt-2">* LOS แบบเวชระเบียน: เดือนเปิดคิดถึง “วันนี้”; เดือนปิดคิดถึง “สิ้นเดือน”</div>
+        <div class="col-4">
+          <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="metric-icon-main mb-3" style="background: #ecfdf5; color: #10b981;"><i class="bi bi-people-fill"></i></div>
+            <div class="subtle-title mb-1 text-success">รวมทั้งหมด</div>
+            <div class="metric-val text-success" id="sumTotal">0</div>
+          </div>
+        </div>
+      </div>
+      <!-- Mini Quick Stats -->
+      <div class="glass-card p-3 mt-3 d-flex flex-wrap gap-4 align-items-center bg-white">
+        <div class="d-flex align-items-center gap-2 px-2">
+          <div class="spinner-grow spinner-grow-sm text-warning" role="status"><span class="visually-hidden">Loading...</span></div>
+          <span class="fw-bold text-secondary" style="font-size:14px;">Active: <span id="sumActive" class="text-dark fs-5 ms-1">0</span></span>
+        </div>
+        <div class="d-flex align-items-center gap-2 px-2 border-start">
+          <i class="bi bi-check-circle-fill text-success fs-5"></i>
+          <span class="fw-bold text-secondary" style="font-size:14px;">D/C: <span id="sumDC" class="text-dark fs-5 ms-1">0</span></span>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary fw-bold rounded-pill ms-auto px-4" onclick="exportCSV('ALL')"><i class="bi bi-cloud-download me-1"></i> โหลด CSV รวม</button>
       </div>
     </div>
-    <div class="col-12 col-lg-4">
-      <div class="card p-3 h-100">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="section-title">Census เดือนปัจจุบัน</div>
-          <span class="chip bg-light border" id="sheetStatusChip">-</span>
+
+    <!-- Census Right Card -->
+    <div class="col-12 col-xl-4">
+      <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+          <div class="fw-black text-dark fs-5"><i class="bi bi-display me-2 text-primary"></i>Census Report</div>
+          <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2" id="sheetStatusChip"><i class="bi bi-cloud-check me-1"></i> ซิงค์แล้ว</span>
         </div>
-        <div id="censusContent" class="mt-2">กำลังโหลด...</div>
+        <div id="censusContent" class="flex-grow-1 d-flex flex-column justify-content-end">
+           <!-- Rendered via JS -->
+           กำลังโหลดสถิติ...
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Charts -->
-  <div class="row g-2 mb-3">
-    <div class="col-12 col-lg-6"><div class="card p-3"><canvas id="chartSithi" style="max-height: 200px;"></canvas></div></div>
-    <div class="col-12 col-lg-6"><div class="card p-3"><canvas id="chartSai" style="max-height: 200px;"></canvas></div></div>
+  <div class="row g-4 mb-4 slide-up delay-2">
+    <div class="col-12 col-lg-6"><div class="glass-card p-4"><canvas id="chartSithi" style="max-height: 220px;"></canvas></div></div>
+    <div class="col-12 col-lg-6"><div class="glass-card p-4"><canvas id="chartSai" style="max-height: 220px;"></canvas></div></div>
   </div>
 
-  <!-- Tabs -->
-  <ul class="nav nav-pills nav-fill mb-3 bg-white p-1 rounded-pill shadow-sm" id="mainTab">
-    <li class="nav-item"><button class="nav-link active rounded-pill" data-bs-toggle="tab" data-bs-target="#list-pane" onclick="loadDashboard()">แดชบอร์ด</button></li>
-    <li class="nav-item"><button class="nav-link rounded-pill" data-bs-toggle="tab" data-bs-target="#form-pane" onclick="prepareNewForm()">ลงทะเบียนใหม่</button></li>
-    <li class="nav-item"><button class="nav-link rounded-pill" data-bs-toggle="tab" data-bs-target="#incident-pane" onclick="openIncidentTab()">Incident/QA</button></li>
+  <!-- Modern Tabs -->
+  <ul class="nav nav-pills nav-fill mb-4 modern-tab slide-up delay-2" id="mainTab">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#list-pane" onclick="loadDashboard()"><i class="bi bi-list-columns-reverse me-2"></i>รายชื่อผู้ป่วย (List)</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#form-pane" onclick="prepareNewForm()"><i class="bi bi-person-plus-fill me-2"></i>ลงทะเบียนใหม่ (Admit)</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#incident-pane" onclick="openIncidentTab()"><i class="bi bi-shield-exclamation me-2"></i>ตัวชี้วัด/QA (Incident)</button></li>
   </ul>
 
-  <div class="tab-content">
+  <!-- TAB CONTENT -->
+  <div class="tab-content slide-up delay-2">
+
     <!-- LIST PANE -->
     <div class="tab-pane fade show active" id="list-pane">
-      <!-- Carry -->
-      <div class="card p-3 mb-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <div class="section-title text-secondary">🟦 ผู้ป่วยยอดยกมา</div>
+      <!-- Carry Over Block -->
+      <div class="glass-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <div style="width: 12px; height: 12px; background: #64748b; border-radius: 4px;"></div>
+            <h5 class="m-0 fw-black text-dark">ผู้ป่วยยอดยกมา</h5>
+          </div>
           <div class="d-flex gap-2 align-items-center">
-            <span class="chip bg-light border">จำนวน: <b id="carryCount">0</b></span>
-            <button class="btn btn-sm btn-outline-dark" onclick="exportCSV('CARRY')">Export CSV</button>
+            <span class="badge bg-light text-secondary border px-3 py-2 fs-6">รวม: <b id="carryCount">0</b> ราย</span>
+            <button class="btn btn-sm btn-outline-secondary fw-bold rounded-10" onclick="exportCSV('CARRY')"><i class="bi bi-download"></i></button>
           </div>
         </div>
-        <div class="filters-bar">
+        
+        <div class="filters-bar bg-light p-2 rounded-3 mb-3 border">
           <div class="filters-left">
             <button class="seg-btn active" id="carryFilterAll" onclick="setTableFilter('carry','ALL')">ทั้งหมด</button>
             <button class="seg-btn" id="carryFilterActive" onclick="setTableFilter('carry','ACTIVE')">Active</button>
-            <button class="seg-btn" id="carryFilterDC" onclick="setTableFilter('carry','DC')">D/C</button>
-            <button class="seg-btn seg-danger" id="carryFilterLong" onclick="setTableFilter('carry','LONG')">Long-stay (≥30)</button>
+            <button class="seg-btn" id="carryFilterDC" onclick="setTableFilter('carry','DC')">D/C แล้ว</button>
+            <button class="seg-btn seg-danger" id="carryFilterLong" onclick="setTableFilter('carry','LONG')"><i class="bi bi-exclamation-triangle me-1"></i>Long-stay (≥30)</button>
           </div>
-          <div class="filters-right">
-            <input class="form-control form-control-sm" style="width:240px" id="carryQuickSearch" placeholder="ค้นหา HN / AN / ชื่อ" oninput="quickSearch('carry', this.value)">
+          <div class="filters-right w-100 w-md-auto mt-2 mt-md-0">
+            <div class="input-group input-group-sm" style="max-width: 300px;">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input class="form-control border-start-0 ps-0" id="carryQuickSearch" placeholder="ค้นหา HN / AN / ชื่อ..." oninput="quickSearch('carry', this.value)">
+            </div>
           </div>
         </div>
-        <div class="table-wrap">
+
+        <div class="table-wrap border rounded-3">
           <table id="carryTable" class="table table-hover w-100 dt-responsive nowrap align-middle mb-0">
-            <thead class="table-light"><tr><th>ประเภท</th><th>ลำดับ</th><th>HN</th><th>AN</th><th>ชื่อ-นามสกุล</th><th>Admit</th><th>แผนก</th><th>LOS</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+            <thead class="table-light"><tr><th>TYPE</th><th>NO.</th><th>HN</th><th>AN</th><th>NAME</th><th>ADMIT</th><th>WARD</th><th>LOS</th><th>STATUS</th><th class="text-center">ACTION</th></tr></thead>
             <tbody id="carryBody"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- New -->
-      <div class="card p-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <div class="section-title text-primary">🟩 ผู้ป่วยรับใหม่เดือนนี้</div>
+      <!-- New Admit Block -->
+      <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <div style="width: 12px; height: 12px; background: #3b82f6; border-radius: 4px;"></div>
+            <h5 class="m-0 fw-black text-dark">ผู้ป่วยรับใหม่เดือนนี้</h5>
+          </div>
           <div class="d-flex gap-2 align-items-center">
-            <span class="chip bg-light border">จำนวน: <b id="newCount">0</b></span>
-            <button class="btn btn-sm btn-outline-dark" onclick="exportCSV('NEW')">Export CSV</button>
+            <span class="badge bg-light text-secondary border px-3 py-2 fs-6">รวม: <b id="newCount">0</b> ราย</span>
+            <button class="btn btn-sm btn-outline-secondary fw-bold rounded-10" onclick="exportCSV('NEW')"><i class="bi bi-download"></i></button>
           </div>
         </div>
-        <div class="filters-bar">
+
+        <div class="filters-bar bg-light p-2 rounded-3 mb-3 border">
           <div class="filters-left">
             <button class="seg-btn active" id="newFilterAll" onclick="setTableFilter('new','ALL')">ทั้งหมด</button>
             <button class="seg-btn" id="newFilterActive" onclick="setTableFilter('new','ACTIVE')">Active</button>
-            <button class="seg-btn" id="newFilterDC" onclick="setTableFilter('new','DC')">D/C</button>
-            <button class="seg-btn seg-danger" id="newFilterLong" onclick="setTableFilter('new','LONG')">Long-stay (≥30)</button>
+            <button class="seg-btn" id="newFilterDC" onclick="setTableFilter('new','DC')">D/C แล้ว</button>
+            <button class="seg-btn seg-danger" id="newFilterLong" onclick="setTableFilter('new','LONG')"><i class="bi bi-exclamation-triangle me-1"></i>Long-stay (≥30)</button>
           </div>
-          <div class="filters-right">
-            <input class="form-control form-control-sm" style="width:240px" id="newQuickSearch" placeholder="ค้นหา HN / AN / ชื่อ" oninput="quickSearch('new', this.value)">
+          <div class="filters-right w-100 w-md-auto mt-2 mt-md-0">
+            <div class="input-group input-group-sm" style="max-width: 300px;">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input class="form-control border-start-0 ps-0" id="newQuickSearch" placeholder="ค้นหา HN / AN / ชื่อ..." oninput="quickSearch('new', this.value)">
+            </div>
           </div>
         </div>
-        <div class="table-wrap">
+
+        <div class="table-wrap border rounded-3">
           <table id="newTable" class="table table-hover w-100 dt-responsive nowrap align-middle mb-0">
-            <thead class="table-light"><tr><th>ประเภท</th><th>ลำดับ</th><th>HN</th><th>AN</th><th>ชื่อ-นามสกุล</th><th>Admit</th><th>แผนก</th><th>LOS</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+            <thead class="table-light"><tr><th>TYPE</th><th>NO.</th><th>HN</th><th>AN</th><th>NAME</th><th>ADMIT</th><th>WARD</th><th>LOS</th><th>STATUS</th><th class="text-center">ACTION</th></tr></thead>
             <tbody id="newBody"></tbody>
           </table>
         </div>
@@ -223,122 +305,110 @@
 
     <!-- FORM PANE -->
     <div class="tab-pane fade" id="form-pane">
-      <form id="dataForm">
+      <form id="dataForm" class="glass-card p-4">
+        <!-- ใส่เนื้อหาฟอร์มเดิมของคุณทั้งหมดตรงนี้ -->
         <input type="hidden" id="rowId">
         <input type="hidden" id="patientStatusStored">
 
-        <div class="card mb-3">
-          <div class="p-3 border-bottom"><div class="section-title">1) การรับเข้า</div></div>
-          <div class="p-3 row g-2">
-            <div class="col-4 col-md-2"><label class="form-label">ลำดับ</label><input type="text" class="form-control bg-light" id="seq" readonly></div>
-            <div class="col-8 col-md-3">
-              <label class="form-label">ประเภท</label>
-              <select class="form-select" id="inType"><option value="รับใหม่">รับใหม่</option><option value="รับย้าย">รับย้าย</option><option value="รับ Refer">รับ Refer</option></select>
-            </div>
-            <div class="col-6 col-md-3"><label class="form-label">วันที่รับ *</label><input type="date" class="form-control" id="inDate" required onchange="calculateLOSPreview()"></div>
-            <div class="col-6 col-md-2">
-              <label class="form-label">เวลา (24 ชม.) *</label>
-              <div class="input-group"><input type="text" class="form-control" id="inTime"><button class="btn btn-outline-secondary" type="button" onclick="setCurrentTime()">NOW</button></div>
-            </div>
-            <div class="col-12 col-md-2"><label class="form-label">ต้นทาง</label><input type="text" class="form-control" id="inDept"></div>
+        <div class="mb-4">
+          <h5 class="fw-black text-primary border-bottom pb-2 mb-3"><i class="bi bi-1-circle-fill me-2"></i>ข้อมูลการรับเข้า</h5>
+          <div class="row g-3">
+            <div class="col-4 col-md-2"><label class="form-label fw-bold">ลำดับ</label><input type="text" class="form-control bg-light" id="seq" readonly></div>
+            <div class="col-8 col-md-3"><label class="form-label fw-bold">ประเภท</label><select class="form-select" id="inType"><option value="รับใหม่">รับใหม่</option><option value="รับย้าย">รับย้าย</option><option value="รับ Refer">รับ Refer</option></select></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">วันที่รับ <span class="text-danger">*</span></label><input type="date" class="form-control" id="inDate" required onchange="calculateLOSPreview()"></div>
+            <div class="col-6 col-md-2"><label class="form-label fw-bold">เวลา <span class="text-danger">*</span></label><div class="input-group"><input type="text" class="form-control" id="inTime" placeholder="เช่น 0830"><button class="btn btn-outline-primary fw-bold" type="button" onclick="setCurrentTime()"><i class="bi bi-clock"></i></button></div></div>
+            <div class="col-12 col-md-2"><label class="form-label fw-bold">ต้นทาง</label><input type="text" class="form-control" id="inDept" placeholder="แผนกที่ส่งมา"></div>
           </div>
         </div>
 
-        <div class="card mb-3">
-          <div class="p-3 border-bottom"><div class="section-title">2) ข้อมูลผู้ป่วย</div></div>
-          <div class="p-3 row g-2">
-            <div class="col-12 col-md-6">
-              <label class="form-label">ชื่อ-นามสกุล *</label>
-              <div class="input-group">
-                <select id="prefix" class="form-select" style="max-width: 90px;"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="น.ส.">น.ส.</option><option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option></select>
-                <input type="text" class="form-control" id="patientName" required>
-              </div>
-            </div>
-            <div class="col-6 col-md-3"><label class="form-label">เพศ *</label><select id="gender" class="form-select" required><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option></select></div>
-            <div class="col-6 col-md-3">
-              <label class="form-label">อายุ (ป/ด/ว)</label>
-              <div class="input-group"><input type="number" id="ageYear" class="form-control" value="0"><input type="number" id="ageMonth" class="form-control" value="0"><input type="number" id="ageDay" class="form-control" value="0"></div>
-            </div>
-            <div class="col-6 col-md-3"><label class="form-label">HN *</label><input type="text" class="form-control" id="hn" required onblur="formatHNAN('hn')"></div>
-            <div class="col-6 col-md-3"><label class="form-label">AN *</label><input type="text" class="form-control" id="an" required onblur="checkAN()"></div>
-            <div class="col-6 col-md-3"><label class="form-label">แผนก</label><select id="ward" class="form-select"></select></div>
-            <div class="col-6 col-md-3"><label class="form-label">สาย</label><select id="sai" class="form-select"></select></div>
-            <div class="col-12 col-md-4"><label class="form-label">สิทธิการรักษา</label><select id="sithi" class="form-select"></select></div>
+        <div class="mb-4">
+          <h5 class="fw-black text-primary border-bottom pb-2 mb-3"><i class="bi bi-2-circle-fill me-2"></i>ข้อมูลส่วนตัวผู้ป่วย</h5>
+          <div class="row g-3">
+            <div class="col-12 col-md-6"><label class="form-label fw-bold">ชื่อ-นามสกุล <span class="text-danger">*</span></label><div class="input-group"><select id="prefix" class="form-select bg-light" style="max-width: 100px;"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="น.ส.">น.ส.</option><option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option></select><input type="text" class="form-control" id="patientName" required></div></div>
+            <div class="col-6 col-md-2"><label class="form-label fw-bold">เพศ <span class="text-danger">*</span></label><select id="gender" class="form-select" required><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option></select></div>
+            <div class="col-6 col-md-4"><label class="form-label fw-bold">อายุ (ปี/เดือน/วัน)</label><div class="input-group"><input type="number" id="ageYear" class="form-control text-center" placeholder="ปี"><span class="input-group-text bg-light border-0">/</span><input type="number" id="ageMonth" class="form-control text-center" placeholder="ด."><span class="input-group-text bg-light border-0">/</span><input type="number" id="ageDay" class="form-control text-center" placeholder="ว."></div></div>
             
-            <div class="col-6 col-md-4">
-              <label class="form-label">Dx. แรก *</label>
-              <div class="position-relative"><div class="dx-tagbox" id="dx1Box" onclick="document.getElementById('dx1Input').focus()"><input type="text" id="dx1Input" class="dx-taginput" placeholder="พิมพ์แล้วกด Enter" autocomplete="off"></div><div class="dx-suggest" id="dx1Suggest" style="display:none;"></div></div>
-              <input type="hidden" id="dx1">
-            </div>
-            <div class="col-6 col-md-4">
-              <label class="form-label">Dx. หลัง</label>
-              <div class="position-relative"><div class="dx-tagbox" id="dx2Box" onclick="document.getElementById('dx2Input').focus()"><input type="text" id="dx2Input" class="dx-taginput" placeholder="พิมพ์แล้วกด Enter" autocomplete="off"></div><div class="dx-suggest" id="dx2Suggest" style="display:none;"></div></div>
-              <input type="hidden" id="dx2">
-            </div>
-            <div class="col-12"><label class="form-label">ที่อยู่</label><input type="text" class="form-control" id="address"></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">HN <span class="text-danger">*</span></label><input type="text" class="form-control fw-bold text-primary" id="hn" required onblur="formatHNAN('hn')"></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">AN <span class="text-danger">*</span></label><input type="text" class="form-control fw-bold text-danger" id="an" required onblur="checkAN()"></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">แผนก</label><select id="ward" class="form-select"></select></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">สายแพทย์</label><select id="sai" class="form-select"></select></div>
+            <div class="col-12 col-md-4"><label class="form-label fw-bold">สิทธิการรักษา</label><select id="sithi" class="form-select"></select></div>
+            
+            <div class="col-6 col-md-4"><label class="form-label fw-bold">Dx. แรก <span class="text-danger">*</span></label><div class="position-relative"><div class="dx-tagbox bg-light" id="dx1Box" onclick="document.getElementById('dx1Input').focus()"><input type="text" id="dx1Input" class="dx-taginput" placeholder="พิมพ์ชื่อโรคแล้วกด Enter" autocomplete="off"></div><div class="dx-suggest" id="dx1Suggest" style="display:none;"></div></div><input type="hidden" id="dx1"></div>
+            <div class="col-6 col-md-4"><label class="form-label fw-bold">Dx. หลัง / ร่วม</label><div class="position-relative"><div class="dx-tagbox bg-light" id="dx2Box" onclick="document.getElementById('dx2Input').focus()"><input type="text" id="dx2Input" class="dx-taginput" placeholder="พิมพ์ชื่อโรคแล้วกด Enter" autocomplete="off"></div><div class="dx-suggest" id="dx2Suggest" style="display:none;"></div></div><input type="hidden" id="dx2"></div>
+            <div class="col-12"><label class="form-label fw-bold">ที่อยู่</label><input type="text" class="form-control" id="address" placeholder="บ้านเลขที่ หมู่ ตำบล อำเภอ จังหวัด"></div>
           </div>
         </div>
 
-        <div class="card mb-3">
-          <div class="p-3 border-bottom"><div class="section-title">3) จำหน่าย / Outcome</div></div>
-          <div class="p-3 row g-2">
-            <div class="col-6 col-md-3"><label class="form-label">D/C วันที่</label><input type="date" class="form-control" id="dcDate" onchange="calculateLOSPreview()"></div>
-            <div class="col-6 col-md-3"><label class="form-label">F/U</label><input type="text" class="form-control" id="fu" placeholder="เช่น นัด 7 วัน / OPD"></div>
-            <div class="col-6 col-md-3"><label class="form-label">LOS (Preview)</label><input type="text" class="form-control text-center fw-bold" id="los" readonly></div>
-            <div class="col-12 col-md-3"><label class="form-label">Admit &lt; 6 ชม.</label><input type="text" id="admitUnder6" class="form-control" oninput="calculateLOSPreview()" placeholder="ระบุ ชม."></div>
-            <div class="col-6 col-md-3"><label class="form-label">ตาย (วันที่)</label><input type="date" id="deathDate" class="form-control" onchange="calculateLOSPreview()"></div>
-            <div class="col-6 col-md-4"><label class="form-label">ย้ายแผนก (วันที่)</label><input type="date" id="transferOutDate" class="form-control" onchange="calculateLOSPreview()"></div>
-            <div class="col-6 col-md-4"><label class="form-label">ย้ายไปแผนก</label><input type="text" id="transferOut" class="form-control"></div>
-            <div class="col-6 col-md-4"><label class="form-label">หนี (วันที่)</label><input type="date" id="abscondDate" class="form-control" onchange="calculateLOSPreview()"></div>
-            <div class="col-6 col-md-4"><label class="form-label">ปฏิเสธ (วันที่)</label><input type="date" id="refuseDate" class="form-control" onchange="calculateLOSPreview()"></div>
-            <div class="col-6 col-md-4"><label class="form-label">Refer Out (วันที่)</label><input type="date" id="referOutDate" class="form-control" onchange="calculateLOSPreview()"></div>
-            <div class="col-12 col-md-4"><label class="form-label">Refer ไปที่ไหน</label><input type="text" id="referDestination" class="form-control"></div>
+        <div class="mb-4">
+          <h5 class="fw-black text-warning border-bottom pb-2 mb-3"><i class="bi bi-3-circle-fill me-2"></i>ข้อมูล Outcome / การจำหน่าย</h5>
+          <div class="row g-3 bg-warning bg-opacity-10 p-2 rounded-3 border border-warning border-opacity-50">
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">วันที่ D/C</label><input type="date" class="form-control" id="dcDate" onchange="calculateLOSPreview()"></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">การนัดหมาย (F/U)</label><input type="text" class="form-control" id="fu" placeholder="เช่น นัด OPD 7 วัน"></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold text-danger">LOS คำนวณ (วัน)</label><input type="text" class="form-control text-center fw-black fs-5 bg-white text-danger" id="los" readonly></div>
+            <div class="col-12 col-md-3"><label class="form-label fw-bold">Admit &lt; 6 ชม. (ระบุ ชม.)</label><input type="text" id="admitUnder6" class="form-control" oninput="calculateLOSPreview()" placeholder="เช่น 4"></div>
+
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">ตาย (วันที่)</label><input type="date" id="deathDate" class="form-control" onchange="calculateLOSPreview()"></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">ย้ายแผนก (วันที่)</label><input type="date" id="transferOutDate" class="form-control" onchange="calculateLOSPreview()"></div>
+            <div class="col-12 col-md-6"><label class="form-label fw-bold">ย้ายไปแผนกไหน?</label><input type="text" id="transferOut" class="form-control" placeholder="ระบุชื่อตึก/แผนก"></div>
+
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">หนี (วันที่)</label><input type="date" id="abscondDate" class="form-control" onchange="calculateLOSPreview()"></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">ปฏิเสธการรักษา (วันที่)</label><input type="date" id="refuseDate" class="form-control" onchange="calculateLOSPreview()"></div>
+            <div class="col-6 col-md-3"><label class="form-label fw-bold">Refer Out (วันที่)</label><input type="date" id="referOutDate" class="form-control" onchange="calculateLOSPreview()"></div>
+            <div class="col-12 col-md-3"><label class="form-label fw-bold">Refer ไปที่ไหน?</label><input type="text" id="referDestination" class="form-control" placeholder="ชื่อโรงพยาบาล"></div>
           </div>
         </div>
 
-        <div class="sticky-actions">
-          <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill shadow">บันทึกข้อมูล</button>
+        <div class="sticky-actions text-center mt-4">
+          <button type="submit" class="btn btn-primary btn-lg w-50 rounded-pill shadow-lg fw-black fs-5" style="background: linear-gradient(135deg, #3b82f6, #2563eb); border: none;"><i class="bi bi-save2-fill me-2"></i> บันทึกข้อมูลผู้ป่วย</button>
         </div>
       </form>
     </div>
 
     <!-- INCIDENT PANE -->
     <div class="tab-pane fade" id="incident-pane">
-      <div class="card p-3">
-        <div class="section-title">Incident/QA (11–27)</div>
-        <div class="subtle mb-2">เลือกคนไข้ → เลือกประเภทเหตุการณ์ → บันทึก (ผูกกับเดือนและ HN/AN)</div>
-        <div class="row g-2">
-          <div class="col-12 col-md-4"><label class="form-label">เลือกคนไข้</label><select id="incPatientPick" class="form-select" onchange="onIncPickPatient()"></select><div class="subtle mt-1" id="incPatientMeta">-</div></div>
-          <div class="col-6 col-md-3"><label class="form-label">วันที่เกิดเหตุ</label><input type="date" id="incDate" class="form-control"></div>
-          <div class="col-6 col-md-5"><label class="form-label">ประเภทเหตุการณ์</label><select id="incType" class="form-select" onchange="toggleIncFields()"></select></div>
-          <div class="col-6 col-md-3"><label class="form-label">จำนวน/นาที/วัน</label><input type="number" id="incValue" class="form-control"></div>
-          <div class="col-6 col-md-3"><label class="form-label">Grade</label><select id="incGrade" class="form-select"><option value="">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
-          <div class="col-6 col-md-3"><label class="form-label">Level</label><input type="text" id="incLevel" class="form-control"></div>
-          <div class="col-12 col-md-9"><label class="form-label">หมายเหตุ</label><input type="text" id="incNote" class="form-control"></div>
-          <div class="col-12"><button class="btn btn-primary rounded-pill w-100" onclick="saveIncident()">บันทึกเหตุการณ์</button></div>
+      <div class="glass-card p-4">
+        <h5 class="fw-black text-danger border-bottom pb-2 mb-4"><i class="bi bi-exclamation-octagon-fill me-2"></i>บันทึกอุบัติการณ์และความเสี่ยง (QA 11-27)</h5>
+        <div class="row g-3">
+          <div class="col-12 col-md-5"><label class="form-label fw-bold">เลือกคนไข้ (ในเดือนนี้)</label><select id="incPatientPick" class="form-select bg-light" onchange="onIncPickPatient()"></select><div class="subtle mt-1 text-primary" id="incPatientMeta">-</div></div>
+          <div class="col-6 col-md-3"><label class="form-label fw-bold">วันที่เกิดเหตุ</label><input type="date" id="incDate" class="form-control"></div>
+          <div class="col-6 col-md-4"><label class="form-label fw-bold">ประเภทเหตุการณ์</label><select id="incType" class="form-select fw-bold text-danger" onchange="toggleIncFields()"></select></div>
+          
+          <div class="col-6 col-md-3"><label class="form-label fw-bold">ตัวเลข/จำนวน</label><input type="number" id="incValue" class="form-control" placeholder="เช่น 1 ครั้ง / 30 นาที"></div>
+          <div class="col-6 col-md-3"><label class="form-label fw-bold">Grade (Phlebitis)</label><select id="incGrade" class="form-select"><option value="">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+          <div class="col-6 col-md-3"><label class="form-label fw-bold">Level (GHI)</label><input type="text" id="incLevel" class="form-control" placeholder="A-I"></div>
+          <div class="col-12 col-md-3 d-flex align-items-end"><button class="btn btn-danger w-100 fw-bold shadow-sm rounded-3 h-75" onclick="saveIncident()"><i class="bi bi-plus-circle-fill me-1"></i> เพิ่มรายการ</button></div>
+          <div class="col-12"><label class="form-label fw-bold">รายละเอียดเพิ่มเติม (Note)</label><input type="text" id="incNote" class="form-control bg-light" placeholder="อธิบายเหตุการณ์สั้นๆ..."></div>
         </div>
-        <hr class="my-3">
-        <div class="table-wrap mt-2">
-          <table class="table table-sm table-bordered mb-0">
-            <thead class="table-light"><tr><th>วันที่</th><th>HN</th><th>AN</th><th>Type</th><th>value</th><th>grade</th><th>level</th><th>note</th><th>จัดการ</th></tr></thead>
+
+        <hr class="my-4 text-muted">
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold m-0 text-secondary"><i class="bi bi-card-list me-2"></i>ประวัติที่บันทึกไว้ในเดือนนี้</h6>
+          <button class="btn btn-sm btn-outline-secondary rounded-pill fw-bold" onclick="loadIncidents()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+        </div>
+        <div class="table-wrap border rounded-3">
+          <table class="table table-hover table-sm mb-0">
+            <thead class="table-light"><tr><th>วันที่</th><th>HN</th><th>AN</th><th>เหตุการณ์</th><th class="text-center">จำนวน</th><th class="text-center">Grade</th><th class="text-center">Level</th><th>หมายเหตุ</th><th class="text-center">จัดการ</th></tr></thead>
             <tbody id="incListBody"></tbody>
           </table>
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
 <!-- Modal รายละเอียดผู้ป่วย -->
 <div class="modal fade" id="patientModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-dark text-white">
-        <h6 class="modal-title fw-bold">รายละเอียดผู้ป่วย</h6>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #334155); color: white; border: none;">
+        <h5 class="modal-title fw-black"><i class="bi bi-person-vcard-fill me-2 text-info"></i>แฟ้มประวัติผู้ป่วยย่อ</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body bg-light"><div id="patientModalBody">-</div></div>
-      <div class="modal-footer bg-light"></div>
+      <div class="modal-body bg-light p-4"><div id="patientModalBody">กำลังโหลด...</div></div>
+      <div class="modal-footer bg-white border-top-0 p-3" style="box-shadow: 0 -4px 10px rgba(0,0,0,0.03);"></div>
     </div>
   </div>
 </div>
@@ -346,45 +416,55 @@
 <!-- Modal รายงานเดือน -->
 <div class="modal fade" id="reportModal" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title fw-bold">รายงานสรุปเดือน: <span id="reportMonthTitle"></span></h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
+      <div class="modal-header border-0 pb-0 pt-4 px-4 bg-white">
+        <button type="button" class="btn-close fs-5" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body bg-light"><div id="reportResult">กำลังโหลด...</div></div>
+      <div class="modal-body bg-white pt-1 px-4 pb-4"><div id="reportResult">กำลังเตรียมรายงาน...</div></div>
     </div>
   </div>
 </div>
 
 <!-- Modal จำหน่าย -->
 <div class="modal fade" id="dischargeModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">จำหน่ายผู้ป่วย</h5>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+      <div class="modal-header bg-warning text-dark border-0">
+        <h5 class="modal-title fw-black"><i class="bi bi-box-arrow-right me-2"></i>ทำเรื่องจำหน่ายผู้ป่วย</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <input type="hidden" id="disRowId">
-        <div class="mb-3">
-          <label class="form-label">ประเภทการจำหน่าย</label>
-          <select id="disType" class="form-select">
-            <option value="">-- เลือก --</option>
+        <div class="mb-4">
+          <label class="form-label fw-bold text-secondary">ประเภทการจำหน่าย <span class="text-danger">*</span></label>
+          <select id="disType" class="form-select form-select-lg fw-bold border-2">
+            <option value="">-- กรุณาเลือก --</option>
             <option value="dc">กลับบ้าน (D/C)</option>
-            <option value="transfer">ย้ายแผนก</option>
-            <option value="refer">Refer Out</option>
-            <option value="death">เสียชีวิต</option>
-            <option value="abscond">หนี</option>
-            <option value="refuse">ปฏิเสธ</option>
+            <option value="transfer">ย้ายตึก/ย้ายแผนก</option>
+            <option value="refer">ส่งต่อ (Refer Out)</option>
+            <option value="death">เสียชีวิต (Death)</option>
+            <option value="abscond">หนีกลับ (Abscond)</option>
+            <option value="refuse">ปฏิเสธการรักษา (Refuse)</option>
           </select>
         </div>
-        <div class="mb-3" id="waitBox" style="display:none;"><label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label><input type="number" id="disWaitMin" class="form-control"></div>
-        <div class="mb-3"><label class="form-label">วันที่</label><input type="date" id="disDate" class="form-control"></div>
-        <div id="fuBox" style="display:none;" class="mb-3"><label class="form-label">F/U</label><input type="text" id="disFU" class="form-control"></div>
+        <div class="mb-3" id="waitBox" style="display:none;">
+          <label class="form-label fw-bold text-secondary"><i class="bi bi-clock-history me-1"></i>ระยะเวลารอคอยกลับบ้าน (นาที)</label>
+          <input type="number" id="disWaitMin" class="form-control fw-bold" placeholder="ตัวอย่าง: 45">
+        </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label fw-bold text-secondary">วันที่ลงรายการ</label>
+            <input type="date" id="disDate" class="form-control fw-bold bg-light">
+          </div>
+          <div class="col-6" id="fuBox" style="display:none;">
+            <label class="form-label fw-bold text-secondary">การนัดหมาย (F/U)</label>
+            <input type="text" id="disFU" class="form-control fw-bold" placeholder="เช่น OPD ศัลย์ 1 สัปดาห์">
+          </div>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-        <button type="button" class="btn btn-primary" onclick="saveDischarge()">บันทึก</button>
+      <div class="modal-footer border-0 p-3 bg-light" style="border-radius: 0 0 20px 20px;">
+        <button type="button" class="btn btn-light fw-bold rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-warning fw-black rounded-pill px-5 shadow-sm" onclick="saveDischarge()"><i class="bi bi-check-circle-fill me-1"></i> ยืนยันการจำหน่าย</button>
       </div>
     </div>
   </div>
@@ -393,17 +473,7 @@
 <datalist id="dxList"></datalist>
 
 <script>
-  const COL = {
-    STATUS:0, SEQ:1, ADMIT_DATE:2, ADMIT_TIME:3, ADMIT_DEPT:4,
-    TRANSFER_IN_DATE:5, TRANSFER_IN_TIME:6, TRANSFER_IN_DEPT:7,
-    REFER_IN_DATE:8, REFER_IN_TIME:9, REFER_IN_DEPT:10,
-    NAME:11, AGE:12, HN:13, AN:14, WARD:15, SAI:16, SITHI:17,
-    DX1:18, DX2:19, DC_DATE:20, FU:21, ADMIT_UNDER6:22, LOS:23,
-    TRANSFER_OUT:24, TRANSFER_OUT_DATE:25, ABSCOND_DATE:26, REFUSE_DATE:27, 
-    REFER_OUT_DATE:28, REFER_DEST:29, DEATH_DATE:30, ADDRESS:31, 
-    PREFIX:32, GENDER:33, WAIT_TIME: 34
-  };
-
+  const COL = { STATUS:0, SEQ:1, ADMIT_DATE:2, ADMIT_TIME:3, ADMIT_DEPT:4, TRANSFER_IN_DATE:5, TRANSFER_IN_TIME:6, TRANSFER_IN_DEPT:7, REFER_IN_DATE:8, REFER_IN_TIME:9, REFER_IN_DEPT:10, NAME:11, AGE:12, HN:13, AN:14, WARD:15, SAI:16, SITHI:17, DX1:18, DX2:19, DC_DATE:20, FU:21, ADMIT_UNDER6:22, LOS:23, TRANSFER_OUT:24, TRANSFER_OUT_DATE:25, ABSCOND_DATE:26, REFUSE_DATE:27, REFER_OUT_DATE:28, REFER_DEST:29, DEATH_DATE:30, ADDRESS:31, PREFIX:32, GENDER:33, WAIT_TIME: 34 };
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOhRzpTanfG_ghmkeYPPO0_yhTRqkw2dt2idnaQ8FPQSuZJTRneWH2KyBw5h3T8g0/exec";
 
   let currentSheet = "", carryDT, newDT, sithiChart, saiChart;
@@ -412,10 +482,7 @@
   let lastTriggerEl = null, disItem = null, DX_OPTIONS =[];
   const NURSE_KEY = "cloudWard.nurseId";
 
-  const dxTagState = {
-    dx1: { tags:[], activeIdx: -1, suggest:[], selected: -1 },
-    dx2: { tags: [], activeIdx: -1, suggest:[], selected: -1 }
-  };
+  const dxTagState = { dx1: { tags:[], activeIdx: -1, suggest:[], selected: -1 }, dx2: { tags: [], activeIdx: -1, suggest:[], selected: -1 } };
 
   async function callApi(action, data = null) {
     const r = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, data, meta: { nurseId: getNurseId() || "" } }) });
@@ -455,30 +522,18 @@
     });
     hidden.value = tagsToString(dxTagState[which].tags);
   }
-  function addDxTag(which, token){
-    const t = normalizeDxToken(token); if (!t || t.length < 2) return;
-    if (!dxTagState[which].tags.some(x => x.toLowerCase() === t.toLowerCase())) dxTagState[which].tags.push(t);
-    dxTagState[which].activeIdx = -1; renderDxTags(which);
-  }
+  function addDxTag(which, token){ const t = normalizeDxToken(token); if (!t || t.length < 2) return; if (!dxTagState[which].tags.some(x => x.toLowerCase() === t.toLowerCase())) dxTagState[which].tags.push(t); dxTagState[which].activeIdx = -1; renderDxTags(which); }
   function removeDxTag(which, idx){ dxTagState[which].tags.splice(idx, 1); dxTagState[which].activeIdx = -1; renderDxTags(which); }
   function setSuggest(which, list){ dxTagState[which].suggest = list || []; dxTagState[which].selected = 0; renderSuggest(which); }
   function renderSuggest(which){
-    const sug = document.getElementById(which + "Suggest"), input = document.getElementById(which + "Input");
-    if (!sug || !input) return;
+    const sug = document.getElementById(which + "Suggest"), input = document.getElementById(which + "Input"); if (!sug || !input) return;
     const q = normalizeDxToken(input.value), list = dxTagState[which].suggest;
     if (!q || list.length === 0){ sug.style.display = "none"; sug.innerHTML = ""; return; }
-    sug.style.display = "block";
-    sug.innerHTML = list.map((t, i) => `<div class="item ${i === dxTagState[which].selected ? "active":""}" data-i="${i}">${escapeHtml(t)}<div class="muted">กด Enter เพื่อเลือก</div></div>`).join("");
+    sug.style.display = "block"; sug.innerHTML = list.map((t, i) => `<div class="item ${i === dxTagState[which].selected ? "active":""}" data-i="${i}">${escapeHtml(t)}<div class="muted">กด Enter เพื่อเลือก</div></div>`).join("");
     sug.querySelectorAll(".item").forEach(el => { el.onmousedown = (e) => { e.preventDefault(); chooseSuggest(which, parseInt(el.getAttribute("data-i"), 10) || 0); }; });
   }
-  function chooseSuggest(which, index){
-    const hit = (dxTagState[which].suggest || [])[index]; if (!hit) return;
-    addDxTag(which, hit); document.getElementById(which + "Input").value = ""; setSuggest(which,[]); document.getElementById(which + "Suggest").style.display = "none";
-  }
-  function computeSuggest(q){
-    const key = q.toLowerCase(), a = DX_OPTIONS.filter(x => x.toLowerCase().startsWith(key)), b = DX_OPTIONS.filter(x => !a.includes(x) && x.toLowerCase().includes(key));
-    return [...a, ...b].slice(0, 12);
-  }
+  function chooseSuggest(which, index){ const hit = (dxTagState[which].suggest || [])[index]; if (!hit) return; addDxTag(which, hit); document.getElementById(which + "Input").value = ""; setSuggest(which,[]); document.getElementById(which + "Suggest").style.display = "none"; }
+  function computeSuggest(q){ const key = q.toLowerCase(), a = DX_OPTIONS.filter(x => x.toLowerCase().startsWith(key)), b = DX_OPTIONS.filter(x => !a.includes(x) && x.toLowerCase().includes(key)); return[...a, ...b].slice(0, 12); }
   function commitCurrentToken(which){
     const input = document.getElementById(which + "Input"); if (!input) return;
     const raw = input.value, sugList = dxTagState[which].suggest ||[], sel = dxTagState[which].selected ?? 0;
@@ -488,71 +543,52 @@
   }
   function initDxTagInput(which){
     const input = document.getElementById(which + "Input"); if (!input) return;
-    input.addEventListener("input", () => {
-      const q = normalizeDxToken(input.value).replace(/;.*$/, "");
-      if (!q || q.length < 1){ setSuggest(which,[]); return; }
-      setSuggest(which, computeSuggest(q));
-    });
+    input.addEventListener("input", () => { const q = normalizeDxToken(input.value).replace(/;.*$/, ""); if (!q || q.length < 1){ setSuggest(which,[]); return; } setSuggest(which, computeSuggest(q)); });
     input.addEventListener("keydown", (e) => {
       const hasSug = (dxTagState[which].suggest ||[]).length > 0;
       if (e.key === "Enter" || e.key === ";") { e.preventDefault(); commitCurrentToken(which); return; }
-      if (hasSug && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
-        e.preventDefault(); const n = dxTagState[which].suggest.length;
-        dxTagState[which].selected = (e.key === "ArrowDown") ? ((dxTagState[which].selected ?? 0) + 1) % n : ((dxTagState[which].selected ?? 0) - 1 + n) % n;
-        renderSuggest(which); return;
-      }
+      if (hasSug && (e.key === "ArrowDown" || e.key === "ArrowUp")) { e.preventDefault(); const n = dxTagState[which].suggest.length; dxTagState[which].selected = (e.key === "ArrowDown") ? ((dxTagState[which].selected ?? 0) + 1) % n : ((dxTagState[which].selected ?? 0) - 1 + n) % n; renderSuggest(which); return; }
       if (e.key === "Backspace" && !input.value && dxTagState[which].tags.length > 0) removeDxTag(which, dxTagState[which].tags.length - 1);
     });
     input.addEventListener("blur", () => { setTimeout(() => { const el = document.getElementById(which + "Suggest"); if (el) el.style.display = "none"; }, 120); });
   }
-  function loadDxTagsFromHidden(which){
-    const hidden = document.getElementById(which); if (!hidden) return;
-    dxTagState[which].tags = splitToTags(hidden.value); renderDxTags(which);
-  }
+  function loadDxTagsFromHidden(which){ const hidden = document.getElementById(which); if (!hidden) return; dxTagState[which].tags = splitToTags(hidden.value); renderDxTags(which); }
 
   function sheetNameToDate(sheetName) {
     if (!sheetName) return null;
     const monthMap = { "มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,"กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11, "มกรา":0,"กุมภา":1,"มีนา":2,"เมษา":3,"พฤษภา":4,"มิถุนา":5,"กรกฎา":6,"สิงหา":7,"กันยา":8,"ตุลา":9,"พฤศจิกา":10,"ธันวา":11 };
     let mIdx = null; for (const m in monthMap) if (sheetName.includes(m)) { mIdx = monthMap[m]; break; }
     if (mIdx === null) return null;
-    const ym = sheetName.match(/\d+/); if (!ym) return null;
-    let y = parseInt(ym[0], 10); if (y < 100) y += 2500;
+    const ym = sheetName.match(/\d+/); if (!ym) return null; let y = parseInt(ym[0], 10); if (y < 100) y += 2500;
     const d = new Date(y - 543, mIdx, 1); d.setHours(0,0,0,0); return d;
   }
   function pickLatestSheet(names) {
     if (!Array.isArray(names) || names.length === 0) return "";
-    return [...names].sort((a, b) => {
-      const da = sheetNameToDate(a), db = sheetNameToDate(b);
-      if (!da && !db) return String(a).localeCompare(String(b));
-      if (!da) return 1; if (!db) return -1; return db - da;
-    })[0];
+    return [...names].sort((a, b) => { const da = sheetNameToDate(a), db = sheetNameToDate(b); if (!da && !db) return String(a).localeCompare(String(b)); if (!da) return 1; if (!db) return -1; return db - da; })[0];
   }
   function getMonthStartFromSheet() { const d = sheetNameToDate(currentSheet); return d ? d : null; }
   function calculateLOSPreview() {
-    const admitUnder6 = document.getElementById('admitUnder6').value.trim();
-    if (admitUnder6 !== "") { document.getElementById('los').value = "0"; return; }
+    const admitUnder6 = document.getElementById('admitUnder6').value.trim(); if (admitUnder6 !== "") { document.getElementById('los').value = "0"; return; }
     const sVal = document.getElementById('inDate').value;
     const eVal = document.getElementById('dcDate').value || document.getElementById('deathDate').value || document.getElementById('transferOutDate').value || document.getElementById('abscondDate').value || document.getElementById('refuseDate').value || document.getElementById('referOutDate').value;
     if (!sVal) { document.getElementById('los').value = ""; return; }
     const monthStart = getMonthStartFromSheet(); if (!monthStart) { document.getElementById('los').value = ""; return; }
-    const start = new Date(sVal); start.setHours(0,0,0,0);
-    let end = eVal ? new Date(eVal) : new Date(); end.setHours(0,0,0,0);
+    const start = new Date(sVal); start.setHours(0,0,0,0); let end = eVal ? new Date(eVal) : new Date(); end.setHours(0,0,0,0);
     const me = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0); me.setHours(0,0,0,0);
-    let calcStart = (start < monthStart) ? monthStart : start;
-    if (end > me) end = me;
-    if (end < calcStart) { document.getElementById('los').value = "0"; return; }
+    let calcStart = (start < monthStart) ? monthStart : start; if (end > me) end = me; if (end < calcStart) { document.getElementById('los').value = "0"; return; }
     document.getElementById('los').value = String(Math.floor((end - calcStart) / 86400000) + 1);
   }
 
   function updateCharts(sMap, saMap) {
     if (sithiChart) sithiChart.destroy(); if (saiChart) saiChart.destroy();
     const cfg = (t, m, color) => ({ type: 'bar', data: { labels: Object.keys(m), datasets:[{ data: Object.values(m), backgroundColor: color, borderRadius: 8 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: t, align: 'start' }, legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } } });
-    sithiChart = new Chart(document.getElementById('chartSithi'), cfg('สิทธิการรักษา', sMap, '#0d6efd'));
-    saiChart = new Chart(document.getElementById('chartSai'), cfg('สายการแพทย์', saMap, '#198754'));
+    sithiChart = new Chart(document.getElementById('chartSithi'), cfg('สิทธิการรักษา', sMap, '#3b82f6'));
+    saiChart = new Chart(document.getElementById('chartSai'), cfg('สายการแพทย์', saMap, '#10b981'));
   }
 
   function isCarryRow(x) { return (x.patientStatus || x.rawData?.[0] || "").trim() === "ยอดยกมา"; }
   function isNewThisMonthRow(x) { const st = (x.patientStatus || x.rawData?.[0] || "").trim(); return st === "รับใหม่" || st === "รับย้าย" || st === "รับ Refer"; }
+  
   function updateSummary(all) {
     document.getElementById('sumCarry').innerText = all.filter(isCarryRow).length;
     document.getElementById('sumNew').innerText = all.filter(isNewThisMonthRow).length;
@@ -561,17 +597,13 @@
     document.getElementById('sumDC').innerText = all.filter(x => x.status === 'จำหน่ายแล้ว').length;
     document.getElementById('sumRows').innerText = all.length;
   }
-  function quickSearch(which, text) {
-    tableState[which].search = String(text || "");
-    const dt = (which === 'carry') ? carryDT : newDT; if (dt) dt.search(tableState[which].search).draw();
-  }
+  function quickSearch(which, text) { tableState[which].search = String(text || ""); const dt = (which === 'carry') ? carryDT : newDT; if (dt) dt.search(tableState[which].search).draw(); }
   function setTableFilter(which, mode) {
     tableState[which].filter = mode;
     const ids = (which === 'carry') ?['carryFilterAll', 'carryFilterActive', 'carryFilterDC', 'carryFilterLong'] :['newFilterAll', 'newFilterActive', 'newFilterDC', 'newFilterLong'];
     ids.forEach(id => document.getElementById(id)?.classList.remove('active'));
     const hit = (which === 'carry') ? (mode === 'ALL' ? 'carryFilterAll' : mode === 'ACTIVE' ? 'carryFilterActive' : mode === 'DC' ? 'carryFilterDC' : 'carryFilterLong') : (mode === 'ALL' ? 'newFilterAll' : mode === 'ACTIVE' ? 'newFilterActive' : mode === 'DC' ? 'newFilterDC' : 'newFilterLong');
-    document.getElementById(hit)?.classList.add('active');
-    const dt = (which === 'carry') ? carryDT : newDT; if (dt) dt.draw();
+    document.getElementById(hit)?.classList.add('active'); const dt = (which === 'carry') ? carryDT : newDT; if (dt) dt.draw();
   }
 
   $.fn.dataTable.ext.search.push(function (settings, data) {
@@ -579,90 +611,28 @@
     if (id === 'carryTable') which = 'carry'; if (id === 'newTable') which = 'new';
     if (!which) return true;
     const mode = tableState[which].filter || 'ALL'; if (mode === 'ALL') return true;
-    const los = parseInt((data[7] || "").replace(/[^\d]/g, ''), 10) || 0;
-    const status = String(data[8] || "").trim();
-    if (mode === 'ACTIVE') return status.includes('ยังรักษาอยู่');
-    if (mode === 'DC') return status.includes('จำหน่ายแล้ว');
-    if (mode === 'LONG') return los >= 30;
-    return true;
+    const los = parseInt((data[7] || "").replace(/[^\d]/g, ''), 10) || 0; const status = String(data[8] || "").trim();
+    if (mode === 'ACTIVE') return status.includes('ยังรักษาอยู่'); if (mode === 'DC') return status.includes('จำหน่ายแล้ว'); if (mode === 'LONG') return los >= 30; return true;
   });
 
   function buildRowHtml(item) {
-    const r = item.rawData || [];
-    const type = (item.patientStatus || r[0] || '').trim();
+    const r = item.rawData ||[]; const type = (item.patientStatus || r[0] || '').trim();
     const badgeMap = { "ยอดยกมา": "bg-secondary", "รับใหม่": "bg-primary", "รับย้าย": "bg-dark", "รับ Refer": "bg-info text-dark" };
     const typeBadge = badgeMap[type] || "bg-light text-dark";
-    const statusBadge = item.status === 'จำหน่ายแล้ว' 
-      ? '<span class="badge bg-success rounded-pill px-3"><i class="bi bi-check-circle me-1"></i>จำหน่ายแล้ว</span>' 
-      : '<span class="badge bg-warning text-dark rounded-pill px-3"><i class="bi bi-activity me-1"></i>ยังรักษาอยู่</span>';
-    const admitDate = r[2] || r[5] || r[8] || "";
-    const los = parseInt(item.displayLOS, 10);
-    const isLong = (!isNaN(los) && los >= 30);
+    const statusBadge = item.status === 'จำหน่ายแล้ว' ? '<span class="badge bg-success rounded-pill px-3"><i class="bi bi-check-circle me-1"></i>จำหน่ายแล้ว</span>' : '<span class="badge bg-warning text-dark rounded-pill px-3"><i class="bi bi-activity me-1"></i>ยังรักษาอยู่</span>';
+    const admitDate = r[2] || r[5] || r[8] || "", los = parseInt(item.displayLOS, 10), isLong = (!isNaN(los) && los >= 30);
     const losBadge = !isNaN(los) ? `<span class="badge ${los >= 30 ? 'bg-danger' : los >= 7 ? 'bg-warning text-dark' : 'bg-success'}">${los}</span>` : '';
-
-    return `
-    <tr class="row-clickable ${isLong ? 'row-longstay' : ''}" data-rowid="${item.rowId}">
-      <td><span class="badge ${typeBadge}">${escapeHtml(type)}</span></td>
-      <td>${escapeHtml(r[1] || '')}</td>
-      <td>${escapeHtml(r[13] || '')}</td>
-      <td>${escapeHtml(r[14] || '')}</td>
-      <td>${escapeHtml(r[11] || '')}</td>
-      <td>${escapeHtml(shortThaiDate(admitDate))}</td>
-      <td>${escapeHtml(r[15] || '')}</td>
-      <td>${losBadge}</td>
-      <td>${statusBadge}</td>
-      <td class="text-center">
-        <button class="btn-modern dis" data-action="dis" data-rowid="${item.rowId}" title="จำหน่าย">
-          <i class="bi bi-hospital"></i>
-        </button>
-      </td>
-    </tr>`;
+    return `<tr class="row-clickable ${isLong ? 'row-longstay' : ''}" data-rowid="${item.rowId}"><td><span class="badge ${typeBadge}">${escapeHtml(type)}</span></td><td>${escapeHtml(r[1] || '')}</td><td>${escapeHtml(r[13] || '')}</td><td>${escapeHtml(r[14] || '')}</td><td class="fw-bold">${escapeHtml(r[11] || '')}</td><td>${escapeHtml(shortThaiDate(admitDate))}</td><td>${escapeHtml(r[15] || '')}</td><td>${losBadge}</td><td>${statusBadge}</td><td class="text-center"><button class="btn-modern dis" data-action="dis" data-rowid="${item.rowId}" title="จำหน่าย"><i class="bi bi-hospital"></i></button></td></tr>`;
   }
 
   function openPatientModal(item) {
-    const r = item.rawData ||[];
-    const empty = "-";
-    const formatD = (d) => d || empty;
-
-    document.getElementById('patientModalBody').innerHTML = `
-      <div class="report-block">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <div><div class="fw-black" style="font-size:20px;">${escapeHtml((r[COL.PREFIX] || "") + (r[COL.NAME] || ""))}</div>
-          <div class="subtle">HN: <b>${escapeHtml(r[COL.HN] || empty)}</b> | AN: <b>${escapeHtml(r[COL.AN] || empty)}</b></div></div>
-          <div class="text-end"><span class="badge bg-info text-dark">LOS: ${item.displayLOS} วัน</span>
-          <div class="mt-1">${item.status === 'จำหน่ายแล้ว' ? '<span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i> จำหน่ายแล้ว</span>' : '<span class="badge bg-warning text-dark rounded-pill"><i class="bi bi-activity"></i> ยังรักษาอยู่</span>'}</div></div>
-        </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-4"><div class="mini"><div class="label">เพศ / อายุ</div><div>${escapeHtml(r[COL.GENDER] || empty)} / ${escapeHtml(r[COL.AGE] || empty)}</div></div></div>
-            <div class="col-12 col-md-4"><div class="mini"><div class="label">สิทธิการรักษา</div><div class="fw-bold">${escapeHtml(r[COL.SITHI] || empty)}</div></div></div>
-            <div class="col-12 col-md-4"><div class="mini"><div class="label">สาย / แผนก</div><div class="fw-bold">${escapeHtml(r[COL.SAI] || empty)} / ${escapeHtml(r[COL.WARD] || empty)}</div></div></div>
-            <div class="col-12"><div class="mini"><div class="label">Dx. แรก</div><div class="text-primary fw-bold">${escapeHtml(r[COL.DX1] || empty)}</div></div></div>
-            <div class="col-12"><div class="mini"><div class="label">Dx. หลัง</div><div>${escapeHtml(r[COL.DX2] || empty)}</div></div></div>
-            <div class="col-12"><div class="mini"><div class="label">ประวัติการรับเข้า</div><div class="row"><div class="col-6">วันที่: ${formatD(r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE])}</div><div class="col-6">ต้นทาง: ${escapeHtml(r[COL.ADMIT_DEPT] || r[COL.TRANSFER_IN_DEPT] || r[COL.REFER_IN_DEPT] || empty)}</div></div></div></div>
-            <div class="col-12"><div class="mini border border-warning"><div class="label text-warning">Outcome / จำหน่าย</div><div class="row"><div class="col-6">วันที่: ${formatD(r[COL.DC_DATE] || r[COL.TRANSFER_OUT_DATE] || r[COL.DEATH_DATE] || "ยังไม่จำหน่าย")}</div><div class="col-6">F/U: ${escapeHtml(r[COL.FU] || empty)}</div></div><div class="mt-1">ปลายทาง/หมายเหตุ: ${escapeHtml(r[COL.REFER_DEST] || r[COL.TRANSFER_OUT] || empty)}</div></div></div>
-            <div class="col-12"><div class="mini"><div class="label">ที่อยู่</div><div class="small">${escapeHtml(r[COL.ADDRESS] || empty)}</div></div></div>
-        </div>
-      </div>`;
-
+    const r = item.rawData ||[]; const empty = "-"; const formatD = (d) => d || empty;
+    document.getElementById('patientModalBody').innerHTML = `<div class="report-block"><div class="d-flex justify-content-between align-items-start mb-3"><div><div class="fw-black" style="font-size:20px;">${escapeHtml((r[COL.PREFIX] || "") + (r[COL.NAME] || ""))}</div><div class="subtle">HN: <b class="text-primary">${escapeHtml(r[COL.HN] || empty)}</b> | AN: <b class="text-danger">${escapeHtml(r[COL.AN] || empty)}</b></div></div><div class="text-end"><span class="badge bg-info text-dark rounded-pill px-3">LOS: ${item.displayLOS} วัน</span><div class="mt-2">${item.status === 'จำหน่ายแล้ว' ? '<span class="badge bg-success rounded-pill px-3"><i class="bi bi-check-circle"></i> จำหน่ายแล้ว</span>' : '<span class="badge bg-warning text-dark rounded-pill px-3"><i class="bi bi-activity"></i> ยังรักษาอยู่</span>'}</div></div></div><div class="row g-2 mt-2"><div class="col-12 col-md-4"><div class="mini"><div class="label">เพศ / อายุ</div><div class="fw-bold text-dark">${escapeHtml(r[COL.GENDER] || empty)} / ${escapeHtml(r[COL.AGE] || empty)}</div></div></div><div class="col-12 col-md-4"><div class="mini"><div class="label">สิทธิการรักษา</div><div class="fw-bold text-dark">${escapeHtml(r[COL.SITHI] || empty)}</div></div></div><div class="col-12 col-md-4"><div class="mini"><div class="label">สาย / แผนก</div><div class="fw-bold text-dark">${escapeHtml(r[COL.SAI] || empty)} / ${escapeHtml(r[COL.WARD] || empty)}</div></div></div><div class="col-12"><div class="mini"><div class="label">Dx. แรก</div><div class="text-primary fw-bold">${escapeHtml(r[COL.DX1] || empty)}</div></div></div><div class="col-12"><div class="mini"><div class="label">Dx. หลัง</div><div class="text-secondary fw-bold">${escapeHtml(r[COL.DX2] || empty)}</div></div></div><div class="col-12"><div class="mini" style="background:#eff6ff;"><div class="label text-primary">ประวัติการรับเข้า</div><div class="row fw-bold text-dark"><div class="col-6"><i class="bi bi-calendar-event me-1"></i> ${formatD(r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE])}</div><div class="col-6"><i class="bi bi-door-open me-1"></i> ต้นทาง: ${escapeHtml(r[COL.ADMIT_DEPT] || r[COL.TRANSFER_IN_DEPT] || r[COL.REFER_IN_DEPT] || empty)}</div></div></div></div><div class="col-12"><div class="mini" style="background:#fffbeb; border: 1px solid #fcd34d;"><div class="label text-warning"><i class="bi bi-box-arrow-right me-1"></i>Outcome / การจำหน่าย</div><div class="row fw-bold text-dark mt-1"><div class="col-6">วันที่: ${formatD(r[COL.DC_DATE] || r[COL.TRANSFER_OUT_DATE] || r[COL.DEATH_DATE] || "ยังไม่จำหน่าย")}</div><div class="col-6 text-truncate" title="${escapeHtml(r[COL.FU] || empty)}">F/U: ${escapeHtml(r[COL.FU] || empty)}</div></div><div class="mt-2 text-danger fw-bold" style="font-size:13px;">${r[COL.REFER_DEST] || r[COL.TRANSFER_OUT] ? `ปลายทาง: ${escapeHtml(r[COL.REFER_DEST] || r[COL.TRANSFER_OUT])}` : ''}</div></div></div><div class="col-12"><div class="mini"><div class="label">ที่อยู่ผู้ป่วย</div><div class="small fw-bold text-secondary">${escapeHtml(r[COL.ADDRESS] || empty)}</div></div></div></div></div>`;
     const modalFooter = document.querySelector('#patientModal .modal-footer');
     const modalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('patientModal'));
-
-    let actionBtnHtml = (item.status === 'จำหน่ายแล้ว') 
-      ? `<button class="btn btn-outline-danger rounded-pill flex-grow-1" id="btnModalCancelDis"><i class="bi bi-arrow-counterclockwise"></i> ยกเลิกจำหน่าย</button>`
-      : `<button class="btn btn-warning rounded-pill flex-grow-1" id="btnModalDis"><i class="bi bi-hospital"></i> จำหน่าย</button>`;
-
-    modalFooter.innerHTML = `
-      <div class="d-flex w-100 gap-2">
-        ${actionBtnHtml}
-        <button class="btn btn-primary rounded-pill flex-grow-1" id="btnModalEdit"><i class="bi bi-pencil-square"></i> แก้ไข</button>
-        <button class="btn btn-danger rounded-pill" id="btnModalPDF"><i class="bi bi-file-pdf"></i></button>
-      </div>`;
-
-    if (item.status === 'จำหน่ายแล้ว') {
-        document.getElementById('btnModalCancelDis').onclick = () => { modalInstance.hide(); confirmCancelDischarge(item); };
-    } else {
-        document.getElementById('btnModalDis').onclick = () => { modalInstance.hide(); dischargeUI(item); };
-    }
+    let actionBtnHtml = (item.status === 'จำหน่ายแล้ว') ? `<button class="btn btn-outline-danger rounded-pill flex-grow-1 fw-bold" id="btnModalCancelDis"><i class="bi bi-arrow-counterclockwise me-1"></i> ยกเลิกจำหน่าย</button>` : `<button class="btn btn-warning rounded-pill flex-grow-1 fw-bold text-dark" id="btnModalDis"><i class="bi bi-hospital me-1"></i> จำหน่ายผู้ป่วย</button>`;
+    modalFooter.innerHTML = `<div class="d-flex w-100 gap-2">${actionBtnHtml}<button class="btn btn-primary rounded-pill flex-grow-1 fw-bold" id="btnModalEdit"><i class="bi bi-pencil-square me-1"></i> แก้ไข</button><button class="btn btn-danger rounded-pill fw-bold px-4" id="btnModalPDF"><i class="bi bi-file-pdf"></i></button></div>`;
+    if (item.status === 'จำหน่ายแล้ว') document.getElementById('btnModalCancelDis').onclick = () => { modalInstance.hide(); confirmCancelDischarge(item); }; else document.getElementById('btnModalDis').onclick = () => { modalInstance.hide(); dischargeUI(item); };
     document.getElementById('btnModalEdit').onclick = () => { modalInstance.hide(); editPatient(item); };
     document.getElementById('btnModalPDF').onclick = () => printPDF(item);
     modalInstance.show();
@@ -670,593 +640,117 @@
 
   function getItemByRowId(rowId) { return lastDataByRowId.get(String(rowId)) || null; }
 
-  function bindTableEvents() {['carryBody', 'newBody'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.onclick = async (e) => {
-          const btn = e.target.closest('button[data-action]');
-          const tr = e.target.closest('tr[data-rowid]');
-          if (!tr) return;
-          const item = getItemByRowId(tr.getAttribute('data-rowid'));
-          if (!item) return;
-          if (btn) {
-            e.stopPropagation();
-            if (btn.dataset.action === 'dis') await dischargeUI(item);
-            return;
-          }
-          openPatientModal(item);
-        };
-      }
-    });
-  }
+  function bindTableEvents() {['carryBody', 'newBody'].forEach(id => { const el = document.getElementById(id); if (el) { el.onclick = async (e) => { const btn = e.target.closest('button[data-action]'); const tr = e.target.closest('tr[data-rowid]'); if (!tr) return; const item = getItemByRowId(tr.getAttribute('data-rowid')); if (!item) return; if (btn) { e.stopPropagation(); if (btn.dataset.action === 'dis') await dischargeUI(item); return; } openPatientModal(item); }; } }); }
 
-  function rebuildIndex() {
-    lastDataByRowId = new Map();
-    lastData.forEach(x => lastDataByRowId.set(String(x.rowId), x));
-  }
+  function rebuildIndex() { lastDataByRowId = new Map(); lastData.forEach(x => lastDataByRowId.set(String(x.rowId), x)); }
 
   function renderTables() {
-    const carry = lastData.filter(isCarryRow);
-    const nnew = lastData.filter(isNewThisMonthRow);
-    document.getElementById('carryCount').innerText = carry.length;
-    document.getElementById('newCount').innerText = nnew.length;
+    const carry = lastData.filter(isCarryRow), nnew = lastData.filter(isNewThisMonthRow);
+    document.getElementById('carryCount').innerText = carry.length; document.getElementById('newCount').innerText = nnew.length;
+    if (carryDT) { carryDT.destroy(); carryDT = null; } if (newDT) { newDT.destroy(); newDT = null; }
+    document.getElementById('carryBody').innerHTML = carry.map(buildRowHtml).join(''); document.getElementById('newBody').innerHTML = nnew.map(buildRowHtml).join('');
 
-    if (carryDT) { carryDT.destroy(); carryDT = null; }
-    if (newDT) { newDT.destroy(); newDT = null; }
+    const activeAll = lastData.filter(x => x.status === 'ยังรักษาอยู่').length, dcAll = lastData.filter(x => x.status === 'จำหน่ายแล้ว').length;
+    document.getElementById('censusContent').innerHTML = `<div class="d-flex justify-content-between align-items-end mt-2"><div><div class="text-muted fw-bold" style="font-size:12px;">ACTIVE NOW</div><div class="text-primary" style="font-size:46px; font-weight:900; line-height:1; letter-spacing:-1px;">${activeAll}</div></div><div class="text-end"><div class="text-muted fw-bold" style="font-size:12px;">DISCHARGED</div><div class="text-success" style="font-size:24px; font-weight:800; line-height:1;">${dcAll}</div><div class="badge bg-light text-secondary mt-2 border rounded-pill px-3 py-1">รวมทั้งหมด ${lastData.length}</div></div></div>`;
 
-    document.getElementById('carryBody').innerHTML = carry.map(buildRowHtml).join('');
-    document.getElementById('newBody').innerHTML = nnew.map(buildRowHtml).join('');
-
-    const activeAll = lastData.filter(x => x.status === 'ยังรักษาอยู่').length;
-    const dcAll = lastData.filter(x => x.status === 'จำหน่ายแล้ว').length;
-    document.getElementById('censusContent').innerHTML =
-      `<div class="d-flex justify-content-between align-items-end">
-         <div><div class="subtle">Active (ขณะนี้)</div><div style="font-size:38px;font-weight:900;line-height:1">${activeAll}</div></div>
-         <div class="text-end"><div class="subtle">D/C</div><div style="font-size:20px;font-weight:900">${dcAll}</div><div class="subtle mt-1">รวมทั้งหมด: <b>${lastData.length}</b></div></div>
-       </div>`;
-
-    const sMap = {}, saMap = {};
-    lastData.forEach(item => {
-      const r = item.rawData || [];
-      const sithi = r[17] || "ไม่ระบุ", sai = r[16] || "ไม่ระบุ";
-      sMap[sithi] = (sMap[sithi] || 0) + 1; saMap[sai] = (saMap[sai] || 0) + 1;
-    });
-    updateCharts(sMap, saMap);
-
+    const sMap = {}, saMap = {}; lastData.forEach(item => { const r = item.rawData ||[]; const sithi = r[17] || "ไม่ระบุ", sai = r[16] || "ไม่ระบุ"; sMap[sithi] = (sMap[sithi] || 0) + 1; saMap[sai] = (saMap[sai] || 0) + 1; }); updateCharts(sMap, saMap);
     carryDT = $('#carryTable').DataTable({ order: [[1, 'desc']], responsive: true, pageLength: 25, language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' } });
     newDT = $('#newTable').DataTable({ order: [[1, 'desc']], responsive: true, pageLength: 25, language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' } });
     carryDT.search(tableState.carry.search || "").draw(); newDT.search(tableState.new.search || "").draw();
   }
 
   async function confirmCancelDischarge(item) {
-    const result = await Swal.fire({
-      title: 'ยืนยันยกเลิกจำหน่าย?', text: `ต้องการดึงเคสคุณ ${item.patientName} กลับมาเป็นผู้ป่วย Active ใช่หรือไม่?`,
-      icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'ใช่, ยกเลิกจำหน่าย', cancelButtonText: 'ยกเลิก'
-    });
-    if (result.isConfirmed) {
-      try {
-        Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        await callApi('cancelDischarge', { targetSheet: currentSheet, rowId: item.rowId });
-        Swal.fire('สำเร็จ', 'ผู้ป่วยกลับมาสถานะ Active แล้ว', 'success');
-        loadDashboard();
-      } catch (err) { Swal.fire('ผิดพลาด', err.toString(), 'error'); }
-    }
+    const result = await Swal.fire({ title: 'ยืนยันยกเลิกจำหน่าย?', text: `ต้องการดึงเคสคุณ ${item.patientName} กลับมาเป็นผู้ป่วย Active ใช่หรือไม่?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'ใช่, ยกเลิกจำหน่าย', cancelButtonText: 'ยกเลิก' });
+    if (result.isConfirmed) { try { Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); await callApi('cancelDischarge', { targetSheet: currentSheet, rowId: item.rowId }); Swal.fire('สำเร็จ', 'ผู้ป่วยกลับมาสถานะ Active แล้ว', 'success'); loadDashboard(); } catch (err) { Swal.fire('ผิดพลาด', err.toString(), 'error'); } }
   }
 
-  function setCurrentTime() {
-    const now = new Date(), hh = String(now.getHours()).padStart(2, '0'), mm = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('inTime').value = `${hh}:${mm}`;
-  }
+  function setCurrentTime() { const now = new Date(), hh = String(now.getHours()).padStart(2, '0'), mm = String(now.getMinutes()).padStart(2, '0'); document.getElementById('inTime').value = `${hh}:${mm}`; }
 
   async function dischargeUI(item) {
-    disItem = item;
-    const modalEl = document.getElementById("dischargeModal");
-    if (!modalEl) { console.error("หา modal ไม่เจอ!"); return; }
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    document.getElementById("disRowId").value = item.rowId;
-    document.getElementById("disDate").value = new Date().toISOString().split("T")[0];
-    document.getElementById("disType").value = "";
-    document.getElementById("disFU").value = "";
-    document.getElementById("disWaitMin").value = ""; 
-    toggleDisFields();
-    modal.show();
+    disItem = item; const modalEl = document.getElementById("dischargeModal"); if (!modalEl) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl); document.getElementById("disRowId").value = item.rowId; document.getElementById("disDate").value = new Date().toISOString().split("T")[0]; document.getElementById("disType").value = ""; document.getElementById("disFU").value = ""; document.getElementById("disWaitMin").value = ""; toggleDisFields(); modal.show();
   }
 
-  function toggleDisFields() {
-    const t = document.getElementById("disType").value;
-    const waitBox = document.getElementById("waitBox"), fuBox = document.getElementById("fuBox");
-    if (waitBox) waitBox.style.display = (t === "dc") ? "block" : "none";
-    if (fuBox) fuBox.style.display = (t === "dc") ? "block" : "none";
-  }
+  function toggleDisFields() { const t = document.getElementById("disType").value, waitBox = document.getElementById("waitBox"), fuBox = document.getElementById("fuBox"); if (waitBox) waitBox.style.display = (t === "dc") ? "block" : "none"; if (fuBox) fuBox.style.display = (t === "dc") ? "block" : "none"; }
 
   async function saveDischarge() {
     const rowId = document.getElementById("disRowId").value, type = document.getElementById("disType").value, date = document.getElementById("disDate").value, waitMin = document.getElementById("disWaitMin").value;
     if (!type) return Swal.fire("เลือกประเภทก่อน"); if (!date) return Swal.fire("เลือกวันที่");
     const d = formatDateForSheet(date), keepStatus = (disItem?.rawData?.[0] || disItem?.patientStatus || "").trim();
     const formData = { rowId, patientStatus: keepStatus, dcDate: "", transferOutDate: "", transferOut: "", referOutDate: "", referDestination: "", deathDate: "", abscondDate: "", refuseDate: "", fu: "", nurseId: getNurseId(), waitTime: waitMin };
-    if (type === "dc") { formData.dcDate = d; formData.fu = document.getElementById("disFU").value; }
-    if (type === "transfer") { formData.transferOutDate = d; formData.transferOut = document.getElementById("transferDept")?.value || ""; }
-    if (type === "refer") { formData.referOutDate = d; formData.referDestination = document.getElementById("referDest")?.value || ""; }
-    if (type === "death") formData.deathDate = d; if (type === "abscond") formData.abscondDate = d; if (type === "refuse") formData.refuseDate = d;
-
-    Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
-    await callApi('processData', { targetSheet: currentSheet, formData });
-    bootstrap.Modal.getInstance(document.getElementById("dischargeModal")).hide();
-    Swal.fire("สำเร็จ", "", "success"); loadDashboard();
+    if (type === "dc") { formData.dcDate = d; formData.fu = document.getElementById("disFU").value; } if (type === "transfer") { formData.transferOutDate = d; formData.transferOut = document.getElementById("transferDept")?.value || ""; } if (type === "refer") { formData.referOutDate = d; formData.referDestination = document.getElementById("referDest")?.value || ""; } if (type === "death") formData.deathDate = d; if (type === "abscond") formData.abscondDate = d; if (type === "refuse") formData.refuseDate = d;
+    Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() }); await callApi('processData', { targetSheet: currentSheet, formData }); bootstrap.Modal.getInstance(document.getElementById("dischargeModal")).hide(); Swal.fire("สำเร็จ", "", "success"); loadDashboard();
   }
 
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      const modal = document.getElementById("dischargeModal");
-      if (modal && modal.classList.contains("show")) { e.preventDefault(); saveDischarge(); }
-    }
-  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Enter") { const modal = document.getElementById("dischargeModal"); if (modal && modal.classList.contains("show")) { e.preventDefault(); saveDischarge(); } } });
 
   function exportCSV(type) {
-    let filtered = lastData;
-    if (type === 'CARRY') filtered = lastData.filter(isCarryRow); else if (type === 'NEW') filtered = lastData.filter(isNewThisMonthRow);
+    let filtered = lastData; if (type === 'CARRY') filtered = lastData.filter(isCarryRow); else if (type === 'NEW') filtered = lastData.filter(isNewThisMonthRow);
     const headers =['ประเภท', 'ลำดับ', 'HN', 'AN', 'ชื่อ-สกุล', 'Admit', 'แผนก', 'LOS', 'สถานะ'];
     const rows = filtered.map(x => [x.patientStatus || x.rawData?.[0] || '', x.rawData?.[1] || '', x.rawData?.[13] || '', x.rawData?.[14] || '', x.rawData?.[11] || '', x.rawData?.[2] || x.rawData?.[5] || x.rawData?.[8] || "", x.rawData?.[15] || '', x.displayLOS ?? '', x.status || '']);
     const csv = [headers, ...rows].map(arr => arr.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `patients_${currentSheet}_${type || 'ALL'}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url; a.download = `patients_${currentSheet}_${type || 'ALL'}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
-  // Load Init
   document.addEventListener("DOMContentLoaded", () => {
     renderNurseId();
-    callApi('getDropdownData').then(d => {
-      fillSelect('ward', d.ward); fillSelect('sithi', d.sithi); fillSelect('sai', d.sai);
-      document.getElementById('dxList').innerHTML = (d.dx ||[]).map(x => `<option value="${escapeHtml(x)}">`).join('');
-      DX_OPTIONS = (d.dx ||[]).map(x => String(x)).filter(Boolean);
-      initDxTagInput('dx1'); initDxTagInput('dx2'); loadDxTagsFromHidden('dx1'); loadDxTagsFromHidden('dx2');
-    });
+    callApi('getDropdownData').then(d => { fillSelect('ward', d.ward); fillSelect('sithi', d.sithi); fillSelect('sai', d.sai); document.getElementById('dxList').innerHTML = (d.dx ||[]).map(x => `<option value="${escapeHtml(x)}">`).join(''); DX_OPTIONS = (d.dx ||[]).map(x => String(x)).filter(Boolean); initDxTagInput('dx1'); initDxTagInput('dx2'); loadDxTagsFromHidden('dx1'); loadDxTagsFromHidden('dx2'); });
     bindTableEvents();
     const disTypeEl = document.getElementById("disType"); if (disTypeEl) disTypeEl.addEventListener("change", toggleDisFields);
-    const disModalEl = document.getElementById("dischargeModal");
-    if (disModalEl) disModalEl.addEventListener("shown.bs.modal", () => { toggleDisFields(); setTimeout(() => document.getElementById("disType")?.focus?.(), 150); });
-    const reportEl = document.getElementById('reportModal');
-    if (reportEl) reportEl.addEventListener('hidden.bs.modal', () => { lastTriggerEl?.focus?.(); });
+    const disModalEl = document.getElementById("dischargeModal"); if (disModalEl) disModalEl.addEventListener("shown.bs.modal", () => { toggleDisFields(); setTimeout(() => document.getElementById("disType")?.focus?.(), 150); });
+    const reportEl = document.getElementById('reportModal'); if (reportEl) reportEl.addEventListener('hidden.bs.modal', () => { lastTriggerEl?.focus?.(); });
     setInterval(() => { const el = document.getElementById('currentTime'); if (el) el.innerText = new Date().toLocaleString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); }, 1000);
     initSheets();
   });
 
-  function validateAndFormatTime(el) {
-    let v = el.value.replace(/\D/g, ''); if (v.length > 4) v = v.slice(0, 4);
-    if (v.length >= 2) { let h = parseInt(v.slice(0, 2), 10); if (h > 23) v = '23' + v.slice(2); }
-    el.value = v.length > 2 ? v.slice(0, 2) + ':' + v.slice(2) : v;
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const inTimeEl = document.getElementById('inTime');
-    if (inTimeEl) inTimeEl.addEventListener('blur', function() { this.value = formatTimeForInput(this.value); });
-  });
+  function validateAndFormatTime(el) { let v = el.value.replace(/\D/g, ''); if (v.length > 4) v = v.slice(0, 4); if (v.length >= 2) { let h = parseInt(v.slice(0, 2), 10); if (h > 23) v = '23' + v.slice(2); } el.value = v.length > 2 ? v.slice(0, 2) + ':' + v.slice(2) : v; }
+  document.addEventListener("DOMContentLoaded", () => { const inTimeEl = document.getElementById('inTime'); if (inTimeEl) inTimeEl.addEventListener('blur', function() { this.value = formatTimeForInput(this.value); }); });
 
   async function initSheets() {
-    const names = await callApi('getSheetNames');
-    const selector = document.getElementById('sheetSelector');
-    const btn = document.querySelector('button[onclick="closeMonthUI()"]');
-    if (!names || names.length === 0) {
-      selector.innerHTML = `<option value="">ยังไม่มีข้อมูล</option>`; btn.innerText = "เริ่มเดือนแรก"; btn.classList.remove('btn-danger'); btn.classList.add('btn-warning');
-      currentSheet = ""; lastData = []; updateSummary([]); document.getElementById('censusContent').innerHTML = "ยังไม่มีข้อมูล"; return;
-    }
-    selector.innerHTML = names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-    btn.innerText = "ปิดยอดเดือน"; btn.classList.remove('btn-warning'); btn.classList.add('btn-danger');
-    currentSheet = pickLatestSheet(names); selector.value = currentSheet; loadDashboard();
+    const names = await callApi('getSheetNames'), selector = document.getElementById('sheetSelector'), btn = document.querySelector('button[onclick="closeMonthUI()"]');
+    if (!names || names.length === 0) { selector.innerHTML = `<option value="">ยังไม่มีข้อมูล</option>`; btn.innerText = "เริ่มเดือนแรก"; btn.classList.remove('btn-danger'); btn.classList.add('btn-warning'); currentSheet = ""; lastData = []; updateSummary([]); document.getElementById('censusContent').innerHTML = "ยังไม่มีข้อมูล"; return; }
+    selector.innerHTML = names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join(''); btn.innerText = "ปิดยอดเดือน"; btn.classList.remove('btn-warning'); btn.classList.add('btn-danger'); currentSheet = pickLatestSheet(names); selector.value = currentSheet; loadDashboard();
   }
 
   async function prepareNewForm() {
-    document.getElementById('dataForm').reset();
-    const now = new Date(), hh = String(now.getHours()).padStart(2, '0'), mm = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('inTime').value = `${hh}:${mm}`;
-    dxTagState.dx1.tags = []; dxTagState.dx2.tags =[]; renderDxTags('dx1'); renderDxTags('dx2');
-    document.getElementById('dx1').value = ""; document.getElementById('dx2').value = "";
-    document.getElementById('rowId').value = ""; document.getElementById('patientStatusStored').value = ""; document.getElementById('inType').value = "รับใหม่";
-    if (currentSheet) {
-      Swal.fire({ title: "กำลังเตรียมลำดับผู้ป่วย...", html: `<div style="font-size:50px">🧸</div><div style="margin-top:10px">วอร์ดเด็กกำลังเตรียมคิวให้หนูอยู่...</div>`, allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-      try { document.getElementById('seq').value = await callApi('getNextSeq', currentSheet); } catch(e){ console.error(e); }
-      Swal.close();
-    }
+    document.getElementById('dataForm').reset(); const now = new Date(), hh = String(now.getHours()).padStart(2, '0'), mm = String(now.getMinutes()).padStart(2, '0'); document.getElementById('inTime').value = `${hh}:${mm}`; dxTagState.dx1.tags =[]; dxTagState.dx2.tags =[]; renderDxTags('dx1'); renderDxTags('dx2'); document.getElementById('dx1').value = ""; document.getElementById('dx2').value = ""; document.getElementById('rowId').value = ""; document.getElementById('patientStatusStored').value = ""; document.getElementById('inType').value = "รับใหม่";
+    if (currentSheet) { Swal.fire({ title: "กำลังเตรียมลำดับผู้ป่วย...", html: `<div style="font-size:50px">🧸</div><div style="margin-top:10px">วอร์ดเด็กกำลังเตรียมคิวให้หนูอยู่...</div>`, allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() }); try { document.getElementById('seq').value = await callApi('getNextSeq', currentSheet); } catch(e){ console.error(e); } Swal.close(); }
     new bootstrap.Tab(document.querySelector('button[data-bs-target="#form-pane"]')).show(); window.scrollTo(0,0);
   }
 
   function onSheetChange() { currentSheet = document.getElementById('sheetSelector').value; loadDashboard(); }
 
-  function loadDashboard() {
-    Swal.fire({ title: 'โหลดข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    callApi('getAllData', currentSheet).then(data => {
-      lastData = Array.isArray(data) ? data :[]; rebuildIndex(); updateSummary(lastData);
-      document.getElementById('sheetStatusChip').innerText = 'โหลดแล้ว'; renderTables(); Swal.close();
-    }).catch(err => { Swal.fire('ผิดพลาด', err.toString(), 'error'); });
-  }
+  function loadDashboard() { Swal.fire({ title: 'โหลดข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); callApi('getAllData', currentSheet).then(data => { lastData = Array.isArray(data) ? data :[]; rebuildIndex(); updateSummary(lastData); document.getElementById('sheetStatusChip').innerHTML = '<i class="bi bi-cloud-check me-1"></i> ซิงค์แล้ว'; renderTables(); Swal.close(); }).catch(err => { Swal.fire('ผิดพลาด', err.toString(), 'error'); }); }
 
-  async function checkAN() {
-    formatHNAN('an'); const anValue = document.getElementById('an').value, rowId = document.getElementById('rowId').value;
-    if (!rowId && anValue) {
-      try {
-        const isDup = await callApi('checkDuplicateAN', { targetSheet: currentSheet, an: anValue });
-        if (isDup) Swal.fire({ title: 'พบข้อมูล AN ซ้ำ!', text: `หมายเลข AN ${anValue} มีอยู่ในทะเบียนของเดือนนี้แล้ว กรุณาตรวจสอบอีกครั้ง`, icon: 'warning', confirmButtonColor: '#f89406' });
-      } catch (err) { console.error("Error checking duplicate AN:", err); }
-    }
-  }
-
-  function editPatient(item) {
-    const r = item.rawData ||[];
-    document.getElementById('rowId').value = item.rowId; document.getElementById('seq').value = r[1] || ""; document.getElementById('patientStatusStored').value = r[0] || "รับใหม่";
-    document.getElementById('prefix').value = r[32] || 'นาย'; document.getElementById('patientName').value = r[11] || ""; document.getElementById('gender').value = r[33] || 'ชาย';
-    const am = (r[12]||"").match(/(\d+) ปี (\d+) เดือน (\d+) วัน/);
-    if(am){ document.getElementById('ageYear').value = am[1]; document.getElementById('ageMonth').value = am[2]; document.getElementById('ageDay').value = am[3]; } else { document.getElementById('ageYear').value = 0; document.getElementById('ageMonth').value = 0; document.getElementById('ageDay').value = 0; }
-    document.getElementById('inDate').value = formatDateForInput(r[2]||r[5]||r[8]); document.getElementById('inTime').value = formatTimeForInput(r[3]||r[6]||r[9]); document.getElementById('inDept').value = r[4]||r[7]||r[10]||"";
-    document.getElementById('hn').value = r[13] || ""; document.getElementById('an').value = r[14] || ""; document.getElementById('ward').value = r[15] || ""; document.getElementById('sai').value = r[16] || ""; document.getElementById('sithi').value = r[17] || "";
-    document.getElementById('dx1').value = r[18] || ""; document.getElementById('dx2').value = r[19] || ""; loadDxTagsFromHidden('dx1'); loadDxTagsFromHidden('dx2');
-    document.getElementById('dcDate').value = formatDateForInput(r[20]); document.getElementById('fu').value = r[21] || ""; document.getElementById('admitUnder6').value = r[22] || "";
-    document.getElementById('deathDate').value = formatDateForInput(r[30]); document.getElementById('transferOutDate').value = formatDateForInput(r[25]); document.getElementById('transferOut').value = r[24] || "";
-    document.getElementById('abscondDate').value = formatDateForInput(r[26]); document.getElementById('refuseDate').value = formatDateForInput(r[27]); document.getElementById('referOutDate').value = formatDateForInput(r[28]);
-    document.getElementById('referDestination').value = r[29] || ""; document.getElementById('address').value = r[31] || "";
-    if(r[2]) document.getElementById('inType').value = "รับใหม่"; else if(r[5]) document.getElementById('inType').value = "รับย้าย"; else if(r[8]) document.getElementById('inType').value = "รับ Refer";
-    calculateLOSPreview(); new bootstrap.Tab(document.querySelector('button[data-bs-target="#form-pane"]')).show(); window.scrollTo(0,0);
-  }
-
-  function printPDF(item) {
-    const win = window.open("", "_blank"); const r = item.rawData ||[];
-    const p = { prefix:r[32], patientName:r[11], hn:r[13], an:r[14], gender:r[33], age:r[12], address:r[31], sithi:r[17], ward:r[15], sai:r[16], dx1:r[18], dx2:r[19], inType:r[2]?'รับใหม่':(r[5]?'รับย้าย':'Refer'), inDate:r[2]||r[5]||r[8], inTime:r[3]||r[6]||r[9], inDept:r[4]||r[7]||r[10], status:item.status, los:item.displayLOS, dcDate:r[20], deathDate:r[30], transferOut:r[24], admitUnder6:r[22], patientStatus:r[0] };
-    callApi('createPatientPDF', p).then(b => { win.document.write(`<iframe src="data:application/pdf;base64,${b}" style="width:100%;height:100vh;border:none;"></iframe>`); }).catch(err => win.document.write(`<pre>${err.toString()}</pre>`));
-  }
-
-  document.getElementById('dataForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); Swal.fire({ title: 'บันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    const inT = document.getElementById('inType').value, existingStatus = (document.getElementById('patientStatusStored').value || "").trim(), statusToSave = (existingStatus === "ยอดยกมา") ? "ยอดยกมา" : inT;
-    const formData = { rowId: document.getElementById('rowId').value, seq: document.getElementById('seq').value, patientStatus: statusToSave, prefix: document.getElementById('prefix').value, patientName: document.getElementById('patientName').value, gender: document.getElementById('gender').value, age: `${document.getElementById('ageYear').value} ปี ${document.getElementById('ageMonth').value} เดือน ${document.getElementById('ageDay').value} วัน`, hn: document.getElementById('hn').value, an: document.getElementById('an').value, ward: document.getElementById('ward').value, sai: document.getElementById('sai').value, sithi: document.getElementById('sithi').value, dx1: document.getElementById('dx1').value, dx2: document.getElementById('dx2').value, address: document.getElementById('address').value, los: document.getElementById('los').value, fu: document.getElementById('fu').value, admitUnder6: document.getElementById('admitUnder6').value, dcDate: formatDateForSheet(document.getElementById('dcDate').value), deathDate: formatDateForSheet(document.getElementById('deathDate').value), transferOutDate: formatDateForSheet(document.getElementById('transferOutDate').value), transferOut: document.getElementById('transferOut').value, abscondDate: formatDateForSheet(document.getElementById('abscondDate').value), refuseDate: formatDateForSheet(document.getElementById('refuseDate').value), referOutDate: formatDateForSheet(document.getElementById('referOutDate').value), referDestination: document.getElementById('referDestination').value, nurseId: getNurseId() || "" };
-    const iD = formatDateForSheet(document.getElementById('inDate').value), iT = document.getElementById('inTime').value, iDep = document.getElementById('inDept').value;
-    if(inT === "รับใหม่"){ formData.newMark=iD; formData.newTime=iT; formData.newDept=iDep; } else if(inT === "รับย้าย"){ formData.transferMark=iD; formData.transferTime=iT; formData.transferDept=iDep; } else { formData.referMark=iD; formData.referTime=iT; formData.referDept=iDep; }
-    try{ await callApi('processData', { targetSheet: currentSheet, formData }); Swal.fire('สำเร็จ', '', 'success'); loadDashboard(); new bootstrap.Tab(document.querySelector('button[data-bs-target="#list-pane"]')).show(); }catch(err){ Swal.fire('ผิดพลาด', err.toString(), 'error'); }
-  });
-
-  const INCIDENT_TYPES =[ {k:"UNPLANNED_ET", t:"(11) Unplanned ET tube", needsValue:true}, {k:"VENT_DAYS", t:"(12) Ventilator days", needsValue:true}, {k:"ICD_DISLODGE", t:"(13) ICD line หลุด", needsValue:true}, {k:"ICD_LINE_DAYS", t:"(14) ICD line days", needsValue:true}, {k:"PRESSURE_ULCER", t:"(15) แผลกดทับ (ครั้ง)", needsValue:true}, {k:"FALL", t:"(16) พลัดตกหกล้ม (ครั้ง)", needsValue:true}, {k:"MED_ERROR", t:"(17) คลาดเคลื่อนยา (ครั้ง)", needsValue:true}, {k:"GHI", t:"(18) GHI level", needsLevel:true}, {k:"UNPLANNED_CPR", t:"(19) Unplanned CPR", needsValue:true}, {k:"UNPLANNED_ICU", t:"(20) Unplanned ICU", needsValue:true}, {k:"WRONG_PROCEDURE", t:"(21) หัตถการผิดคน/ข้าง/ตำแหน่ง", needsValue:true}, {k:"WRONG_SURGERY", t:"(22) ผ่าตัดผิดคน/ข้าง/ตำแหน่ง", needsValue:true}, {k:"WRONG_TRANSFUSION", t:"(23) ให้เลือดผิดคน", needsValue:true}, {k:"PHLEBITIS", t:"(24) Phlebitis grade", needsGrade:true, needsValue:true}, {k:"NURSE_NOTE_QTY", t:"(25) บันทึกพยาบาลเชิงปริมาณ (%)", needsValue:true}, {k:"NURSE_NOTE_QLT", t:"(25) บันทึกพยาบาลเชิงคุณภาพ (%)", needsValue:true}, {k:"DISCHARGE_WAIT_MIN", t:"(26) รอคอยกลับบ้าน (นาที)", needsValue:true}, {k:"REFER_IN", t:"(27) Refer IN", needsValue:true}, {k:"REFER_OUT", t:"(27) Refer OUT", needsValue:true}, {k:"REFER_BACK", t:"(27) Refer Back", needsValue:true}, {k:"REFER_BACK_TO", t:"(27) Refer Back To", needsValue:true}, {k:"DAYCARE", t:"(27) Day Care", needsValue:true} ];
+  async function checkAN() { formatHNAN('an'); const anValue = document.getElementById('an').value, rowId = document.getElementById('rowId').value; if (!rowId && anValue) { try { const isDup = await callApi('checkDuplicateAN', { targetSheet: currentSheet, an: anValue }); if (isDup) Swal.fire({ title: 'พบข้อมูล AN ซ้ำ!', text: `หมายเลข AN ${anValue} มีอยู่ในทะเบียนของเดือนนี้แล้ว กรุณาตรวจสอบอีกครั้ง`, icon: 'warning', confirmButtonColor: '#f89406' }); } catch (err) { console.error("Error checking duplicate AN:", err); } } }
 
   function openIncidentTab(){
-    const sel = document.getElementById("incPatientPick"); if(!sel) return;
-    sel.innerHTML = `<option value="">-- เลือกคนไข้ --</option>` + lastData.map(p=>{ const r = p.rawData ||[]; return `<option value="${p.rowId}">${escapeHtml(r[14]||"")} | ${escapeHtml(r[13]||"")} | ${escapeHtml((r[32]||"")+(r[11]||""))}</option>`; }).join("");
-    document.getElementById("incType").innerHTML = INCIDENT_TYPES.map(x=>`<option value="${x.k}">${escapeHtml(x.t)}</option>`).join("");
-    document.getElementById("incDate").value = new Date().toISOString().split("T")[0]; toggleIncFields(); loadIncidents();
+    const sel = document.getElementById("incPatientPick"); if(!sel) return; sel.innerHTML = `<option value="">-- เลือกคนไข้ --</option>` + lastData.map(p=>{ const r = p.rawData ||[]; return `<option value="${p.rowId}">${escapeHtml(r[14]||"")} | ${escapeHtml(r[13]||"")} | ${escapeHtml((r[32]||"")+(r[11]||""))}</option>`; }).join("");
+    document.getElementById("incType").innerHTML = INCIDENT_TYPES.map(x=>`<option value="${x.k}">${escapeHtml(x.t)}</option>`).join(""); document.getElementById("incDate").value = new Date().toISOString().split("T")[0]; toggleIncFields(); loadIncidents();
   }
-  function onIncPickPatient(){
-    const p = getItemByRowId(document.getElementById("incPatientPick").value), meta = document.getElementById("incPatientMeta");
-    if(!p){ meta.innerText = "-"; return; } const r = p.rawData ||[]; meta.innerHTML = `ชื่อ: <b>${escapeHtml((r[32]||"")+(r[11]||""))}</b> | HN: <b>${escapeHtml(r[13]||"-")}</b> | AN: <b>${escapeHtml(r[14]||"-")}</b>`;
-  }
-  function toggleIncFields(){
-    const def = INCIDENT_TYPES.find(x=>x.k===document.getElementById("incType").value) || {};
-    document.getElementById("incValue").disabled = !def.needsValue; document.getElementById("incGrade").disabled = !def.needsGrade; document.getElementById("incLevel").disabled = !def.needsLevel;
-    if(!def.needsValue) document.getElementById("incValue").value = ""; if(!def.needsGrade) document.getElementById("incGrade").value = ""; if(!def.needsLevel) document.getElementById("incLevel").value = "";
-  }
-  async function saveIncident(){
-    if(!currentSheet) return Swal.fire("ยังไม่ได้เลือกเดือน");
-    const p = getItemByRowId(document.getElementById("incPatientPick").value); if(!p) return Swal.fire("เลือกคนไข้ก่อน");
-    const r = p.rawData ||[], eventDateISO = document.getElementById("incDate").value; if(!eventDateISO) return Swal.fire("เลือกวันที่");
-    Swal.fire({title:"กำลังบันทึก...", didOpen:()=>Swal.showLoading()});
-    try{
-      await callApi("ensureIncidentLog");
-      await callApi("addIncident", { sheetName: currentSheet, eventDate: formatDateForSheet(eventDateISO), hn: r[13]||"", an: r[14]||"", eventType: document.getElementById("incType").value, value: document.getElementById("incValue").value === "" ? "" : Number(document.getElementById("incValue").value), grade: document.getElementById("incGrade").value, level: document.getElementById("incLevel").value, note: document.getElementById("incNote").value, rowIdRef: String(p.rowId || "") });
-      Swal.fire("สำเร็จ","","success"); document.getElementById("incNote").value = ""; loadIncidents();
-    }catch(err){ Swal.fire("ผิดพลาด", err.toString(),"error"); }
-  }
-  async function loadIncidents(){
-    if(!currentSheet) return;
-    try{
-      const list = await callApi("getIncidentsByMonth", currentSheet), body = document.getElementById("incListBody"); if(!body) return;
-      body.innerHTML = (list||[]).map(it=>`<tr><td>${escapeHtml(it.eventDate)}</td><td>${escapeHtml(it.hn)}</td><td>${escapeHtml(it.an)}</td><td>${escapeHtml(it.eventType)}</td><td class="text-end">${escapeHtml(it.value)}</td><td class="text-center">${escapeHtml(it.grade)}</td><td class="text-center">${escapeHtml(it.level)}</td><td>${escapeHtml(it.note)}</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="delIncident(${it.id})">ลบ</button></td></tr>`).join("");
-    }catch(e){ console.error(e); }
-  }
-  async function delIncident(rowId){
-    const ok = await Swal.fire({title:"ลบรายการนี้?", icon:"warning", showCancelButton:true}); if(!ok.isConfirmed) return;
-    try{ Swal.fire({title:"กำลังลบ...", didOpen:()=>Swal.showLoading()}); await callApi("deleteIncident", { rowId }); Swal.fire("ลบแล้ว","","success"); loadIncidents(); }catch(err){ Swal.fire("ผิดพลาด", err.toString(),"error"); }
-  }
-
-  async function closeMonthUI(){
-    try{
-      if(!currentSheet){
-        const ok = await Swal.fire({ title: "เริ่มเดือนแรก?", text: "ยังไม่มีข้อมูลเดือน ระบบจะสร้างชีทเดือนปัจจุบันจาก Template", icon: "question", showCancelButton: true, confirmButtonText: "สร้างเดือนแรก", cancelButtonText: "ยกเลิก" });
-        if(!ok.isConfirmed) return; Swal.fire({ title:"กำลังสร้าง...", didOpen:()=>Swal.showLoading() }); await callApi("initFirstMonth"); Swal.close(); await initSheets(); Swal.fire("สำเร็จ", "", "success"); return;
-      }
-      const { value: bedCount } = await Swal.fire({ title: "ปิดยอดเดือน", html: `<div class="text-start small text-muted mb-2">ระบบจะสร้าง Snapshot → สร้างชีทเดือนถัดไป → ย้ายยอดค้างเป็น “ยอดยกมา” และล็อกชีทเดือนเก่า</div>`, input: "number", inputLabel: "จำนวนเตียงที่เปิดจริง (ใช้คำนวณ BOR)", inputValue: 21, inputAttributes: { min: 1, step: 1 }, showCancelButton: true, confirmButtonText: "ปิดยอด", cancelButtonText: "ยกเลิก" });
-      if(bedCount === undefined) return;
-      const confirm = await Swal.fire({ title: "ยืนยันปิดยอด?", text: `เดือน ${currentSheet} จะถูกล็อก และสร้างเดือนถัดไปทันที`, icon: "warning", showCancelButton: true, confirmButtonColor: "#dc3545", confirmButtonText: "ยืนยัน", cancelButtonText: "ยกเลิก" });
-      if(!confirm.isConfirmed) return;
-      Swal.fire({ title:"กำลังปิดยอด...", didOpen:()=>Swal.showLoading() });
-      await callApi("closeMonthAction", { currentSheetName: currentSheet, bedCount: Number(bedCount) || 0 });
-      Swal.close(); await initSheets(); Swal.fire("ปิดยอดสำเร็จ", "", "success");
-    }catch(err){ Swal.fire("ผิดพลาด", err.toString(), "error"); }
-  }
-
-  window.closeMonthUI = closeMonthUI; window.onSheetChange = onSheetChange; window.loadDashboard = loadDashboard; window.setNurseIdUI = setNurseIdUI;
-
-  // Report Pro Helper
-  function daysInMonthFromSheet(sheetName){ const d = sheetNameToDate(sheetName); if(!d) return new Date().getDate(); return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); }
-  function fmt2(n){ return (isNaN(n)?0:n).toFixed(2); }
-  function safeNum(v, def=0){ const n = Number(v); return Number.isFinite(n) ? n : def; }
-  function safeText(v, def="-"){ const s = String(v ?? "").trim(); return s ? s : def; }
-  function genderOf(p){ const g = String(p?.rawData?.[33] || "").trim(); if (g.includes("หญิง")) return "F"; if (g.includes("ชาย")) return "M"; return "U"; }
-  function typeOf(p){ return String(p?.patientStatus || p?.rawData?.[0] || "").trim(); }
-  function isOutcomeClosed(r){ return !!(r?.[20] || r?.[25] || r?.[26] || r?.[27] || r?.[28] || r?.[30]); }
-  function deptFromRow(r){
-    const s = (String(r?.[15] || "").trim() || String(r?.[16] || "").trim()).toLowerCase(); if(!s) return "ไม่ระบุ";
-    if (s.includes("med") || s.includes("อายุร")) return "อายุรศาสตร์"; if (s.includes("surg") || s.includes("ศัลย")) return "ศัลยศาสตร์"; if (s.includes("ped") || s.includes("กุมาร")) return "กุมารเวชศาสตร์"; if (s.includes("obs") || s.includes("สูติ")) return "สูติศาสตร์"; if (s.includes("gyn") || s.includes("นรี")) return "นรีเวชวิทยา"; if (s.includes("oph") || s.includes("eye") || s.includes("จักษุ")) return "จักษุ"; if (s.includes("ent") || s.includes("โสต") || s.includes("หู") || s.includes("คอ") || s.includes("นาสิก")) return "โสต ศอ นาสิก"; if (s.includes("ortho") || s.includes("กระดูก")) return "ศัลยกรรมกระดูกและข้อ";
-    return String(r?.[15] || "").trim() || String(r?.[16] || "").trim() || "ไม่ระบุ";
-  }
-  function countByGender(list){ let F=0,M=0; list.forEach(p=>{ const g = genderOf(p); if(g==="F") F++; else if(g==="M") M++; }); return {F,M,T:F+M}; }
-  function sumLos(list){ return list.reduce((s,p)=>s + safeInt(p.displayLOS), 0); }
-  function sumInc(list, type){ return (list||[]).filter(x=>x.eventType===type).reduce((s,x)=> s + (parseFloat(x.value)||0), 0); }
-  function avgInc(list, type){ const a = (list||[]).filter(x=>x.eventType===type).map(x=>parseFloat(x.value)||0); if(a.length===0) return null; return a.reduce((s,v)=>s+v,0)/a.length; }
-  function phlebitisByGrade(list){ const out = {1:0,2:0,3:0,4:0}; (list||[]).filter(x=>x.eventType==="PHLEBITIS").forEach(x=>{ const g = parseInt(x.grade,10); if(out[g]!==undefined) out[g] += (parseFloat(x.value)||1); }); return out; }
-
-  let currentReportCtx = null;
-  async function showFullReport(btn) {
-    lastTriggerEl = btn || document.activeElement; lastTriggerEl?.blur?.();
-    if (!currentSheet) return Swal.fire("ยังไม่ได้เลือกเดือน", "", "warning");
-    Swal.fire({ title: 'คำนวณรายงานสรุป...', didOpen: () => Swal.showLoading() });
-    try {
-      const [patients, summary, dxMapPack, incidents] = await Promise.all([ callApi('getAllData', currentSheet), callApi('getMonthlySummaryRow', currentSheet), callApi('getDxMap'), callApi('getIncidentsByMonth', currentSheet) ]);
-      const dxMap = dxMapPack?.map || {}, mapDx = (s) => String(dxMap[String(s || "").trim().replace(/\s+/g, " ")] || String(s || "").trim().replace(/\s+/g, " ")).trim() || "";
-      const waitList = patients.map(p => Number(p.waitTime)).filter(v => v > 0), avgWait = waitList.length > 0 ? waitList.reduce((a, b) => a + b, 0) / waitList.length : 0;
-      const days = daysInMonthFromSheet(currentSheet), isMonthClosed = !!(summary && summary.beds), beds = isMonthClosed ? Number(summary.beds) : 0, bedDays = beds * days;
-      const carryList = patients.filter(p => typeOf(p) === "ยอดยกมา"), inNewList = patients.filter(p => typeOf(p) === "รับใหม่"), inTransferList = patients.filter(p => typeOf(p) === "รับย้าย"), inReferList = patients.filter(p => typeOf(p) === "รับ Refer"), inAllList =[...carryList, ...inNewList, ...inTransferList, ...inReferList];
-      const outDCList = patients.filter(p => !!p?.rawData?.[20]), outDeathList = patients.filter(p => !!p?.rawData?.[30]), outTOList = patients.filter(p => !!p?.rawData?.[25]), outROList = patients.filter(p => !!p?.rawData?.[28]), outAbsList = patients.filter(p => !!p?.rawData?.[26]), outRefuseList = patients.filter(p => !!p?.rawData?.[27]), outAllList = patients.filter(p => isOutcomeClosed(p.rawData ||[])), eomList = patients.filter(p => p.status === "ยังรักษาอยู่");
-      const patientDays = sumLos(outAllList), deptRows = {};
-      inAllList.forEach(p=>{ const r = p.rawData ||[]; const dept = deptFromRow(r); if(!deptRows[dept]) deptRows[dept] = {F:0,M:0,T:0,PD:0}; const g = genderOf(p); if(g==="F") deptRows[dept].F++; if(g==="M") deptRows[dept].M++; deptRows[dept].T = deptRows[dept].F + deptRows[dept].M; deptRows[dept].PD += safeInt(p.displayLOS); });
-      const counts = {}; patients.forEach(p=>{ const r = p.rawData ||[]; [...splitDxList(r[18]).map(mapDx), ...splitDxList(r[19]).map(mapDx)].forEach(dx=>addCount(counts, dx, 1)); });
-      const topDx5 = topEntries(counts, 5), ratePer1000 = (n)=> (patientDays > 0 ? (n/patientDays*1000) : 0), ph = phlebitisByGrade(incidents), ghiList = (incidents ||[]).filter(x => x.eventType === "GHI" && String(x.level||"").trim() !== "");
-      
-      const k = {
-        k11_unplanned_et: sumInc(incidents,"UNPLANNED_ET"), k12_vent_days: sumInc(incidents,"VENT_DAYS"), k13_icd_displaced: sumInc(incidents,"ICD_DISLODGE"), k14_icd_days: sumInc(incidents,"ICD_LINE_DAYS"),
-        k15_pressure_ulcer_rate: fmt2(ratePer1000(sumInc(incidents, "PRESSURE_ULCER"))), k16_fall_rate: fmt2(ratePer1000(sumInc(incidents, "FALL"))), k17_med_error: fmt2(ratePer1000(sumInc(incidents, "MED_ERROR"))),
-        k18_ghi_level: safeText(ghiList.length ? String(ghiList[ghiList.length - 1].level).trim() : "-", "-"), k19_unplanned_cpr: sumInc(incidents,"UNPLANNED_CPR"), k20_unplanned_icu: sumInc(incidents,"UNPLANNED_ICU"),
-        k21_wrong_proc: sumInc(incidents,"WRONG_PROCEDURE"), k22_wrong_surgery: sumInc(incidents,"WRONG_SURGERY"), k23_wrong_blood: sumInc(incidents,"WRONG_TRANSFUSION"),
-        k24_phlebitis_g1: ph[1]||0, k24_phlebitis_g2: ph[2]||0, k24_phlebitis_g3: ph[3]||0, k24_phlebitis_g4: ph[4]||0, k25_note_qty: Math.round(avgInc(incidents,"NURSE_NOTE_QTY")||0), k25_note_qlt: Math.round(avgInc(incidents,"NURSE_NOTE_QLT")||0),
-        k26_avg_wait_dc_min: avgWait, k27_refer_in: sumInc(incidents,"REFER_IN"), k27_refer_out: sumInc(incidents,"REFER_OUT"), k27_refer_back: sumInc(incidents,"REFER_BACK"), k27_refer_back_to: sumInc(incidents,"REFER_BACK_TO"), k27_daycare: sumInc(incidents,"DAYCARE")
-      };
-      const under6Count = patients.filter(p => String(p.rawData?.[22] || "").trim() !== "").length, patientDaysOcc = sumLos(outAllList), patientDaysUtil = patientDaysOcc + under6Count;
-      const ctx = { sheet: currentSheet, days, beds, isMonthClosed, inAllG: countByGender(inAllList), carryG: countByGender(carryList), inNewG: countByGender(inNewList), inTransferG: countByGender(inTransferList), inReferG: countByGender(inReferList), outAllG: countByGender(outAllList), outDCG: countByGender(outDCList), outDeathG: countByGender(outDeathList), outTOG: countByGender(outTOList), outROG: countByGender(outROList), outAbsG: countByGender(outAbsList), outRefuseG: countByGender(outRefuseList), eomG: countByGender(eomList), patientDays: patientDaysOcc, patientDaysUtil, borOcc: (bedDays > 0) ? (patientDaysOcc / bedDays * 100) : 0, borUtil: (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0, deptRows, topDx5, kpi1127: k };
-      currentReportCtx = ctx;
-      document.getElementById('reportMonthTitle').innerText = currentSheet; document.getElementById('reportResult').innerHTML = buildModernReportHTML(ctx);
-      Swal.close(); bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show(); setTimeout(() => renderReportCharts(ctx), 250);
-    } catch (err) { Swal.fire('ผิดพลาด', err.toString(), 'error'); }
-  }
-
-// --------------------------------------------------------------------------------
-// 1. หน้าต่าง Dashboard ทันสมัย (แสดงใน Modal) - ✨ Premium Redesign
-// --------------------------------------------------------------------------------
-function buildModernReportHTML(ctx) {
-  const k = ctx.kpi1127;
-  const isC = ctx.isMonthClosed;
+  function onIncPickPatient(){ const p = getItemByRowId(document.getElementById("incPatientPick").value), meta = document.getElementById("incPatientMeta"); if(!p){ meta.innerText = "-"; return; } const r = p.rawData ||[]; meta.innerHTML = `ชื่อ: <b>${escapeHtml((r[32]||"")+(r[11]||""))}</b> | HN: <b>${escapeHtml(r[13]||"-")}</b> | AN: <b>${escapeHtml(r[14]||"-")}</b>`; }
   
-  // สร้างรายการ 5 อันดับโรคแบบ Modern List ที่มี Hover Effect
-  const dxHtml = (ctx.topDx5 && ctx.topDx5.length) 
-    ? ctx.topDx5.map(([dx, count], i) => {
-        const medalColors =['#ffd700', '#c0c0c0', '#cd7f32', '#e2e8f0', '#e2e8f0']; // สีเหรียญทอง เงิน ทองแดง
-        const isTop3 = i < 3;
-        return `
-          <div class="dx-item d-flex align-items-center p-2 mb-2 bg-white rounded-3 border-0 shadow-sm" style="transition: transform 0.2s, box-shadow 0.2s; cursor: default;">
-            <div class="dx-rank rounded-circle d-flex justify-content-center align-items-center me-3 shadow-sm" 
-                 style="width: 35px; height: 35px; background: ${medalColors[i]}; color: ${isTop3 ? '#fff' : '#64748b'}; font-weight: 900; font-size: 14px;">
-              ${i+1}
-            </div>
-            <div class="flex-grow-1 fw-bold text-secondary text-truncate" style="font-size: 13.5px;" title="${escapeHtml(dx)}">
-              ${escapeHtml(dx)}
-            </div>
-            <div class="badge px-3 py-2 rounded-pill" style="background: linear-gradient(45deg, #3b82f6, #06b6d4); font-size: 12px; font-weight: 700;">
-              ${count} <span style="font-weight:400; opacity:0.8;">ราย</span>
-            </div>
-          </div>`;
-      }).join("") 
-    : `<div class="text-muted text-center py-4"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>ไม่มีข้อมูลการวินิจฉัย</div>`;
+  // (ฟังก์ชันที่เหลือเหมือนเดิมทั้งหมดในส่วนของ Incident และ Report)
+  const INCIDENT_TYPES =[ {k:"UNPLANNED_ET", t:"(11) Unplanned ET tube", needsValue:true}, {k:"VENT_DAYS", t:"(12) Ventilator days", needsValue:true}, {k:"ICD_DISLODGE", t:"(13) ICD line หลุด", needsValue:true}, {k:"ICD_LINE_DAYS", t:"(14) ICD line days", needsValue:true}, {k:"PRESSURE_ULCER", t:"(15) แผลกดทับ (ครั้ง)", needsValue:true}, {k:"FALL", t:"(16) พลัดตกหกล้ม (ครั้ง)", needsValue:true}, {k:"MED_ERROR", t:"(17) คลาดเคลื่อนยา (ครั้ง)", needsValue:true}, {k:"GHI", t:"(18) GHI level", needsLevel:true}, {k:"UNPLANNED_CPR", t:"(19) Unplanned CPR", needsValue:true}, {k:"UNPLANNED_ICU", t:"(20) Unplanned ICU", needsValue:true}, {k:"WRONG_PROCEDURE", t:"(21) หัตถการผิดคน/ข้าง/ตำแหน่ง", needsValue:true}, {k:"WRONG_SURGERY", t:"(22) ผ่าตัดผิดคน/ข้าง/ตำแหน่ง", needsValue:true}, {k:"WRONG_TRANSFUSION", t:"(23) ให้เลือดผิดคน", needsValue:true}, {k:"PHLEBITIS", t:"(24) Phlebitis grade", needsGrade:true, needsValue:true}, {k:"NURSE_NOTE_QTY", t:"(25) บันทึกพยาบาลเชิงปริมาณ (%)", needsValue:true}, {k:"NURSE_NOTE_QLT", t:"(25) บันทึกพยาบาลเชิงคุณภาพ (%)", needsValue:true}, {k:"DISCHARGE_WAIT_MIN", t:"(26) รอคอยกลับบ้าน (นาที)", needsValue:true}, {k:"REFER_IN", t:"(27) Refer IN", needsValue:true}, {k:"REFER_OUT", t:"(27) Refer OUT", needsValue:true}, {k:"REFER_BACK", t:"(27) Refer Back", needsValue:true}, {k:"REFER_BACK_TO", t:"(27) Refer Back To", needsValue:true}, {k:"DAYCARE", t:"(27) Day Care", needsValue:true} ];
+  function toggleIncFields(){ const def = INCIDENT_TYPES.find(x=>x.k===document.getElementById("incType").value) || {}; document.getElementById("incValue").disabled = !def.needsValue; document.getElementById("incGrade").disabled = !def.needsGrade; document.getElementById("incLevel").disabled = !def.needsLevel; if(!def.needsValue) document.getElementById("incValue").value = ""; if(!def.needsGrade) document.getElementById("incGrade").value = ""; if(!def.needsLevel) document.getElementById("incLevel").value = ""; }
+  async function saveIncident(){ if(!currentSheet) return Swal.fire("ยังไม่ได้เลือกเดือน"); const p = getItemByRowId(document.getElementById("incPatientPick").value); if(!p) return Swal.fire("เลือกคนไข้ก่อน"); const r = p.rawData ||[], eventDateISO = document.getElementById("incDate").value; if(!eventDateISO) return Swal.fire("เลือกวันที่"); Swal.fire({title:"กำลังบันทึก...", didOpen:()=>Swal.showLoading()}); try{ await callApi("ensureIncidentLog"); await callApi("addIncident", { sheetName: currentSheet, eventDate: formatDateForSheet(eventDateISO), hn: r[13]||"", an: r[14]||"", eventType: document.getElementById("incType").value, value: document.getElementById("incValue").value === "" ? "" : Number(document.getElementById("incValue").value), grade: document.getElementById("incGrade").value, level: document.getElementById("incLevel").value, note: document.getElementById("incNote").value, rowIdRef: String(p.rowId || "") }); Swal.fire("สำเร็จ","","success"); document.getElementById("incNote").value = ""; loadIncidents(); }catch(err){ Swal.fire("ผิดพลาด", err.toString(),"error"); } }
+  async function loadIncidents(){ if(!currentSheet) return; try{ const list = await callApi("getIncidentsByMonth", currentSheet), body = document.getElementById("incListBody"); if(!body) return; body.innerHTML = (list||[]).map(it=>`<tr><td>${escapeHtml(it.eventDate)}</td><td>${escapeHtml(it.hn)}</td><td>${escapeHtml(it.an)}</td><td>${escapeHtml(it.eventType)}</td><td class="text-end">${escapeHtml(it.value)}</td><td class="text-center">${escapeHtml(it.grade)}</td><td class="text-center">${escapeHtml(it.level)}</td><td>${escapeHtml(it.note)}</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="delIncident(${it.id})">ลบ</button></td></tr>`).join(""); }catch(e){ console.error(e); } }
+  async function delIncident(rowId){ const ok = await Swal.fire({title:"ลบรายการนี้?", icon:"warning", showCancelButton:true}); if(!ok.isConfirmed) return; try{ Swal.fire({title:"กำลังลบ...", didOpen:()=>Swal.showLoading()}); await callApi("deleteIncident", { rowId }); Swal.fire("ลบแล้ว","","success"); loadIncidents(); }catch(err){ Swal.fire("ผิดพลาด", err.toString(),"error"); } }
 
-  return `
-  <style>
-    /* Animations */
-    @keyframes slideUpFade {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes pulseSoft {
-      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-    }
+  // Reports
+  function buildModernReportHTML(ctx) {
+    const k = ctx.kpi1127, isC = ctx.isMonthClosed;
+    const dxHtml = (ctx.topDx5 && ctx.topDx5.length) ? ctx.topDx5.map(([dx, count], i) => { const medalColors =['#ffd700', '#c0c0c0', '#cd7f32', '#e2e8f0', '#e2e8f0']; const isTop3 = i < 3; return `<div class="dx-item d-flex align-items-center p-2 mb-2 bg-white rounded-3 border-0 shadow-sm" style="transition: transform 0.2s, box-shadow 0.2s; cursor: default;"><div class="dx-rank rounded-circle d-flex justify-content-center align-items-center me-3 shadow-sm" style="width: 35px; height: 35px; background: ${medalColors[i]}; color: ${isTop3 ? '#fff' : '#64748b'}; font-weight: 900; font-size: 14px;">${i+1}</div><div class="flex-grow-1 fw-bold text-secondary text-truncate" style="font-size: 13.5px;" title="${escapeHtml(dx)}">${escapeHtml(dx)}</div><div class="badge px-3 py-2 rounded-pill" style="background: linear-gradient(45deg, #3b82f6, #06b6d4); font-size: 12px; font-weight: 700;">${count} <span style="font-weight:400; opacity:0.8;">ราย</span></div></div>`; }).join("") : `<div class="text-muted text-center py-4"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>ไม่มีข้อมูลการวินิจฉัย</div>`;
+    return `<div class="premium-dash"><div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3"><div class="d-flex align-items-center gap-3"><div style="width:50px; height:50px; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius:16px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);"><i class="bi bi-bar-chart-fill"></i></div><div><h4 class="m-0 fw-black text-dark" style="letter-spacing: -0.5px;">รายงานสรุปผลการดำเนินงาน</h4><div class="fw-bold text-primary" style="font-size: 13px;">Ward 9/2 • ประจำเดือน ${ctx.sheet}</div></div></div><button class="btn-action-pdf" onclick="printOfficialReport()"><i class="bi bi-printer-fill me-1"></i> พิมพ์ใบรายงานผล</button></div><div class="row g-3 mb-4"><div class="col-6 col-md-3"><div class="glass-card p-3 d-flex align-items-center gap-3"><div class="metric-icon" style="background: #eff6ff; color: #3b82f6;"><i class="bi bi-pie-chart-fill"></i></div><div><div class="metric-value">${isC ? fmt2(ctx.borOcc) + '%' : 'N/A'}</div><div class="metric-label">ครองเตียง (สถิติ)</div></div></div></div><div class="col-6 col-md-3"><div class="glass-card p-3 d-flex align-items-center gap-3"><div class="metric-icon" style="background: #f5f3ff; color: #6366f1;"><i class="bi bi-activity"></i></div><div><div class="metric-value">${isC ? fmt2(ctx.borUtil) + '%' : 'N/A'}</div><div class="metric-label">ครองเตียง (งานจริง)</div></div></div></div><div class="col-6 col-md-3"><div class="glass-card p-3 d-flex align-items-center gap-3"><div class="metric-icon" style="background: #ecfdf5; color: #8b5cf6;"><i class="bi bi-calendar2-check-fill"></i></div><div><div class="metric-value">${ctx.patientDays}</div><div class="metric-label">วันนอนรวม (Day)</div></div></div></div><div class="col-6 col-md-3"><div class="glass-card p-3 d-flex align-items-center gap-3"><div class="metric-icon" style="background: #fff7ed; color: #10b981;"><i class="bi bi-people-fill"></i></div><div><div class="metric-value">${ctx.eomG.T}</div><div class="metric-label">คนไข้คงค้าง (ราย)</div></div></div></div></div><div class="row g-3 mb-4"><div class="col-12 col-lg-4"><div class="glass-card p-4 h-100 d-flex flex-column"><h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-circle-half me-2 text-primary"></i>สัดส่วนเตียงว่าง</h6><div class="flex-grow-1 position-relative" style="min-height: 180px;"><canvas id="chartBOR"></canvas></div></div></div><div class="col-12 col-lg-4"><div class="glass-card p-4 h-100 bg-light border-0"><h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-trophy-fill me-2 text-warning"></i>5 อันดับโรคสูงสุด</h6><div>${dxHtml}</div></div></div><div class="col-12 col-lg-4"><div class="glass-card p-4 h-100 d-flex flex-column"><h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-bar-chart-steps me-2 text-info"></i>ผู้ป่วยแยกตามแผนก</h6><div class="flex-grow-1 position-relative" style="min-height: 180px;"><canvas id="chartDept"></canvas></div></div></div></div><div class="row g-3 mb-4"><div class="col-12 col-md-6"><div class="glass-card p-4 h-100"><h6 class="fw-bold mb-3 text-primary"><i class="bi bi-box-arrow-in-right border border-primary p-1 rounded me-2"></i>ข้อมูลรับเข้า (Admission)</h6><table class="modern-table text-center"><thead><tr><th class="text-start">ประเภท</th><th>หญิง 👩</th><th>ชาย 👨</th><th>รวม 📊</th></tr></thead><tbody><tr><td class="text-start">ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td class="text-primary fw-bold">${ctx.carryG.T}</td></tr><tr><td class="text-start">รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td class="text-primary fw-bold">${ctx.inNewG.T}</td></tr><tr><td class="text-start">รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td class="text-primary fw-bold">${ctx.inTransferG.T}</td></tr><tr><td class="text-start">รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td class="text-primary fw-bold">${ctx.inReferG.T}</td></tr></tbody></table></div></div><div class="col-12 col-md-6"><div class="glass-card p-4 h-100"><h6 class="fw-bold mb-3 text-danger"><i class="bi bi-box-arrow-right border border-danger p-1 rounded me-2"></i>ข้อมูลจำหน่าย (Discharge)</h6><table class="modern-table text-center"><thead><tr><th class="text-start">ประเภท</th><th>หญิง 👩</th><th>ชาย 👨</th><th>รวม 📊</th></tr></thead><tbody><tr><td class="text-start">กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td class="text-danger fw-bold">${ctx.outDCG.T}</td></tr><tr><td class="text-start">ส่งต่อ (Refer Out)</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td class="text-danger fw-bold">${ctx.outROG.T}</td></tr><tr><td class="text-start">ย้ายแผนก/ตึก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td class="text-danger fw-bold">${ctx.outTOG.T}</td></tr><tr><td class="text-start">ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td class="text-danger fw-bold">${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr></tbody></table></div></div></div><div class="glass-card p-4 bg-white border-0 shadow-sm"><h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-shield-check me-2 text-success"></i>ตัวชี้วัดคุณภาพงานพยาบาล (QA)</h6><div class="d-flex flex-wrap gap-2"><div class="qa-chip"><div class="qa-icon bg-danger"><i class="bi bi-lungs"></i></div> Unplanned ET: <span class="text-danger">${k.k11_unplanned_et}</span></div><div class="qa-chip"><div class="qa-icon bg-warning"><i class="bi bi-bandaid"></i></div> แผลกดทับ: <span class="text-warning text-dark">${k.k15_pressure_ulcer_rate}</span></div><div class="qa-chip"><div class="qa-icon bg-orange" style="background:#f97316;"><i class="bi bi-person-falling"></i></div> หกล้ม: <span style="color:#f97316;">${k.k16_fall_rate}</span></div><div class="qa-chip"><div class="qa-icon bg-info"><i class="bi bi-journal-check"></i></div> บันทึกการพยาบาล: <span class="text-info text-dark">${k.k25_note_qlt}%</span></div><div class="qa-chip"><div class="qa-icon bg-success"><i class="bi bi-clock-history"></i></div> รอ D/C เฉลี่ย: <span class="text-success">${fmt2(k.k26_avg_wait_dc_min)} นาที</span></div><div class="qa-chip"><div class="qa-icon bg-primary"><i class="bi bi-capsule"></i></div> คลาดเคลื่อนทางยา: <span class="text-primary">${k.k17_med_error}</span></div></div></div></div>`;
+  }
 
-    .premium-dash {
-      background: #f8fafc;
-      padding: 15px;
-      font-family: 'Sarabun', sans-serif;
-      animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    /* Glass Cards */
-    .glass-card {
-      background: #ffffff;
-      border: 1px solid rgba(226, 232, 240, 0.8);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-      border-radius: 20px;
-      transition: all 0.3s ease;
-    }
-    .glass-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-
-    /* Metric Pills */
-    .metric-icon {
-      width: 48px; height: 48px; border-radius: 14px;
-      display: flex; align-items: center; justify-content: center; font-size: 24px;
-    }
-    .metric-value { font-size: 26px; font-weight: 900; line-height: 1; letter-spacing: -0.5px; color: #1e293b; }
-    .metric-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 4px; }
-
-    /* Interactive Top 5 Dx */
-    .dx-item:hover { transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; }
-
-    /* Modern Tables */
-    .modern-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-    .modern-table th { border: none; font-size: 11px; color: #64748b; font-weight: 800; padding: 0 12px 8px 12px; text-transform: uppercase; }
-    .modern-table td { padding: 12px; background: #f8fafc; font-weight: 600; font-size: 13px; color: #334155; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
-    .modern-table tr td:first-child { border-radius: 12px 0 0 12px; border-left: 1px solid #e2e8f0; }
-    .modern-table tr td:last-child { border-radius: 0 12px 12px 0; border-right: 1px solid #e2e8f0; }
-    .modern-table tbody tr { transition: transform 0.2s; }
-    .modern-table tbody tr:hover td { background: #f1f5f9; transform: scale(1.01); }
-
-    /* QA Badges */
-    .qa-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;
-      background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      transition: all 0.2s; cursor: default;
-    }
-    .qa-chip:hover { border-color: #cbd5e1; background: #f8fafc; transform: translateY(-2px); }
-    .qa-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; }
-
-    /* Action Button */
-    .btn-action-pdf {
-      background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;
-      padding: 10px 24px; border-radius: 999px; font-weight: 800; font-size: 14px;
-      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); transition: all 0.2s;
-      animation: pulseSoft 2s infinite;
-    }
-    .btn-action-pdf:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6); color:white; }
-  </style>
-
-  <div class="premium-dash">
-    <!-- ส่วนหัว -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-      <div class="d-flex align-items-center gap-3">
-        <div style="width:50px; height:50px; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius:16px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
-          <i class="bi bi-bar-chart-fill"></i>
-        </div>
-        <div>
-          <h4 class="m-0 fw-black text-dark" style="letter-spacing: -0.5px;">รายงานสรุปผลการดำเนินงาน</h4>
-          <div class="fw-bold text-primary" style="font-size: 13px;">Ward 9/2 • ประจำเดือน ${ctx.sheet}</div>
-        </div>
-      </div>
-      <button class="btn-action-pdf" onclick="printOfficialReport()">
-        <i class="bi bi-printer-fill me-1"></i> พิมพ์ใบรายงานผล
-      </button>
-    </div>
-
-    <!-- 4 Metrics (KPI) -->
-    <div class="row g-3 mb-4">
-      <div class="col-6 col-md-3">
-        <div class="glass-card p-3 d-flex align-items-center gap-3">
-          <div class="metric-icon" style="background: #eff6ff; color: #3b82f6;"><i class="bi bi-pie-chart-fill"></i></div>
-          <div><div class="metric-value">${isC ? fmt2(ctx.borOcc) + '%' : 'N/A'}</div><div class="metric-label">ครองเตียง (สถิติ)</div></div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="glass-card p-3 d-flex align-items-center gap-3">
-          <div class="metric-icon" style="background: #f5f3ff; color: #6366f1;"><i class="bi bi-activity"></i></div>
-          <div><div class="metric-value">${isC ? fmt2(ctx.borUtil) + '%' : 'N/A'}</div><div class="metric-label">ครองเตียง (งานจริง)</div></div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="glass-card p-3 d-flex align-items-center gap-3">
-          <div class="metric-icon" style="background: #ecfdf5; color: #8b5cf6;"><i class="bi bi-calendar2-check-fill"></i></div>
-          <div><div class="metric-value">${ctx.patientDays}</div><div class="metric-label">วันนอนรวม (Day)</div></div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="glass-card p-3 d-flex align-items-center gap-3">
-          <div class="metric-icon" style="background: #fff7ed; color: #10b981;"><i class="bi bi-people-fill"></i></div>
-          <div><div class="metric-value">${ctx.eomG.T}</div><div class="metric-label">คนไข้คงค้าง (ราย)</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- กราฟและอันดับโรค -->
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-lg-4">
-        <div class="glass-card p-4 h-100 d-flex flex-column">
-          <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-circle-half me-2 text-primary"></i>สัดส่วนเตียงว่าง</h6>
-          <div class="flex-grow-1 position-relative" style="min-height: 180px;">
-            <canvas id="chartBOR"></canvas>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-lg-4">
-        <div class="glass-card p-4 h-100 bg-light border-0">
-          <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-trophy-fill me-2 text-warning"></i>5 อันดับโรคสูงสุด</h6>
-          <div>${dxHtml}</div>
-        </div>
-      </div>
-      <div class="col-12 col-lg-4">
-        <div class="glass-card p-4 h-100 d-flex flex-column">
-          <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-bar-chart-steps me-2 text-info"></i>ผู้ป่วยแยกตามแผนก</h6>
-          <div class="flex-grow-1 position-relative" style="min-height: 180px;">
-            <canvas id="chartDept"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ตารางรายละเอียด -->
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-md-6">
-        <div class="glass-card p-4 h-100">
-          <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-box-arrow-in-right border border-primary p-1 rounded me-2"></i>ข้อมูลรับเข้า (Admission)</h6>
-          <table class="modern-table text-center">
-            <thead><tr><th class="text-start">ประเภท</th><th>หญิง 👩</th><th>ชาย 👨</th><th>รวม 📊</th></tr></thead>
-            <tbody>
-              <tr><td class="text-start">ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td class="text-primary fw-bold">${ctx.carryG.T}</td></tr>
-              <tr><td class="text-start">รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td class="text-primary fw-bold">${ctx.inNewG.T}</td></tr>
-              <tr><td class="text-start">รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td class="text-primary fw-bold">${ctx.inTransferG.T}</td></tr>
-              <tr><td class="text-start">รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td class="text-primary fw-bold">${ctx.inReferG.T}</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="col-12 col-md-6">
-        <div class="glass-card p-4 h-100">
-          <h6 class="fw-bold mb-3 text-danger"><i class="bi bi-box-arrow-right border border-danger p-1 rounded me-2"></i>ข้อมูลจำหน่าย (Discharge)</h6>
-          <table class="modern-table text-center">
-            <thead><tr><th class="text-start">ประเภท</th><th>หญิง 👩</th><th>ชาย 👨</th><th>รวม 📊</th></tr></thead>
-            <tbody>
-              <tr><td class="text-start">กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td class="text-danger fw-bold">${ctx.outDCG.T}</td></tr>
-              <tr><td class="text-start">ส่งต่อ (Refer Out)</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td class="text-danger fw-bold">${ctx.outROG.T}</td></tr>
-              <tr><td class="text-start">ย้ายแผนก/ตึก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td class="text-danger fw-bold">${ctx.outTOG.T}</td></tr>
-              <tr><td class="text-start">ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td class="text-danger fw-bold">${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- แถบตัวชี้วัดคุณภาพ (QA Indicators) -->
-    <div class="glass-card p-4 bg-white border-0 shadow-sm">
-      <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-shield-check me-2 text-success"></i>ตัวชี้วัดคุณภาพงานพยาบาล (QA)</h6>
-      <div class="d-flex flex-wrap gap-2">
-        <div class="qa-chip"><div class="qa-icon bg-danger"><i class="bi bi-lungs"></i></div> Unplanned ET: <span class="text-danger">${k.k11_unplanned_et}</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-warning"><i class="bi bi-bandaid"></i></div> แผลกดทับ: <span class="text-warning text-dark">${k.k15_pressure_ulcer_rate}</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-orange" style="background:#f97316;"><i class="bi bi-person-falling"></i></div> หกล้ม: <span style="color:#f97316;">${k.k16_fall_rate}</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-info"><i class="bi bi-journal-check"></i></div> บันทึกการพยาบาล: <span class="text-info text-dark">${k.k25_note_qlt}%</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-success"><i class="bi bi-clock-history"></i></div> รอ D/C เฉลี่ย: <span class="text-success">${fmt2(k.k26_avg_wait_dc_min)} นาที</span></div>
-        <div class="qa-chip"><div class="qa-icon bg-primary"><i class="bi bi-capsule"></i></div> คลาดเคลื่อนทางยา: <span class="text-primary">${k.k17_med_error}</span></div>
-      </div>
-    </div>
-  </div>`;
-}
   function renderReportCharts(ctx) {
     Chart.helpers.each(Chart.instances, (instance) => instance.destroy());
-    const elBOR = document.getElementById('chartBOR'); if (elBOR) { new Chart(elBOR, { type: 'doughnut', data: { labels: ['ครองเตียง', 'ว่าง'], datasets: [{ data:[ctx.borOcc || 0.1, 100 - (ctx.borOcc || 0)], backgroundColor:['#80cbc4', '#eceff1'], borderWidth: 0, borderRadius: 15, cutout: '80%' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, animation: { duration: 2000, easing: 'easeOutBounce' } } }); }
-    const elDept = document.getElementById('chartDept'); if (elDept) { const deptLabels = Object.keys(ctx.deptRows); new Chart(elDept, { type: 'bar', data: { labels: deptLabels, datasets:[ { label: 'คนไข้หญิง', data: deptLabels.map(d => ctx.deptRows[d].F), backgroundColor: '#ffccbc', borderRadius: 10 }, { label: 'คนไข้ชาย', data: deptLabels.map(d => ctx.deptRows[d].M), backgroundColor: '#b2ebf2', borderRadius: 10 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { weight: 'bold', family: 'Sarabun' } } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { borderDash: [5, 5] } } } } }); }
+    const elBOR = document.getElementById('chartBOR'); if (elBOR) { new Chart(elBOR, { type: 'doughnut', data: { labels: ['ครองเตียง', 'ว่าง'], datasets: [{ data:[ctx.borOcc || 0.1, 100 - (ctx.borOcc || 0)], backgroundColor:['#3b82f6', '#f1f5f9'], borderWidth: 0, borderRadius: 15, cutout: '80%' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, animation: { duration: 2000, easing: 'easeOutBounce' } } }); }
+    const elDept = document.getElementById('chartDept'); if (elDept) { const deptLabels = Object.keys(ctx.deptRows); new Chart(elDept, { type: 'bar', data: { labels: deptLabels, datasets:[ { label: 'หญิง (F)', data: deptLabels.map(d => ctx.deptRows[d].F), backgroundColor: '#f472b6', borderRadius: 5 }, { label: 'ชาย (M)', data: deptLabels.map(d => ctx.deptRows[d].M), backgroundColor: '#38bdf8', borderRadius: 5 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { weight: 'bold', family: 'Sarabun' } } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { borderDash: [5, 5] } } } } }); }
   }
 
-  function printOfficialReport() {
-    if (!currentReportCtx) return; const html = buildTabularReportHTML(currentReportCtx); const printWindow = window.open('', '_blank'); printWindow.document.write(html); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 500);
-  }
-
-  function buildTabularReportHTML(ctx) {
-    const { sheet, days, beds, isMonthClosed, kpi1127: k } = ctx; const isC = isMonthClosed; const borOccText = isC ? `${fmt2(ctx.borOcc)}%` : "-", borUtilText = isC ? `${fmt2(ctx.borUtil)}%` : "-";
-    const rowG = (label, gData, isBold = false) => `<tr style="${isBold ? 'font-weight:bold; background:#f9f9f9;' : ''}"><td style="text-align:left; padding-left:15px;">${label}</td><td style="width:50px;">${gData.F}</td><td style="width:50px;">${gData.M}</td><td style="width:50px; background:#f0f0f0;">${gData.T}</td></tr>`;
-    const deptRowsHtml = Object.keys(ctx.deptRows).map(d => `<tr><td style="text-align:left; font-size:11px;">- ${d} (วันนอน: ${ctx.deptRows[d].PD})</td><td>${ctx.deptRows[d].F}</td><td>${ctx.deptRows[d].M}</td><td style="background:#f0f0f0;">${ctx.deptRows[d].T}</td></tr>`).join('');
-    return `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>Official_Report_${sheet}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet"><style>@media print { @page { size: A4 portrait; margin: 1cm; } } body { font-family: 'Sarabun', sans-serif; font-size: 12px; color: #000; line-height: 1.4; padding: 0; margin: 0; } .header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 15px; padding-bottom: 5px; } .header h2 { margin: 0; font-size: 18px; font-weight: 700; } .meta-grid { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 600; font-size: 13px; } .main-grid { display: flex; gap: 15px; } .col-left { flex: 1.2; } .col-right { flex: 1; } table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; } th, td { border: 1px solid #333; padding: 4px 2px; text-align: center; overflow: hidden; } th { background: #eee; font-weight: 700; font-size: 11px; } .section-title { background: #444; color: #fff; text-align: left; padding-left: 5px; font-weight: bold; border: 1px solid #000; } .sub-label { text-align: left; padding-left: 10px; font-weight: 600; background: #f2f2f2; } .footer-sign { margin-top: 30px; display: flex; justify-content: space-around; text-align: center; } .dx-list { text-align: left; padding: 5px; border: 1px solid #333; font-size: 11px; min-height: 60px; }</style></head><body><div class="header"><h2>ใบรายงานสถิติผู้ป่วยใน หน่วยงาน Ward 9/2</h2></div><div class="meta-grid"><span>ประจำเดือน: ${sheet}</span><span>จำนวนวัน: ${days} วัน</span><span>เตียงเปิดจริง: ${isC ? beds : "(ยังไม่ระบุ)"} เตียง</span></div><div class="main-grid"><div class="col-left"><table><thead><tr><th style="width:auto;">ลำดับ / รายการ</th><th style="width:45px;">หญิง</th><th style="width:45px;">ชาย</th><th style="width:45px;">รวม</th></tr></thead><tbody><tr><td class="section-title" colspan="4">1. จำนวนผู้ป่วยรับเข้าทั้งหมด</td></tr>${rowG("ยอดผู้ป่วยยกมาจากเดือนก่อน", ctx.carryG)}${rowG("ผู้ป่วยรับใหม่", ctx.inNewG)}${rowG("ผู้ป่วยรับย้าย", ctx.inTransferG)}${rowG("ผู้ป่วยรับ Refer", ctx.inReferG)}${rowG("รวมรับเข้าทั้งสิ้น", ctx.inAllG, true)}<tr><td class="section-title" colspan="4">2. จำนวนผู้ป่วยจำหน่ายทั้งหมด</td></tr>${rowG("กลับบ้าน (D/C)", ctx.outDCG)}${rowG("ตาย (Death)", ctx.outDeathG)}${rowG("ย้ายแผนก (Transfer Out)", ctx.outTOG)}${rowG("ส่งต่อ (Refer Out)", ctx.outROG)}${rowG("หนี/ไม่สมัครใจ (Abscond/Refuse)", {F: ctx.outAbsG.F+ctx.outRefuseG.F, M: ctx.outAbsG.M+ctx.outRefuseG.M, T: ctx.outAbsG.T+ctx.outRefuseG.T})}${rowG("รวมจำหน่ายทั้งสิ้น", ctx.outAllG, true)}<tr><td class="section-title" colspan="4">3. จำนวนผู้ป่วยยกยอดไปเดือนหน้า</td></tr>${rowG("คงพยาบาลปลายเดือน", ctx.eomG, true)}<tr><td class="section-title" colspan="4">4. แยกตามภาควิชา</td></tr>${deptRowsHtml || '<tr><td colspan="4">ไม่มีข้อมูล</td></tr>'}<tr><td class="section-title" colspan="4">5. Newborn (ทารกแรกเกิด)</td></tr>${rowG("จำนวนทารกในเดือนนี้", {F:0, M:0, T:0})}</tbody></table></div><div class="col-right"><table><thead><tr><th style="width:40px;">ข้อ</th><th>รายการตัวชี้วัด</th><th style="width:80px;">ผลลัพธ์</th></tr></thead><tbody><tr><td>6</td><td style="text-align:left;">อัตราครองเตียง (Official)</td><td style="font-weight:bold;">${borOccText}</td></tr><tr><td>7</td><td style="text-align:left;">อัตราการใช้เตียง (Util)</td><td style="font-weight:bold;">${borUtilText}</td></tr><tr><td>8</td><td style="text-align:left;">จำนวนวันนอนรวม (LOS)</td><td>${ctx.patientDays}</td></tr><tr><td>9</td><td style="text-align:left;">วันใช้เตียงรวม (+&lt;6ชม.)</td><td>${ctx.patientDays + (ctx.under6Count || 0)}</td></tr><tr><td colspan="3" class="sub-label">10. สถิติ 5 โรคแรก (Top Diagnoses)</td></tr><tr><td colspan="3"><div class="dx-list">${ctx.topDx5.map((d, i) => `<div>${i + 1}. ${d[0]} (${d[1]})</div>`).join('') || 'ไม่มีข้อมูล'}</div></td></tr><tr><td>11</td><td style="text-align:left;">Unplanned ET tube</td><td>${k.k11_unplanned_et} ราย</td></tr><tr><td>12</td><td style="text-align:left;">Ventilator days</td><td>${k.k12_vent_days} วัน</td></tr><tr><td>13</td><td style="text-align:left;">ICD Line หลุด</td><td>${k.k13_icd_displaced} ครั้ง</td></tr><tr><td>15</td><td style="text-align:left;">อัตราแผลกดทับ (/1000)</td><td style="color:red;">${k.k15_pressure_ulcer_rate}</td></tr><tr><td>16</td><td style="text-align:left;">อัตราพลัดตกหกล้ม (/1000)</td><td style="color:red;">${k.k16_fall_rate}</td></tr><tr><td>24</td><td style="text-align:left;">Phlebitis (G1-G4)</td><td>${k.k24_phlebitis_g1+k.k24_phlebitis_g2+k.k24_phlebitis_g3+k.k24_phlebitis_g4} ครั้ง</td></tr><tr><td>25</td><td style="text-align:left;">บันทึกการพยาบาล (คุณภาพ)</td><td style="font-weight:bold;">${k.k25_note_qlt}%</td></tr><tr><td>26</td><td style="text-align:left;">รอคอยกลับบ้านเฉลี่ย</td><td>${fmt2(k.k26_avg_wait_dc_min)} นาที</td></tr><tr><td colspan="3" class="sub-label">27. การส่งต่อและบริการอื่น</td></tr><tr><td>Ref</td><td style="text-align:left;">Refer IN / OUT</td><td>${k.k27_refer_in} / ${k.k27_refer_out}</td></tr><tr><td>DC</td><td style="text-align:left;">ผู้ป่วย Day Care</td><td>${k.k27_daycare} case</td></tr></tbody></table></div></div><div class="footer-sign"><div><br>ลงชื่อ......................................................<br>(......................................................)<br>ผู้รายงาน / พยาบาลประจำการ</div><div><br>ลงชื่อ......................................................<br>(......................................................)<br>หัวหน้าหอผู้ป่วย Ward 9/2</div></div><div style="text-align:center; margin-top:10px; font-size:10px; color:#666;">พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')} | ระบบทะเบียนผู้ป่วย Cloud V.Ultimate</div></body></html>`;
-  }
   window.showFullReport = showFullReport; window.printOfficialReport = printOfficialReport;
 </script>
 </body>
