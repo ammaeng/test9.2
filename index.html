@@ -2017,56 +2017,50 @@ function buildTabularReportHTML(ctx) {
     </tr>`;
 
   let sumF = 0;
-let sumM = 0;
-let sumT = 0;
-let sumPDF = 0;
-let sumPDM = 0;
-let sumPD = 0;
+  let sumM = 0;
+  let sumT = 0;
+  let sumPDF = 0;
+  let sumPDM = 0;
+  let sumPD = 0;
 
-Object.values(ctx.deptRows).forEach(r => {
-  sumF += r.F || 0;
-  sumM += r.M || 0;
-  sumT += r.T || 0;
-  sumPDF += r.PDF || 0;
-  sumPDM += r.PDM || 0;
-  sumPD += r.PD || 0;
-});
-const deptRowsHtml = `
-${Object.keys(ctx.deptRows).map(d => `
+  Object.values(ctx.deptRows || {}).forEach(r => {
+    sumF += r.F || 0;
+    sumM += r.M || 0;
+    sumT += r.T || 0;
+    sumPDF += r.PDF || 0;
+    sumPDM += r.PDM || 0;
+    sumPD += r.PD || 0;
+  });
+
+  const deptRowsHtml = `
+${Object.keys(ctx.deptRows || {}).map(d => `
 <tr>
-<td style="text-align:left; font-size:11px;">
-- ${d}
-<br>
-<small>
-วันนอน: หญิง ${ctx.deptRows[d].PDF} | ชาย ${ctx.deptRows[d].PDM} | รวม ${ctx.deptRows[d].PD}
-</small>
-</td>
-<td>${ctx.deptRows[d].F}</td>
-<td>${ctx.deptRows[d].M}</td>
-<td style="background:#f0f0f0;">${ctx.deptRows[d].T}</td>
+  <td style="text-align:left; font-size:11px;">
+    - ${d}
+    <br>
+    <small>
+      วันนอน: หญิง ${ctx.deptRows[d].PDF || 0} | ชาย ${ctx.deptRows[d].PDM || 0} | รวม ${ctx.deptRows[d].PD || 0}
+    </small>
+  </td>
+  <td>${ctx.deptRows[d].F || 0}</td>
+  <td>${ctx.deptRows[d].M || 0}</td>
+  <td style="background:#f0f0f0;">${ctx.deptRows[d].T || 0}</td>
 </tr>
 `).join('')}
 
 <tr style="font-weight:bold; background:#fff3cd;">
-<td style="text-align:left;">
-รวมทุกภาควิชา
-<br>
-<small>
-วันนอน: หญิง ${sumPDF} | ชาย ${sumPDM} | รวม ${sumPD}
-</small>
-</td>
-<td>${sumF}</td>
-<td>${sumM}</td>
-<td>${sumT}</td>
+  <td style="text-align:left;">
+    รวมทุกภาควิชา
+    <br>
+    <small>
+      วันนอน: หญิง ${sumPDF} | ชาย ${sumPDM} | รวม ${sumPD}
+    </small>
+  </td>
+  <td>${sumF}</td>
+  <td>${sumM}</td>
+  <td>${sumT}</td>
 </tr>
 `;
-  const deptRowsHtml = Object.keys(ctx.deptRows).map(d => `
-    <tr>
-      <td style="text-align:left; font-size:11px;">- ${d} (วันนอน: ${ctx.deptRows[d].PD})</td>
-      <td>${ctx.deptRows[d].F}</td>
-      <td>${ctx.deptRows[d].M}</td>
-      <td style="background:#f0f0f0;">${ctx.deptRows[d].T}</td>
-    </tr>`).join('');
 
   return `<!DOCTYPE html>
 <html lang="th">
@@ -2084,12 +2078,13 @@ body { font-family: 'Sarabun', sans-serif; font-size: 12px; color: #000; line-he
 .col-left { flex: 1.2; }
 .col-right { flex: 1; }
 table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; }
-th, td { border: 1px solid #333; padding: 4px 2px; text-align: center; overflow: hidden; }
+th, td { border: 1px solid #333; padding: 4px 2px; text-align: center; overflow: hidden; vertical-align: top; }
 th { background: #eee; font-weight: 700; font-size: 11px; }
 .section-title { background: #444; color: #fff; text-align: left; padding-left: 5px; font-weight: bold; border: 1px solid #000; }
 .sub-label { text-align: left; padding-left: 10px; font-weight: 600; background: #f2f2f2; }
 .footer-sign { margin-top: 30px; display: flex; justify-content: space-around; text-align: center; }
 .dx-list { text-align: left; padding: 5px; border: 1px solid #333; font-size: 11px; min-height: 60px; }
+small { font-size: 10px; color: #444; }
 </style>
 </head>
 <body>
@@ -2128,9 +2123,9 @@ th { background: #eee; font-weight: 700; font-size: 11px; }
           ${rowG("ย้ายแผนก (Transfer Out)", ctx.outTOG)}
           ${rowG("ส่งต่อ (Refer Out)", ctx.outROG)}
           ${rowG("หนี/ไม่สมัครใจ (Abscond/Refuse)", {
-            F: ctx.outAbsG.F + ctx.outRefuseG.F,
-            M: ctx.outAbsG.M + ctx.outRefuseG.M,
-            T: ctx.outAbsG.T + ctx.outRefuseG.T
+            F: (ctx.outAbsG?.F || 0) + (ctx.outRefuseG?.F || 0),
+            M: (ctx.outAbsG?.M || 0) + (ctx.outRefuseG?.M || 0),
+            T: (ctx.outAbsG?.T || 0) + (ctx.outRefuseG?.T || 0)
           })}
           ${rowG("รวมจำหน่ายทั้งสิ้น", ctx.outAllG, true)}
 
@@ -2175,7 +2170,7 @@ th { background: #eee; font-weight: 700; font-size: 11px; }
           <tr><td>13</td><td style="text-align:left;">ICD Line หลุด</td><td>${k.k13_icd_displaced} ครั้ง</td></tr>
           <tr><td>15</td><td style="text-align:left;">อัตราแผลกดทับ (/1000)</td><td style="color:red;">${k.k15_pressure_ulcer_rate}</td></tr>
           <tr><td>16</td><td style="text-align:left;">อัตราพลัดตกหกล้ม (/1000)</td><td style="color:red;">${k.k16_fall_rate}</td></tr>
-          <tr><td>24</td><td style="text-align:left;">Phlebitis (G1-G4)</td><td>${k.k24_phlebitis_g1 + k.k24_phlebitis_g2 + k.k24_phlebitis_g3 + k.k24_phlebitis_g4} ครั้ง</td></tr>
+          <tr><td>24</td><td style="text-align:left;">Phlebitis (G1-G4)</td><td>${(k.k24_phlebitis_g1 || 0) + (k.k24_phlebitis_g2 || 0) + (k.k24_phlebitis_g3 || 0) + (k.k24_phlebitis_g4 || 0)} ครั้ง</td></tr>
           <tr><td>25</td><td style="text-align:left;">บันทึกการพยาบาล (คุณภาพ)</td><td style="font-weight:bold;">${k.k25_note_qlt}%</td></tr>
           <tr><td>26</td><td style="text-align:left;">รอคอยกลับบ้านเฉลี่ย</td><td>${fmt2(k.k26_avg_wait_dc_min)} นาที</td></tr>
 
@@ -2197,8 +2192,7 @@ th { background: #eee; font-weight: 700; font-size: 11px; }
   </div>
 </body>
 </html>`;
-} 
-
+}
   function lockOutcomeFieldsInMainForm() {
   const outcomeFields = [
     'dcDate',
