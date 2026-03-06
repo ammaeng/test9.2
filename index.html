@@ -1453,11 +1453,11 @@ function formatTimeForInput(v) {
     `;
     document.getElementById('patientModalBody').innerHTML = html;
 
-    // จัดการ Footer และปุ่ม
+    // จัดการ Footer และปุ่ม (แบบสะอาด)
     const modalFooter = document.querySelector('#patientModal .modal-footer');
     const modalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('patientModal'));
 
-    // สร้างปุ่มจำหน่าย/ยกเลิก ตามสถานะ
+    // กำหนดปุ่ม Action ตามสถานะ
     let actionBtnHtml = (item.status === 'จำหน่ายแล้ว') 
       ? `<button class="btn btn-outline-danger rounded-pill flex-grow-1" id="btnModalCancelDis"><i class="bi bi-arrow-counterclockwise"></i> ยกเลิกจำหน่าย</button>`
       : `<button class="btn btn-warning rounded-pill flex-grow-1" id="btnModalDis"><i class="bi bi-hospital"></i> จำหน่าย</button>`;
