@@ -2504,8 +2504,8 @@ async function showFullReport(btn) {
       const raw = String(s || "").trim().replace(/\s+/g, " ");
       return String(dxMap[raw] || raw).trim().replace(/\s+/g, " ") || "";
     };
-    const waitList = patients
-  .map(p => Number(p.rawData[COL.WAIT_TIME]))
+const waitList = patients
+  .map(p => Number(p.rawData[34])) // ระบุ index 34 ตรงๆ (คอลัมน์ที่ 35)
   .filter(v => v > 0);
 
 const avgWait = waitList.length > 0 
@@ -2586,7 +2586,7 @@ const avgWait = waitList.length > 0
       k24_phlebitis_g4:        ph[4] || 0,
       k25_note_qty:            Math.round(avgInc(incidents,"NURSE_NOTE_QTY") || 0),
       k25_note_qlt:            Math.round(avgInc(incidents,"NURSE_NOTE_QLT") || 0),
-      k26_avg_wait_dc_min:     avgInc(incidents,"DISCHARGE_WAIT_MIN") || 0,
+  k26_avg_wait_dc_min: avgWait, // ใช้ค่าที่คำนวณได้ที่นี่
       k27_refer_in:            sumInc(incidents,"REFER_IN"),
       k27_refer_out:           sumInc(incidents,"REFER_OUT"),
       k27_refer_back:          sumInc(incidents,"REFER_BACK"),
