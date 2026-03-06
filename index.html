@@ -1599,20 +1599,38 @@ async function showFullReport(btn) {
       return sum + utilDays;
     }, 0);
 
-    const deptRows = {};
-    inAllList.forEach(p => {
-      const r = p.rawData || [];
-      const dept = deptFromRow(r);
-      if (!deptRows[dept]) deptRows[dept] = { F: 0, M: 0, T: 0, PD: 0 };
+const deptRows = {};
+inAllList.forEach(p => {
+  const r = p.rawData || [];
+  const dept = deptFromRow(r);
 
-      const g = genderOf(p);
-      if (g === "F") deptRows[dept].F++;
-      if (g === "M") deptRows[dept].M++;
-      deptRows[dept].T = deptRows[dept].F + deptRows[dept].M;
+  if (!deptRows[dept]) {
+    deptRows[dept] = {
+      F: 0,
+      M: 0,
+      T: 0,
+      PDF: 0,
+      PDM: 0,
+      PD: 0
+    };
+  }
 
-      // ภาควิชายังใช้วันนอนแบบ official
-      deptRows[dept].PD += safeInt(p.displayLOS);
-    });
+  const g = genderOf(p);
+  const los = safeInt(p.displayLOS);
+
+  if (g === "F") {
+    deptRows[dept].F++;
+    deptRows[dept].PDF += los;
+  }
+
+  if (g === "M") {
+    deptRows[dept].M++;
+    deptRows[dept].PDM += los;
+  }
+
+  deptRows[dept].T = deptRows[dept].F + deptRows[dept].M;
+  deptRows[dept].PD = deptRows[dept].PDF + deptRows[dept].PDM;
+});
 
     const counts = {};
 
