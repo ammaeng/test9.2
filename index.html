@@ -281,10 +281,9 @@
 
         <div class="card mb-3">
           <div class="p-3 border-bottom"><div class="section-title">3) ข้อมูลจำหน่าย</div>
-<div class="subtle">
-การบันทึกจำหน่าย ย้ายแผนก Refer ตาย หนี ปฏิเสธ  
-ให้แก้ผ่านปุ่ม <b>“จำหน่าย”</b> ในรายการผู้ป่วย
-</div></div>
+<div class="section-title">3) จำหน่าย / Outcome</div>
+          
+          </div>
           <div class="p-3 row g-2">
             <div class="col-6 col-md-3"><label class="form-label">D/C วันที่</label><input type="date" class="form-control" id="dcDate" onchange="calculateLOSPreview()"></div>
             <div class="col-6 col-md-3"><label class="form-label">F/U</label><input type="text" class="form-control" id="fu" placeholder="เช่น นัด 7 วัน / OPD"></div>
@@ -1179,6 +1178,8 @@ function toggleDisFields() {
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+      lockOutcomeFieldsInMainForm();
+
     const inTimeEl = document.getElementById('inTime');
     if (inTimeEl) inTimeEl.addEventListener('blur', function() { this.value = formatTimeForInput(this.value); });
   });
@@ -2152,7 +2153,35 @@ th { background: #eee; font-weight: 700; font-size: 11px; }
   </div>
 </body>
 </html>`;
-}  window.showFullReport = showFullReport; window.printOfficialReport = printOfficialReport;
+} 
+
+  function lockOutcomeFieldsInMainForm() {
+  const outcomeFields = [
+    'dcDate',
+    'fu',
+    'admitUnder6',
+    'los',
+    'deathDate',
+    'transferOutDate',
+    'transferOut',
+    'abscondDate',
+    'refuseDate',
+    'referOutDate',
+    'referDestination'
+  ];
+
+  outcomeFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = true;
+      el.classList.add('bg-light');
+      el.title = "แก้ไขผ่านปุ่มจำหน่ายเท่านั้น";
+    }
+  });
+}
+  
+  
+  window.showFullReport = showFullReport; window.printOfficialReport = printOfficialReport;
 </script>
 </body>
 </html>
