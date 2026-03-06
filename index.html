@@ -280,7 +280,11 @@
         </div>
 
         <div class="card mb-3">
-          <div class="p-3 border-bottom"><div class="section-title">3) จำหน่าย / Outcome</div></div>
+          <div class="p-3 border-bottom"><div class="section-title">3) ข้อมูลจำหน่าย</div>
+<div class="subtle">
+การบันทึกจำหน่าย ย้ายแผนก Refer ตาย หนี ปฏิเสธ  
+ให้แก้ผ่านปุ่ม <b>“จำหน่าย”</b> ในรายการผู้ป่วย
+</div></div>
           <div class="p-3 row g-2">
             <div class="col-6 col-md-3"><label class="form-label">D/C วันที่</label><input type="date" class="form-control" id="dcDate" onchange="calculateLOSPreview()"></div>
             <div class="col-6 col-md-3"><label class="form-label">F/U</label><input type="text" class="form-control" id="fu" placeholder="เช่น นัด 7 วัน / OPD"></div>
@@ -933,6 +937,123 @@ async function dischargeUI(item) {
   toggleDisFields();
   modal.show();
 }
+
+  function processData(p, nurseId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const s = ss.getSheetByName(p.targetSheet);
+  if (!s) throw new Error("ไม่พบชีทเป้าหมาย");
+
+  const f = p.formData || {};
+  const rowId = f.rowId ? Number(f.rowId) : null;
+
+  const setIf = (arr, col, v) => {
+    if (v !== undefined && v !== null && String(v).trim() !== "") arr[col] = v;
+  };
+
+  let finalRow;
+  if (rowId) {
+    finalRow = s.getRange(rowId, 1, 1, TOTAL_COLS).getDisplayValues()[0];
+    const oldStatus = String(finalRow[COL.STATUS] || "").trim();
+    finalRow[COL.STATUS] = (oldStatus === "ยอดยกมา")
+      ? "ยอดยกมา"
+      : (f.patientStatus || oldStatus || "รับใหม่");
+  } else {
+    finalRow = new Array(TOTAL_COLS).fill("");
+    finalRow[COL.STATUS] = f.patientStatus || "รับใหม่";
+  }
+
+  setIf(finalRow, COL.SEQ, f.seq);
+
+  setIf(finalRow, COL.ADMIT_DATE, f.newMark);
+  setIf(finalRow, COL.ADMIT_TIME, f.newTime);
+  setIf(finalRow, COL.ADMIT_DEPT, f.newDept);
+
+  setIf(finalRow, COL.TRANSFER_IN_DATE, f.transferMark);
+  setIf(finalRow, COL.TRANSFER_IN_TIME, f.transferTime);
+  setIf(finalRow, COL.TRANSFER_IN_DEPT, f.transferDept);
+
+  setIf(finalRow, COL.REFER_IN_DATE, f.referMark);
+  setIf(finalRow, COL.REFER_IN_TIME, f.referTime);
+  setIf(finalRow, COL.REFER_IN_DEPT, f.referDept);
+
+  setIf(finalRow, COL.NAME, f.patientName);
+  setIf(finalRow, COL.AGE, f.age);
+  setIf(finalRow, COL.HN, f.hn);
+  setIf(finalRow, COL.AN, f.an);
+  setIf(finalRow, COL.WARD, f.ward);
+  setIf(finalRow, COL.SAI, f.sai);
+  setIf(finalRow, COL.SITHI, f.sithi);
+  setIf(finalRow, COL.DX1, f.dx1);
+  setIf(finalRow, COL.DX2, f.dx2);
+  setIf(finalRow, COL.ADDRESS, f.address);
+  setIf(finalRow, COL.PREFIX, f.prefix);
+  setIf(finalRow, COL.GENDER, f.gender);
+
+  splitDxList_(f.dx1).forEach(upsertDxMap_);
+  splitDxList_(f.dx2).forEach(upsertDxMap_);
+
+  const hasAnyOutcomeInput = [
+    f.dcDate,
+    f.transferOutDate,
+    f.abscondDate,
+    f.refuseDate,
+    f.referOutDate,
+    f.deathDate,
+    f.fu,
+    f.transferOut,
+    f.referDestination,
+    f.waitTime,
+    f.outTime
+  ].some(v => String(v || "").trim() !== "");
+
+  if (hasAnyOutcomeInput) {
+    [
+      COL.DC_DATE,
+      COL.TRANSFER_OUT,
+      COL.TRANSFER_OUT_DATE,
+      COL.ABSCOND_DATE,
+      COL.REFUSE_DATE,
+      COL.REFER_OUT_DATE,
+      COL.REFER_DEST,
+      COL.DEATH_DATE,
+      COL.FU,
+      COL.WAIT_TIME,
+      COL.OUT_TIME
+    ].forEach(col => finalRow[col] = "");
+
+    setIf(finalRow, COL.DC_DATE, f.dcDate);
+    setIf(finalRow, COL.FU, f.fu);
+
+    setIf(finalRow, COL.TRANSFER_OUT, f.transferOut);
+    setIf(finalRow, COL.TRANSFER_OUT_DATE, f.transferOutDate);
+
+    setIf(finalRow, COL.ABSCOND_DATE, f.abscondDate);
+    setIf(finalRow, COL.REFUSE_DATE, f.refuseDate);
+
+    setIf(finalRow, COL.REFER_OUT_DATE, f.referOutDate);
+    setIf(finalRow, COL.REFER_DEST, f.referDestination);
+
+    setIf(finalRow, COL.DEATH_DATE, f.deathDate);
+
+    setIf(finalRow, COL.WAIT_TIME, f.waitTime);
+    setIf(finalRow, COL.OUT_TIME, f.outTime);
+  }
+
+  if (rowId) {
+    s.getRange(rowId, 1, 1, TOTAL_COLS).setValues([finalRow]);
+  } else {
+    s.appendRow(finalRow);
+  }
+
+  writeAuditLog_(
+    rowId ? "UPDATE_PATIENT" : "CREATE_PATIENT",
+    f.hn || "",
+    `sheet:${p.targetSheet}`,
+    nurseId
+  );
+
+  return "สำเร็จ";
+}
   
 function toggleDisFields() {
   const t = document.getElementById("disType").value;
@@ -1110,37 +1231,139 @@ function toggleDisFields() {
     }
   }
 
-  function editPatient(item) {
-    const r = item.rawData ||[];
-    document.getElementById('rowId').value = item.rowId; document.getElementById('seq').value = r[1] || ""; document.getElementById('patientStatusStored').value = r[0] || "รับใหม่";
-    document.getElementById('prefix').value = r[32] || 'นาย'; document.getElementById('patientName').value = r[11] || ""; document.getElementById('gender').value = r[33] || 'ชาย';
-    const am = (r[12]||"").match(/(\d+) ปี (\d+) เดือน (\d+) วัน/);
-    if(am){ document.getElementById('ageYear').value = am[1]; document.getElementById('ageMonth').value = am[2]; document.getElementById('ageDay').value = am[3]; } else { document.getElementById('ageYear').value = 0; document.getElementById('ageMonth').value = 0; document.getElementById('ageDay').value = 0; }
-    document.getElementById('inDate').value = formatDateForInput(r[2]||r[5]||r[8]); document.getElementById('inTime').value = formatTimeForInput(r[3]||r[6]||r[9]); document.getElementById('inDept').value = r[4]||r[7]||r[10]||"";
-    document.getElementById('hn').value = r[13] || ""; document.getElementById('an').value = r[14] || ""; document.getElementById('ward').value = r[15] || ""; document.getElementById('sai').value = r[16] || ""; document.getElementById('sithi').value = r[17] || "";
-    document.getElementById('dx1').value = r[18] || ""; document.getElementById('dx2').value = r[19] || ""; loadDxTagsFromHidden('dx1'); loadDxTagsFromHidden('dx2');
-    document.getElementById('dcDate').value = formatDateForInput(r[20]); document.getElementById('fu').value = r[21] || ""; document.getElementById('admitUnder6').value = r[22] || "";
-    document.getElementById('deathDate').value = formatDateForInput(r[30]); document.getElementById('transferOutDate').value = formatDateForInput(r[25]); document.getElementById('transferOut').value = r[24] || "";
-    document.getElementById('abscondDate').value = formatDateForInput(r[26]); document.getElementById('refuseDate').value = formatDateForInput(r[27]); document.getElementById('referOutDate').value = formatDateForInput(r[28]);
-    document.getElementById('referDestination').value = r[29] || ""; document.getElementById('address').value = r[31] || "";
-    if(r[2]) document.getElementById('inType').value = "รับใหม่"; else if(r[5]) document.getElementById('inType').value = "รับย้าย"; else if(r[8]) document.getElementById('inType').value = "รับ Refer";
-    calculateLOSPreview(); new bootstrap.Tab(document.querySelector('button[data-bs-target="#form-pane"]')).show(); window.scrollTo(0,0);
+function editPatient(item) {
+  const r = item.rawData || [];
+
+  document.getElementById('rowId').value = item.rowId;
+  document.getElementById('seq').value = r[COL.SEQ] || "";
+  document.getElementById('patientStatusStored').value = r[COL.STATUS] || "รับใหม่";
+
+  document.getElementById('prefix').value = r[COL.PREFIX] || 'นาย';
+  document.getElementById('patientName').value = r[COL.NAME] || "";
+  document.getElementById('gender').value = r[COL.GENDER] || 'ชาย';
+
+  const am = String(r[COL.AGE] || "").match(/(\d+)\s*ปี\s*(\d+)\s*เดือน\s*(\d+)\s*วัน/);
+  if (am) {
+    document.getElementById('ageYear').value = am[1];
+    document.getElementById('ageMonth').value = am[2];
+    document.getElementById('ageDay').value = am[3];
+  } else {
+    document.getElementById('ageYear').value = 0;
+    document.getElementById('ageMonth').value = 0;
+    document.getElementById('ageDay').value = 0;
   }
 
+  document.getElementById('inDate').value =
+    formatDateForInput(r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE]);
+
+  document.getElementById('inTime').value =
+    formatTimeForInput(r[COL.ADMIT_TIME] || r[COL.TRANSFER_IN_TIME] || r[COL.REFER_IN_TIME]);
+
+  document.getElementById('inDept').value =
+    r[COL.ADMIT_DEPT] || r[COL.TRANSFER_IN_DEPT] || r[COL.REFER_IN_DEPT] || "";
+
+  document.getElementById('hn').value = r[COL.HN] || "";
+  document.getElementById('an').value = r[COL.AN] || "";
+  document.getElementById('ward').value = r[COL.WARD] || "";
+  document.getElementById('sai').value = r[COL.SAI] || "";
+  document.getElementById('sithi').value = r[COL.SITHI] || "";
+
+  document.getElementById('dx1').value = r[COL.DX1] || "";
+  document.getElementById('dx2').value = r[COL.DX2] || "";
+  loadDxTagsFromHidden('dx1');
+  loadDxTagsFromHidden('dx2');
+
+  document.getElementById('address').value = r[COL.ADDRESS] || "";
+
+  if (r[COL.ADMIT_DATE]) {
+    document.getElementById('inType').value = "รับใหม่";
+  } else if (r[COL.TRANSFER_IN_DATE]) {
+    document.getElementById('inType').value = "รับย้าย";
+  } else if (r[COL.REFER_IN_DATE]) {
+    document.getElementById('inType').value = "รับ Refer";
+  } else {
+    document.getElementById('inType').value = "รับใหม่";
+  }
+
+  // ฟอร์มหลักไม่ใช้แก้ outcome
+  document.getElementById('dcDate').value = "";
+  document.getElementById('fu').value = "";
+  document.getElementById('admitUnder6').value = "";
+  document.getElementById('los').value = "";
+  document.getElementById('deathDate').value = "";
+  document.getElementById('transferOutDate').value = "";
+  document.getElementById('transferOut').value = "";
+  document.getElementById('abscondDate').value = "";
+  document.getElementById('refuseDate').value = "";
+  document.getElementById('referOutDate').value = "";
+  document.getElementById('referDestination').value = "";
+
+  new bootstrap.Tab(document.querySelector('button[data-bs-target="#form-pane"]')).show();
+  window.scrollTo(0, 0);
+}
   function printPDF(item) {
     const win = window.open("", "_blank"); const r = item.rawData ||[];
     const p = { prefix:r[32], patientName:r[11], hn:r[13], an:r[14], gender:r[33], age:r[12], address:r[31], sithi:r[17], ward:r[15], sai:r[16], dx1:r[18], dx2:r[19], inType:r[2]?'รับใหม่':(r[5]?'รับย้าย':'Refer'), inDate:r[2]||r[5]||r[8], inTime:r[3]||r[6]||r[9], inDept:r[4]||r[7]||r[10], status:item.status, los:item.displayLOS, dcDate:r[20], deathDate:r[30], transferOut:r[24], admitUnder6:r[22], patientStatus:r[0] };
     callApi('createPatientPDF', p).then(b => { win.document.write(`<iframe src="data:application/pdf;base64,${b}" style="width:100%;height:100vh;border:none;"></iframe>`); }).catch(err => win.document.write(`<pre>${err.toString()}</pre>`));
   }
 
-  document.getElementById('dataForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); Swal.fire({ title: 'บันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    const inT = document.getElementById('inType').value, existingStatus = (document.getElementById('patientStatusStored').value || "").trim(), statusToSave = (existingStatus === "ยอดยกมา") ? "ยอดยกมา" : inT;
-    const formData = { rowId: document.getElementById('rowId').value, seq: document.getElementById('seq').value, patientStatus: statusToSave, prefix: document.getElementById('prefix').value, patientName: document.getElementById('patientName').value, gender: document.getElementById('gender').value, age: `${document.getElementById('ageYear').value} ปี ${document.getElementById('ageMonth').value} เดือน ${document.getElementById('ageDay').value} วัน`, hn: document.getElementById('hn').value, an: document.getElementById('an').value, ward: document.getElementById('ward').value, sai: document.getElementById('sai').value, sithi: document.getElementById('sithi').value, dx1: document.getElementById('dx1').value, dx2: document.getElementById('dx2').value, address: document.getElementById('address').value, los: document.getElementById('los').value, fu: document.getElementById('fu').value, admitUnder6: document.getElementById('admitUnder6').value, dcDate: formatDateForSheet(document.getElementById('dcDate').value), deathDate: formatDateForSheet(document.getElementById('deathDate').value), transferOutDate: formatDateForSheet(document.getElementById('transferOutDate').value), transferOut: document.getElementById('transferOut').value, abscondDate: formatDateForSheet(document.getElementById('abscondDate').value), refuseDate: formatDateForSheet(document.getElementById('refuseDate').value), referOutDate: formatDateForSheet(document.getElementById('referOutDate').value), referDestination: document.getElementById('referDestination').value, nurseId: getNurseId() || "" };
-    const iD = formatDateForSheet(document.getElementById('inDate').value), iT = document.getElementById('inTime').value, iDep = document.getElementById('inDept').value;
-    if(inT === "รับใหม่"){ formData.newMark=iD; formData.newTime=iT; formData.newDept=iDep; } else if(inT === "รับย้าย"){ formData.transferMark=iD; formData.transferTime=iT; formData.transferDept=iDep; } else { formData.referMark=iD; formData.referTime=iT; formData.referDept=iDep; }
-    try{ await callApi('processData', { targetSheet: currentSheet, formData }); Swal.fire('สำเร็จ', '', 'success'); loadDashboard(); new bootstrap.Tab(document.querySelector('button[data-bs-target="#list-pane"]')).show(); }catch(err){ Swal.fire('ผิดพลาด', err.toString(), 'error'); }
-  });
+document.getElementById('dataForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  Swal.fire({ title: 'บันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  const inT = document.getElementById('inType').value;
+  const existingStatus = (document.getElementById('patientStatusStored').value || "").trim();
+  const statusToSave = (existingStatus === "ยอดยกมา")
+    ? "ยอดยกมา"
+    : (existingStatus || inT || "รับใหม่");
+
+  const formData = {
+    rowId: document.getElementById('rowId').value,
+    seq: document.getElementById('seq').value,
+    patientStatus: statusToSave,
+
+    prefix: document.getElementById('prefix').value,
+    patientName: document.getElementById('patientName').value,
+    gender: document.getElementById('gender').value,
+    age: `${document.getElementById('ageYear').value} ปี ${document.getElementById('ageMonth').value} เดือน ${document.getElementById('ageDay').value} วัน`,
+    hn: document.getElementById('hn').value,
+    an: document.getElementById('an').value,
+    ward: document.getElementById('ward').value,
+    sai: document.getElementById('sai').value,
+    sithi: document.getElementById('sithi').value,
+    dx1: document.getElementById('dx1').value,
+    dx2: document.getElementById('dx2').value,
+    address: document.getElementById('address').value,
+    nurseId: getNurseId() || ""
+  };
+
+  const iD = formatDateForSheet(document.getElementById('inDate').value);
+  const iT = document.getElementById('inTime').value;
+  const iDep = document.getElementById('inDept').value;
+
+  if (inT === "รับใหม่") {
+    formData.newMark = iD;
+    formData.newTime = iT;
+    formData.newDept = iDep;
+  } else if (inT === "รับย้าย") {
+    formData.transferMark = iD;
+    formData.transferTime = iT;
+    formData.transferDept = iDep;
+  } else {
+    formData.referMark = iD;
+    formData.referTime = iT;
+    formData.referDept = iDep;
+  }
+
+  try {
+    await callApi('processData', { targetSheet: currentSheet, formData });
+    Swal.fire('สำเร็จ', '', 'success');
+    loadDashboard();
+    new bootstrap.Tab(document.querySelector('button[data-bs-target="#list-pane"]')).show();
+  } catch (err) {
+    Swal.fire('ผิดพลาด', err.toString(), 'error');
+  }
+});
 
   const INCIDENT_TYPES =[ {k:"UNPLANNED_ET", t:"(11) Unplanned ET tube", needsValue:true}, {k:"VENT_DAYS", t:"(12) Ventilator days", needsValue:true}, {k:"ICD_DISLODGE", t:"(13) ICD line หลุด", needsValue:true}, {k:"ICD_LINE_DAYS", t:"(14) ICD line days", needsValue:true}, {k:"PRESSURE_ULCER", t:"(15) แผลกดทับ (ครั้ง)", needsValue:true}, {k:"FALL", t:"(16) พลัดตกหกล้ม (ครั้ง)", needsValue:true}, {k:"MED_ERROR", t:"(17) คลาดเคลื่อนยา (ครั้ง)", needsValue:true}, {k:"GHI", t:"(18) GHI level", needsLevel:true}, {k:"UNPLANNED_CPR", t:"(19) Unplanned CPR", needsValue:true}, {k:"UNPLANNED_ICU", t:"(20) Unplanned ICU", needsValue:true}, {k:"WRONG_PROCEDURE", t:"(21) หัตถการผิดคน/ข้าง/ตำแหน่ง", needsValue:true}, {k:"WRONG_SURGERY", t:"(22) ผ่าตัดผิดคน/ข้าง/ตำแหน่ง", needsValue:true}, {k:"WRONG_TRANSFUSION", t:"(23) ให้เลือดผิดคน", needsValue:true}, {k:"PHLEBITIS", t:"(24) Phlebitis grade", needsGrade:true, needsValue:true}, {k:"NURSE_NOTE_QTY", t:"(25) บันทึกพยาบาลเชิงปริมาณ (%)", needsValue:true}, {k:"NURSE_NOTE_QLT", t:"(25) บันทึกพยาบาลเชิงคุณภาพ (%)", needsValue:true}, {k:"DISCHARGE_WAIT_MIN", t:"(26) รอคอยกลับบ้าน (นาที)", needsValue:true}, {k:"REFER_IN", t:"(27) Refer IN", needsValue:true}, {k:"REFER_OUT", t:"(27) Refer OUT", needsValue:true}, {k:"REFER_BACK", t:"(27) Refer Back", needsValue:true}, {k:"REFER_BACK_TO", t:"(27) Refer Back To", needsValue:true}, {k:"DAYCARE", t:"(27) Day Care", needsValue:true} ];
 
