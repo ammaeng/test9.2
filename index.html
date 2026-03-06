@@ -795,6 +795,10 @@
     modalInstance.show();
   }
 
+  function getItemByRowId(rowId) {
+    return lastDataByRowId.get(String(rowId)) || null;
+  }
+
   function bindTableEvents() {
     ['carryBody', 'newBody'].forEach(id => {
       const el = document.getElementById(id);
