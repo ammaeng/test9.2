@@ -1421,12 +1421,11 @@ function buildRowHtml(item) {
 
 // 2. Modal รายละเอียด (Hybrid Strategy)
 // 2. Modal รายละเอียด: ศูนย์รวม Action และสถานะ
-  function openPatientModal(item) {
+function openPatientModal(item) {
     const r = item.rawData || [];
     const empty = "-";
     const formatD = (d) => d || empty;
 
-    // สร้างเนื้อหา HTML
     const html = `
       <div class="report-block">
         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -1454,11 +1453,9 @@ function buildRowHtml(item) {
     `;
     document.getElementById('patientModalBody').innerHTML = html;
 
-    // จัดการ Footer และปุ่ม
     const modalFooter = document.querySelector('#patientModal .modal-footer');
     const modalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('patientModal'));
 
-    // สร้างปุ่ม Action ตามสถานะ
     let actionBtnHtml = (item.status === 'จำหน่ายแล้ว') 
       ? `<button class="btn btn-outline-danger rounded-pill flex-grow-1" id="btnModalCancelDis"><i class="bi bi-arrow-counterclockwise"></i> ยกเลิกจำหน่าย</button>`
       : `<button class="btn btn-warning rounded-pill flex-grow-1" id="btnModalDis"><i class="bi bi-hospital"></i> จำหน่าย</button>`;
@@ -1471,18 +1468,17 @@ function buildRowHtml(item) {
       </div>
     `;
 
-    // ผูก Event
     if (item.status === 'จำหน่ายแล้ว') {
         document.getElementById('btnModalCancelDis').onclick = () => { modalInstance.hide(); confirmCancelDischarge(item); };
     } else {
         document.getElementById('btnModalDis').onclick = () => { modalInstance.hide(); dischargeUI(item); };
     }
-
     document.getElementById('btnModalEdit').onclick = () => { modalInstance.hide(); editPatient(item); };
     document.getElementById('btnModalPDF').onclick = () => printPDF(item);
 
     modalInstance.show();
   }
+    
 function bindTableEvents() {
   ['carryBody', 'newBody'].forEach(id => {
     const el = document.getElementById(id);
