@@ -1383,223 +1383,50 @@ function formatTimeForInput(v) {
     return true;
   });
 
-// 1. ตารางหลัก: แสดงเฉพาะปุ่มจำหน่าย (ลบปุ่มแก้ไขและ PDF ออก)
-  function buildRowHtml(item) {
-    const r = item.rawData || [];
-    const type = (item.patientStatus || r[0] || '').trim();
-    const badgeMap = { "ยอดยกมา": "bg-secondary", "รับใหม่": "bg-primary", "รับย้าย": "bg-dark", "รับ Refer": "bg-info text-dark" };
-    const typeBadge = badgeMap[type] || "bg-light text-dark";
-
-    const statusBadge = item.status === 'จำหน่ายแล้ว' 
-      ? '<span class="badge bg-success rounded-pill px-3"><i class="bi bi-check-circle me-1"></i>จำหน่ายแล้ว</span>' 
-      : '<span class="badge bg-warning text-dark rounded-pill px-3"><i class="bi bi-activity me-1"></i>ยังรักษาอยู่</span>';
-
-    const admitDate = r[2] || r[5] || r[8] || "";
-    const admitShort = shortThaiDate(admitDate);
-    const los = parseInt(item.displayLOS, 10);
-    const isLong = (!isNaN(los) && los >= 30);
-    const losBadge = !isNaN(los) ? `<span class="badge ${los >= 30 ? 'bg-danger' : los >= 7 ? 'bg-warning text-dark' : 'bg-success'}">${los}</span>` : '';
-
-    return `
-    <tr class="row-clickable ${isLong ? 'row-longstay' : ''}" data-rowid="${item.rowId}">
-      <td><span class="badge ${typeBadge}">${escapeHtml(type)}</span></td>
-      <td>${escapeHtml(r[1] || '')}</td>
-      <td>${escapeHtml(r[13] || '')}</td>
-      <td>${escapeHtml(r[14] || '')}</td>
-      <td>${escapeHtml(r[11] || '')}</td>
-      <td>${escapeHtml(admitShort || admitDate)}</td>
-      <td>${escapeHtml(r[15] || '')}</td>
-      <td>${losBadge}</td>
-      <td>${statusBadge}</td>
-      <td class="text-center">
-        <button class="btn-modern dis" data-action="dis" data-rowid="${item.rowId}" title="จำหน่าย">
-          <i class="bi bi-hospital"></i>
-        </button>
-      </td>
-    </tr>`;
-  }
-
-  // 2. Modal รายละเอียด: ศูนย์รวม Action และสถานะ
-  function openPatientModal(item) {
-    const r = item.rawData || [];
-    const empty = "-";
-    const formatD = (d) => d || empty;
-
-    // สร้างเนื้อหา HTML
-    const html = `
-      <div class="report-block">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <div>
-            <div class="fw-black" style="font-size:20px;">${escapeHtml((r[COL.PREFIX] || "") + (r[COL.NAME] || ""))}</div>
-            <div class="subtle">HN: <b>${escapeHtml(r[COL.HN] || empty)}</b> | AN: <b>${escapeHtml(r[COL.AN] || empty)}</b></div>
-          </div>
-          <div class="text-end">
-            <span class="badge bg-info text-dark">LOS: ${item.displayLOS} วัน</span>
-            <div class="mt-1">${item.status === 'จำหน่ายแล้ว' ? '<span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i> จำหน่ายแล้ว</span>' : '<span class="badge bg-warning text-dark rounded-pill"><i class="bi bi-activity"></i> ยังรักษาอยู่</span>'}</div>
-          </div>
-        </div>
-        
-        <div class="row g-2">
-            <div class="col-12 col-md-4"><div class="mini"><div class="label">เพศ / อายุ</div><div>${escapeHtml(r[COL.GENDER] || empty)} / ${escapeHtml(r[COL.AGE] || empty)}</div></div></div>
-            <div class="col-12 col-md-4"><div class="mini"><div class="label">สิทธิการรักษา</div><div class="fw-bold">${escapeHtml(r[COL.SITHI] || empty)}</div></div></div>
-            <div class="col-12 col-md-4"><div class="mini"><div class="label">สาย / แผนก</div><div class="fw-bold">${escapeHtml(r[COL.SAI] || empty)} / ${escapeHtml(r[COL.WARD] || empty)}</div></div></div>
-            <div class="col-12"><div class="mini"><div class="label">Dx. แรก</div><div class="text-primary fw-bold">${escapeHtml(r[COL.DX1] || empty)}</div></div></div>
-            <div class="col-12"><div class="mini"><div class="label">Dx. หลัง</div><div>${escapeHtml(r[COL.DX2] || empty)}</div></div></div>
-            <div class="col-12"><div class="mini"><div class="label">ประวัติการรับเข้า</div><div class="row"><div class="col-6">วันที่: ${formatD(r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE])}</div><div class="col-6">ต้นทาง: ${escapeHtml(r[COL.ADMIT_DEPT] || r[COL.TRANSFER_IN_DEPT] || r[COL.REFER_IN_DEPT] || empty)}</div></div></div></div>
-            <div class="col-12"><div class="mini border border-warning"><div class="label text-warning">Outcome / จำหน่าย</div><div class="row"><div class="col-6">วันที่: ${formatD(r[COL.DC_DATE] || r[COL.TRANSFER_OUT_DATE] || r[COL.DEATH_DATE] || "ยังไม่จำหน่าย")}</div><div class="col-6">F/U: ${escapeHtml(r[COL.FU] || empty)}</div></div><div class="mt-1">ปลายทาง/หมายเหตุ: ${escapeHtml(r[COL.REFER_DEST] || r[COL.TRANSFER_OUT] || empty)}</div></div></div>
-            <div class="col-12"><div class="mini"><div class="label">ที่อยู่</div><div class="small">${escapeHtml(r[COL.ADDRESS] || empty)}</div></div></div>
-        </div>
-      </div>
-    `;
-    document.getElementById('patientModalBody').innerHTML = html;
-
-    // จัดการ Footer และปุ่ม (แบบสะอาด)
-    const modalFooter = document.querySelector('#patientModal .modal-footer');
-    const modalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('patientModal'));
-
-    // กำหนดปุ่ม Action ตามสถานะ
-    let actionBtnHtml = (item.status === 'จำหน่ายแล้ว') 
-      ? `<button class="btn btn-outline-danger rounded-pill flex-grow-1" id="btnModalCancelDis"><i class="bi bi-arrow-counterclockwise"></i> ยกเลิกจำหน่าย</button>`
-      : `<button class="btn btn-warning rounded-pill flex-grow-1" id="btnModalDis"><i class="bi bi-hospital"></i> จำหน่าย</button>`;
-
-    modalFooter.innerHTML = `
-      <div class="d-flex w-100 gap-2">
-        ${actionBtnHtml}
-        <button class="btn btn-primary rounded-pill flex-grow-1" id="btnModalEdit"><i class="bi bi-pencil-square"></i> แก้ไข</button>
-        <button class="btn btn-danger rounded-pill" id="btnModalPDF"><i class="bi bi-file-pdf"></i></button>
-      </div>
-    `;
-
-    // ผูก Event
-    if (item.status === 'จำหน่ายแล้ว') {
-        document.getElementById('btnModalCancelDis').onclick = () => { modalInstance.hide(); confirmCancelDischarge(item); };
-    } else {
-        document.getElementById('btnModalDis').onclick = () => { modalInstance.hide(); dischargeUI(item); };
-    }
-
-    document.getElementById('btnModalEdit').onclick = () => { modalInstance.hide(); editPatient(item); };
-    document.getElementById('btnModalPDF').onclick = () => printPDF(item);
-
-    modalInstance.show();
-  }
-  function rebuildIndex() {
-    lastDataByRowId = new Map();
-    lastData.forEach(x => lastDataByRowId.set(String(x.rowId), x));
-  }
-
-  function renderTables() {
-    const carry = lastData.filter(isCarryRow);
-    const nnew = lastData.filter(isNewThisMonthRow);
-
-    document.getElementById('carryCount').innerText = carry.length;
-    document.getElementById('newCount').innerText = nnew.length;
-
-    if (carryDT) { carryDT.destroy(); carryDT = null; }
-    if (newDT) { newDT.destroy(); newDT = null; }
-
-    document.getElementById('carryBody').innerHTML = carry.map(buildRowHtml).join('');
-    document.getElementById('newBody').innerHTML = nnew.map(buildRowHtml).join('');
-
-    const activeAll = lastData.filter(x => x.status === 'ยังรักษาอยู่').length;
-    const dcAll = lastData.filter(x => x.status === 'จำหน่ายแล้ว').length;
-    document.getElementById('censusContent').innerHTML =
-      `<div class="d-flex justify-content-between align-items-end">
-         <div>
-           <div class="subtle">Active (ขณะนี้)</div>
-           <div style="font-size:38px;font-weight:900;line-height:1">${activeAll}</div>
-         </div>
-         <div class="text-end">
-           <div class="subtle">D/C</div>
-           <div style="font-size:20px;font-weight:900">${dcAll}</div>
-           <div class="subtle mt-1">รวมทั้งหมด: <b>${lastData.length}</b></div>
-         </div>
-       </div>`;
-
-    const sMap = {}, saMap = {};
-    lastData.forEach(item => {
-      const r = item.rawData || [];
-      const sithi = r[17] || "ไม่ระบุ";
-      const sai = r[16] || "ไม่ระบุ";
-      sMap[sithi] = (sMap[sithi] || 0) + 1;
-      saMap[sai] = (saMap[sai] || 0) + 1;
-    });
-    updateCharts(sMap, saMap);
-
-    carryDT = $('#carryTable').DataTable({
-      order: [[1, 'desc']],
-      responsive: true,
-      pageLength: 25,
-      language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
-    });
-
-    newDT = $('#newTable').DataTable({
-      order: [[1, 'desc']],
-      responsive: true,
-      pageLength: 25,
-      language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/th.json' }
-    });
-
-    carryDT.search(tableState.carry.search || "").draw();
-    newDT.search(tableState.new.search || "").draw();
-    carryDT.draw();
-    newDT.draw();
-  }
-
-  // ================== Table events ==================
-  function getItemByRowId(rowId) {
-    return lastDataByRowId.get(String(rowId)) || null;
-  }
-
-  function bindTableEvents() {
-    const carryBody = document.getElementById('carryBody');
-    const newBody = document.getElementById('newBody');
-    if (!carryBody || !newBody) return;
-
-    carryBody.replaceWith(carryBody.cloneNode(true));
-    newBody.replaceWith(newBody.cloneNode(true));
-
-    const carryNew = document.getElementById('carryBody');
-    const newNew = document.getElementById('newBody');
-
-    const handler = async function (e) {
-      const btn = e.target.closest('button[data-action]');
-      const tr = e.target.closest('tr[data-rowid]');
-      if (!tr) return;
-
-      const rowId = tr.getAttribute('data-rowid');
-      const item = getItemByRowId(rowId);
-      if (!item) return;
-
-      if (btn) {
-        e.stopPropagation();
-        const act = btn.getAttribute('data-action');
-        if (act === 'edit') { await editPatient(item); return; }
-        if (act === 'pdf') { await printPDF(item); return; }
-        if (act === 'dis') { await dischargeUI(item); return; }
-        return;
-      }
-
-      openPatientModal(item);
-    };
-
-    carryNew.addEventListener('click', handler);
-    newNew.addEventListener('click', handler);
-  }
-
-  // ================== Patient Detail Modal ==================
-  function openPatientModal(item) {
+// 1. ตารางหลัก (Hybrid Strategy)
+function buildRowHtml(item) {
   const r = item.rawData || [];
-  const nurseId = getNurseId();
+  const type = (item.patientStatus || r[0] || '').trim();
+  const badgeMap = { "ยอดยกมา": "bg-secondary", "รับใหม่": "bg-primary", "รับย้าย": "bg-dark", "รับ Refer": "bg-info text-dark" };
+  const typeBadge = badgeMap[type] || "bg-light text-dark";
 
-  // กำหนดข้อความกรณีว่าง
+  const statusBadge = item.status === 'จำหน่ายแล้ว' 
+    ? '<span class="badge bg-success rounded-pill px-3"><i class="bi bi-check-circle me-1"></i>จำหน่ายแล้ว</span>' 
+    : '<span class="badge bg-warning text-dark rounded-pill px-3"><i class="bi bi-activity me-1"></i>ยังรักษาอยู่</span>';
+
+  const admitDate = r[2] || r[5] || r[8] || "";
+  const admitShort = shortThaiDate(admitDate);
+  const los = parseInt(item.displayLOS, 10);
+  const isLong = (!isNaN(los) && los >= 30);
+  const losBadge = !isNaN(los) ? `<span class="badge ${los >= 30 ? 'bg-danger' : los >= 7 ? 'bg-warning text-dark' : 'bg-success'}">${los}</span>` : '';
+
+  return `
+  <tr class="row-clickable ${isLong ? 'row-longstay' : ''}" data-rowid="${item.rowId}">
+    <td><span class="badge ${typeBadge}">${escapeHtml(type)}</span></td>
+    <td>${escapeHtml(r[1] || '')}</td>
+    <td>${escapeHtml(r[13] || '')}</td>
+    <td>${escapeHtml(r[14] || '')}</td>
+    <td>${escapeHtml(r[11] || '')}</td>
+    <td>${escapeHtml(admitShort || admitDate)}</td>
+    <td>${escapeHtml(r[15] || '')}</td>
+    <td>${losBadge}</td>
+    <td>${statusBadge}</td>
+    <td class="text-center">
+      <button class="btn-modern dis" data-action="dis" data-rowid="${item.rowId}" title="จำหน่าย">
+        <i class="bi bi-hospital"></i>
+      </button>
+    </td>
+  </tr>`;
+}
+
+// 2. Modal รายละเอียด (Hybrid Strategy)
+function openPatientModal(item) {
+  const r = item.rawData || [];
   const empty = "-";
-  
-  // แปลงค่าวันที่และเวลาให้ดูง่ายขึ้น
   const formatD = (d) => d || empty;
-  
+
   const html = `
     <div class="report-block">
-      <!-- ส่วนหัวชื่อและ HN/AN -->
       <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
           <div class="fw-black" style="font-size:20px;">${escapeHtml((r[COL.PREFIX] || "") + (r[COL.NAME] || ""))}</div>
@@ -1607,77 +1434,68 @@ function formatTimeForInput(v) {
         </div>
         <div class="text-end">
           <span class="badge bg-info text-dark">LOS: ${item.displayLOS} วัน</span>
-          <div class="subtle mt-1">Status: ${item.status}</div>
+          <div class="mt-1">${item.status === 'จำหน่ายแล้ว' ? '<span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i> จำหน่ายแล้ว</span>' : '<span class="badge bg-warning text-dark rounded-pill"><i class="bi bi-activity"></i> ยังรักษาอยู่</span>'}</div>
         </div>
       </div>
-
       <div class="row g-2">
-        <!-- ข้อมูลพื้นฐาน -->
-        <div class="col-12 col-md-4">
-          <div class="mini">
-            <div class="label">เพศ / อายุ</div>
-            <div>${escapeHtml(r[COL.GENDER] || empty)} / ${escapeHtml(r[COL.AGE] || empty)}</div>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="mini">
-            <div class="label">สิทธิการรักษา</div>
-            <div class="fw-bold">${escapeHtml(r[COL.SITHI] || empty)}</div>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="mini">
-            <div class="label">สาย / แผนก</div>
-            <div class="fw-bold">${escapeHtml(r[COL.SAI] || empty)} / ${escapeHtml(r[COL.WARD] || empty)}</div>
-          </div>
-        </div>
-
-        <!-- การวินิจฉัย -->
-        <div class="col-12">
-          <div class="mini">
-            <div class="label">Dx. แรก</div>
-            <div class="text-primary fw-bold">${escapeHtml(r[COL.DX1] || empty)}</div>
-          </div>
-        </div>
-        <div class="col-12">
-          <div class="mini">
-            <div class="label">Dx. หลัง / อื่นๆ</div>
-            <div>${escapeHtml(r[COL.DX2] || empty)}</div>
-          </div>
-        </div>
-
-        <!-- รายละเอียดการ Admit -->
-        <div class="col-12">
-          <div class="mini">
-            <div class="label">ประวัติการรับเข้า</div>
-            <div class="row">
-              <div class="col-6">วันที่: ${formatD(r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE])}</div>
-              <div class="col-6">ต้นทาง: ${escapeHtml(r[COL.ADMIT_DEPT] || r[COL.TRANSFER_IN_DEPT] || r[COL.REFER_IN_DEPT] || empty)}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- รายละเอียดการจำหน่าย -->
-        <div class="col-12">
-          <div class="mini border border-warning">
-            <div class="label text-warning">Outcome / จำหน่าย</div>
-            <div class="row">
-              <div class="col-6">วันที่: ${formatD(r[COL.DC_DATE] || r[COL.TRANSFER_OUT_DATE] || r[COL.DEATH_DATE] || "ยังไม่จำหน่าย")}</div>
-              <div class="col-6">F/U: ${escapeHtml(r[COL.FU] || empty)}</div>
-            </div>
-            <div class="mt-1">ปลายทาง/หมายเหตุ: ${escapeHtml(r[COL.REFER_DEST] || r[COL.TRANSFER_OUT] || empty)}</div>
-          </div>
-        </div>
-        
-        <div class="col-12">
-            <div class="mini">
-                <div class="label">ที่อยู่</div>
-                <div class="small">${escapeHtml(r[COL.ADDRESS] || empty)}</div>
-            </div>
-        </div>
+          <div class="col-12 col-md-4"><div class="mini"><div class="label">เพศ / อายุ</div><div>${escapeHtml(r[COL.GENDER] || empty)} / ${escapeHtml(r[COL.AGE] || empty)}</div></div></div>
+          <div class="col-12 col-md-4"><div class="mini"><div class="label">สิทธิการรักษา</div><div class="fw-bold">${escapeHtml(r[COL.SITHI] || empty)}</div></div></div>
+          <div class="col-12 col-md-4"><div class="mini"><div class="label">สาย / แผนก</div><div class="fw-bold">${escapeHtml(r[COL.SAI] || empty)} / ${escapeHtml(r[COL.WARD] || empty)}</div></div></div>
+          <div class="col-12"><div class="mini"><div class="label">Dx. แรก</div><div class="text-primary fw-bold">${escapeHtml(r[COL.DX1] || empty)}</div></div></div>
+          <div class="col-12"><div class="mini"><div class="label">Dx. หลัง</div><div>${escapeHtml(r[COL.DX2] || empty)}</div></div></div>
+          <div class="col-12"><div class="mini"><div class="label">ประวัติการรับเข้า</div><div class="row"><div class="col-6">วันที่: ${formatD(r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE])}</div><div class="col-6">ต้นทาง: ${escapeHtml(r[COL.ADMIT_DEPT] || r[COL.TRANSFER_IN_DEPT] || r[COL.REFER_IN_DEPT] || empty)}</div></div></div></div>
+          <div class="col-12"><div class="mini border border-warning"><div class="label text-warning">Outcome / จำหน่าย</div><div class="row"><div class="col-6">วันที่: ${formatD(r[COL.DC_DATE] || r[COL.TRANSFER_OUT_DATE] || r[COL.DEATH_DATE] || "ยังไม่จำหน่าย")}</div><div class="col-6">F/U: ${escapeHtml(r[COL.FU] || empty)}</div></div><div class="mt-1">ปลายทาง/หมายเหตุ: ${escapeHtml(r[COL.REFER_DEST] || r[COL.TRANSFER_OUT] || empty)}</div></div></div>
+          <div class="col-12"><div class="mini"><div class="label">ที่อยู่</div><div class="small">${escapeHtml(r[COL.ADDRESS] || empty)}</div></div></div>
       </div>
-    </div>
-  `;
+    </div>`;
+  document.getElementById('patientModalBody').innerHTML = html;
+
+  const modalFooter = document.querySelector('#patientModal .modal-footer');
+  const modalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('patientModal'));
+
+  let actionBtnHtml = (item.status === 'จำหน่ายแล้ว') 
+    ? `<button class="btn btn-outline-danger rounded-pill flex-grow-1" id="btnModalCancelDis"><i class="bi bi-arrow-counterclockwise"></i> ยกเลิกจำหน่าย</button>`
+    : `<button class="btn btn-warning rounded-pill flex-grow-1" id="btnModalDis"><i class="bi bi-hospital"></i> จำหน่าย</button>`;
+
+  modalFooter.innerHTML = `
+    <div class="d-flex w-100 gap-2">
+      ${actionBtnHtml}
+      <button class="btn btn-primary rounded-pill flex-grow-1" id="btnModalEdit"><i class="bi bi-pencil-square"></i> แก้ไข</button>
+      <button class="btn btn-danger rounded-pill" id="btnModalPDF"><i class="bi bi-file-pdf"></i></button>
+    </div>`;
+
+  if (item.status === 'จำหน่ายแล้ว') {
+    document.getElementById('btnModalCancelDis').onclick = () => { modalInstance.hide(); confirmCancelDischarge(item); };
+  } else {
+    document.getElementById('btnModalDis').onclick = () => { modalInstance.hide(); dischargeUI(item); };
+  }
+  document.getElementById('btnModalEdit').onclick = () => { modalInstance.hide(); editPatient(item); };
+  document.getElementById('btnModalPDF').onclick = () => printPDF(item);
+
+  modalInstance.show();
+}
+
+function bindTableEvents() {
+  ['carryBody', 'newBody'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.onclick = async (e) => {
+      const btn = e.target.closest('button[data-action]');
+      const tr = e.target.closest('tr[data-rowid]');
+      if (!tr) return;
+      const item = getItemByRowId(tr.getAttribute('data-rowid'));
+      if (!item) return;
+      if (btn) {
+        e.stopPropagation();
+        if (btn.dataset.action === 'dis') await dischargeUI(item);
+        return;
+      }
+      openPatientModal(item);
+    };
+  });
+}
+
+  // ================== Patient Detail Modal ==================
 
 
 
