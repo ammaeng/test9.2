@@ -1023,38 +1023,224 @@
     } catch (err) { Swal.fire('ผิดพลาด', err.toString(), 'error'); }
   }
 
-  function buildModernReportHTML(ctx) {
-    const k = ctx.kpi1127, isC = ctx.isMonthClosed;
-    const dxHtml = (ctx.topDx5 && ctx.topDx5.length) ? ctx.topDx5.map(([dx, count], i) => { const softColors =['#e0f2f1', '#e1f5fe', '#f3e5f5', '#fff3e0', '#f9fbe7'], borderColors =['#80cbc4', '#81d4fa', '#ce93d8', '#ffcc80', '#dce775']; return `<div class="d-flex align-items-center mb-2 px-3 py-2" style="background:${softColors[i]}; border: 1.5px solid ${borderColors[i]}; border-radius:18px;"><div style="width:25px; height:25px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; color:${borderColors[i]}; font-size:12px; margin-right:12px; box-shadow: 2px 2px 0 ${borderColors[i]}33;">${i+1}</div><div style="flex:1; font-weight:700; font-size:13px; color:#455a64; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(dx)}</div><div style="font-weight:800; font-size:12px; color:#546e7a; margin-left:10px;">${count} <span style="font-size:10px; font-weight:400;">ราย</span></div></div>`; }).join("") : `<div class="text-muted text-center py-4">ยังไม่มีข้อมูลการวินิจฉัย</div>`;
-    return `
-    <div class="cute-container">
-      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div class="title-area"><div style="font-size: 30px;">📝</div><div><h4 class="m-0" style="font-weight: 900; color: #455a64; letter-spacing: -0.5px;">แดชบอร์ดสรุปรายเดือน</h4><div class="small fw-bold text-muted">หอผู้ป่วย Ward 9/2 • ${ctx.sheet}</div></div></div>
-        <button class="btn-pdf-cute" onclick="printOfficialReport()"><i class="bi bi-file-pdf-fill"></i> พิมพ์รายงาน PDF</button>
-      </div>
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3 d-flex"><div class="stat-pill bg-sky"><span class="num">${isC ? fmt2(ctx.borOcc) + '%' : 'N/A'}</span><span class="lbl">ครองเตียง (สถิติ)</span></div></div>
-        <div class="col-6 col-md-3 d-flex"><div class="stat-pill bg-lavender"><span class="num">${isC ? fmt2(ctx.borUtil) + '%' : 'N/A'}</span><span class="lbl">ครองเตียง (งานจริง)</span></div></div>
-        <div class="col-6 col-md-3 d-flex"><div class="stat-pill bg-mint"><span class="num">${ctx.patientDays}</span><span class="lbl">จำนวนวันนอนรวม</span></div></div>
-        <div class="col-6 col-md-3 d-flex"><div class="stat-pill bg-peach"><span class="num">${ctx.eomG.T}</span><span class="lbl">คนไข้คงค้าง</span></div></div>
-      </div>
-      <div class="row g-3 mb-4">
-        <div class="col-12 col-lg-4"><div class="bubble-card-alt p-4 h-100 text-center"><h6 class="fw-bold mb-4" style="color:#78909c;">🍩 สัดส่วนเตียงว่าง</h6><div style="height: 160px;"><canvas id="chartBOR"></canvas></div></div></div>
-        <div class="col-12 col-lg-4"><div class="bubble-card-alt p-4 h-100"><h6 class="fw-bold mb-3" style="color:#78909c;">📍 5 อันดับโรคสูงสุด</h6><div class="dx-container">${dxHtml}</div></div></div>
-        <div class="col-12 col-lg-4"><div class="bubble-card-alt p-4 h-100"><h6 class="fw-bold mb-4" style="color:#78909c;">📊 คนไข้แยกตามแผนก</h6><div style="height: 160px;"><canvas id="chartDept"></canvas></div></div></div>
-      </div>
-      <div class="row g-3 mb-4">
-        <div class="col-12 col-md-6"><div class="bubble-card-alt p-3 h-100"><h6 class="fw-bold mb-2 text-primary" style="font-size:14px;"><i class="bi bi-door-open-fill me-2"></i>รายละเอียดการรับเข้า</h6>
-            <table class="cute-table text-center"><thead><tr><th class="text-start">ประเภท</th><th>หญิง</th><th>ชาย</th><th style="background:#e3f2fd; border-radius:10px 10px 0 0;">รวม</th></tr></thead><tbody><tr><td class="text-start">ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td>${ctx.carryG.T}</td></tr><tr><td class="text-start">รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td>${ctx.inNewG.T}</td></tr><tr><td class="text-start">รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td>${ctx.inTransferG.T}</td></tr><tr><td class="text-start">รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td>${ctx.inReferG.T}</td></tr></tbody></table></div></div>
-        <div class="col-12 col-md-6"><div class="bubble-card-alt p-3 h-100"><h6 class="fw-bold mb-2 text-success" style="font-size:14px;"><i class="bi bi-box-arrow-right me-2"></i>รายละเอียดการจำหน่าย</h6>
-            <table class="cute-table text-center"><thead><tr><th class="text-start">ประเภท</th><th>หญิง</th><th>ชาย</th><th style="background:#e8f5e9; border-radius:10px 10px 0 0;">รวม</th></tr></thead><tbody><tr><td class="text-start">กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td>${ctx.outDCG.T}</td></tr><tr><td class="text-start">ส่งต่อ (Refer Out)</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td>${ctx.outROG.T}</td></tr><tr><td class="text-start">ย้ายตึก/ตึกอื่น</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td>${ctx.outTOG.T}</td></tr><tr><td class="text-start">ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td><b>${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</b></td></tr></tbody></table></div></div>
-      </div>
-      <div class="bubble-card-alt p-3 bg-white"><h6 class="fw-bold mb-3 px-2" style="color:#78909c;">✨ ตัวชี้วัดคุณภาพงาน</h6><div class="d-flex flex-wrap gap-2">
-        <div class="sticker-badge">🩺 Unplanned ET: <b>${k.k11_unplanned_et}</b></div><div class="sticker-badge">🧴 แผลกดทับ: <b>${k.k15_pressure_ulcer_rate}</b></div><div class="sticker-badge">⚠️ พลัดตกหกล้ม: <b>${k.k16_fall_rate}</b></div><div class="sticker-badge">📖 บันทึกพยาบาล: <b>${k.k25_note_qlt}%</b></div><div class="sticker-badge">⏰ รอ D/C เฉลี่ย: <b>${fmt2(k.k26_avg_wait_dc_min)} นาที</b></div>
-      </div></div>
-    </div>`;
-  }
+// --------------------------------------------------------------------------------
+// 1. หน้าต่าง Dashboard ทันสมัย (แสดงใน Modal) - ✨ Premium Redesign
+// --------------------------------------------------------------------------------
+function buildModernReportHTML(ctx) {
+  const k = ctx.kpi1127;
+  const isC = ctx.isMonthClosed;
+  
+  // สร้างรายการ 5 อันดับโรคแบบ Modern List ที่มี Hover Effect
+  const dxHtml = (ctx.topDx5 && ctx.topDx5.length) 
+    ? ctx.topDx5.map(([dx, count], i) => {
+        const medalColors =['#ffd700', '#c0c0c0', '#cd7f32', '#e2e8f0', '#e2e8f0']; // สีเหรียญทอง เงิน ทองแดง
+        const isTop3 = i < 3;
+        return `
+          <div class="dx-item d-flex align-items-center p-2 mb-2 bg-white rounded-3 border-0 shadow-sm" style="transition: transform 0.2s, box-shadow 0.2s; cursor: default;">
+            <div class="dx-rank rounded-circle d-flex justify-content-center align-items-center me-3 shadow-sm" 
+                 style="width: 35px; height: 35px; background: ${medalColors[i]}; color: ${isTop3 ? '#fff' : '#64748b'}; font-weight: 900; font-size: 14px;">
+              ${i+1}
+            </div>
+            <div class="flex-grow-1 fw-bold text-secondary text-truncate" style="font-size: 13.5px;" title="${escapeHtml(dx)}">
+              ${escapeHtml(dx)}
+            </div>
+            <div class="badge px-3 py-2 rounded-pill" style="background: linear-gradient(45deg, #3b82f6, #06b6d4); font-size: 12px; font-weight: 700;">
+              ${count} <span style="font-weight:400; opacity:0.8;">ราย</span>
+            </div>
+          </div>`;
+      }).join("") 
+    : `<div class="text-muted text-center py-4"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>ไม่มีข้อมูลการวินิจฉัย</div>`;
 
+  return `
+  <style>
+    /* Animations */
+    @keyframes slideUpFade {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseSoft {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .premium-dash {
+      background: #f8fafc;
+      padding: 15px;
+      font-family: 'Sarabun', sans-serif;
+      animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Glass Cards */
+    .glass-card {
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      border-radius: 20px;
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Metric Pills */
+    .metric-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center; font-size: 24px;
+    }
+    .metric-value { font-size: 26px; font-weight: 900; line-height: 1; letter-spacing: -0.5px; color: #1e293b; }
+    .metric-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 4px; }
+
+    /* Interactive Top 5 Dx */
+    .dx-item:hover { transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; }
+
+    /* Modern Tables */
+    .modern-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    .modern-table th { border: none; font-size: 11px; color: #64748b; font-weight: 800; padding: 0 12px 8px 12px; text-transform: uppercase; }
+    .modern-table td { padding: 12px; background: #f8fafc; font-weight: 600; font-size: 13px; color: #334155; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .modern-table tr td:first-child { border-radius: 12px 0 0 12px; border-left: 1px solid #e2e8f0; }
+    .modern-table tr td:last-child { border-radius: 0 12px 12px 0; border-right: 1px solid #e2e8f0; }
+    .modern-table tbody tr { transition: transform 0.2s; }
+    .modern-table tbody tr:hover td { background: #f1f5f9; transform: scale(1.01); }
+
+    /* QA Badges */
+    .qa-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: all 0.2s; cursor: default;
+    }
+    .qa-chip:hover { border-color: #cbd5e1; background: #f8fafc; transform: translateY(-2px); }
+    .qa-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; }
+
+    /* Action Button */
+    .btn-action-pdf {
+      background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;
+      padding: 10px 24px; border-radius: 999px; font-weight: 800; font-size: 14px;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); transition: all 0.2s;
+      animation: pulseSoft 2s infinite;
+    }
+    .btn-action-pdf:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6); color:white; }
+  </style>
+
+  <div class="premium-dash">
+    <!-- ส่วนหัว -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div style="width:50px; height:50px; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius:16px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);">
+          <i class="bi bi-bar-chart-fill"></i>
+        </div>
+        <div>
+          <h4 class="m-0 fw-black text-dark" style="letter-spacing: -0.5px;">รายงานสรุปผลการดำเนินงาน</h4>
+          <div class="fw-bold text-primary" style="font-size: 13px;">Ward 9/2 • ประจำเดือน ${ctx.sheet}</div>
+        </div>
+      </div>
+      <button class="btn-action-pdf" onclick="printOfficialReport()">
+        <i class="bi bi-printer-fill me-1"></i> พิมพ์ใบรายงานผล
+      </button>
+    </div>
+
+    <!-- 4 Metrics (KPI) -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+          <div class="metric-icon" style="background: #eff6ff; color: #3b82f6;"><i class="bi bi-pie-chart-fill"></i></div>
+          <div><div class="metric-value">${isC ? fmt2(ctx.borOcc) + '%' : 'N/A'}</div><div class="metric-label">ครองเตียง (สถิติ)</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+          <div class="metric-icon" style="background: #f5f3ff; color: #6366f1;"><i class="bi bi-activity"></i></div>
+          <div><div class="metric-value">${isC ? fmt2(ctx.borUtil) + '%' : 'N/A'}</div><div class="metric-label">ครองเตียง (งานจริง)</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+          <div class="metric-icon" style="background: #ecfdf5; color: #8b5cf6;"><i class="bi bi-calendar2-check-fill"></i></div>
+          <div><div class="metric-value">${ctx.patientDays}</div><div class="metric-label">วันนอนรวม (Day)</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+          <div class="metric-icon" style="background: #fff7ed; color: #10b981;"><i class="bi bi-people-fill"></i></div>
+          <div><div class="metric-value">${ctx.eomG.T}</div><div class="metric-label">คนไข้คงค้าง (ราย)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- กราฟและอันดับโรค -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-lg-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column">
+          <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-circle-half me-2 text-primary"></i>สัดส่วนเตียงว่าง</h6>
+          <div class="flex-grow-1 position-relative" style="min-height: 180px;">
+            <canvas id="chartBOR"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <div class="glass-card p-4 h-100 bg-light border-0">
+          <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-trophy-fill me-2 text-warning"></i>5 อันดับโรคสูงสุด</h6>
+          <div>${dxHtml}</div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column">
+          <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-bar-chart-steps me-2 text-info"></i>ผู้ป่วยแยกตามแผนก</h6>
+          <div class="flex-grow-1 position-relative" style="min-height: 180px;">
+            <canvas id="chartDept"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ตารางรายละเอียด -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6">
+        <div class="glass-card p-4 h-100">
+          <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-box-arrow-in-right border border-primary p-1 rounded me-2"></i>ข้อมูลรับเข้า (Admission)</h6>
+          <table class="modern-table text-center">
+            <thead><tr><th class="text-start">ประเภท</th><th>หญิง 👩</th><th>ชาย 👨</th><th>รวม 📊</th></tr></thead>
+            <tbody>
+              <tr><td class="text-start">ยอดยกมา</td><td>${ctx.carryG.F}</td><td>${ctx.carryG.M}</td><td class="text-primary fw-bold">${ctx.carryG.T}</td></tr>
+              <tr><td class="text-start">รับใหม่</td><td>${ctx.inNewG.F}</td><td>${ctx.inNewG.M}</td><td class="text-primary fw-bold">${ctx.inNewG.T}</td></tr>
+              <tr><td class="text-start">รับย้าย</td><td>${ctx.inTransferG.F}</td><td>${ctx.inTransferG.M}</td><td class="text-primary fw-bold">${ctx.inTransferG.T}</td></tr>
+              <tr><td class="text-start">รับ Refer</td><td>${ctx.inReferG.F}</td><td>${ctx.inReferG.M}</td><td class="text-primary fw-bold">${ctx.inReferG.T}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="glass-card p-4 h-100">
+          <h6 class="fw-bold mb-3 text-danger"><i class="bi bi-box-arrow-right border border-danger p-1 rounded me-2"></i>ข้อมูลจำหน่าย (Discharge)</h6>
+          <table class="modern-table text-center">
+            <thead><tr><th class="text-start">ประเภท</th><th>หญิง 👩</th><th>ชาย 👨</th><th>รวม 📊</th></tr></thead>
+            <tbody>
+              <tr><td class="text-start">กลับบ้าน (D/C)</td><td>${ctx.outDCG.F}</td><td>${ctx.outDCG.M}</td><td class="text-danger fw-bold">${ctx.outDCG.T}</td></tr>
+              <tr><td class="text-start">ส่งต่อ (Refer Out)</td><td>${ctx.outROG.F}</td><td>${ctx.outROG.M}</td><td class="text-danger fw-bold">${ctx.outROG.T}</td></tr>
+              <tr><td class="text-start">ย้ายแผนก/ตึก</td><td>${ctx.outTOG.F}</td><td>${ctx.outTOG.M}</td><td class="text-danger fw-bold">${ctx.outTOG.T}</td></tr>
+              <tr><td class="text-start">ตาย/หนี/ปฏิเสธ</td><td>${ctx.outDeathG.F + ctx.outAbsG.F + ctx.outRefuseG.F}</td><td>${ctx.outDeathG.M + ctx.outAbsG.M + ctx.outRefuseG.M}</td><td class="text-danger fw-bold">${ctx.outDeathG.T + ctx.outAbsG.T + ctx.outRefuseG.T}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- แถบตัวชี้วัดคุณภาพ (QA Indicators) -->
+    <div class="glass-card p-4 bg-white border-0 shadow-sm">
+      <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-shield-check me-2 text-success"></i>ตัวชี้วัดคุณภาพงานพยาบาล (QA)</h6>
+      <div class="d-flex flex-wrap gap-2">
+        <div class="qa-chip"><div class="qa-icon bg-danger"><i class="bi bi-lungs"></i></div> Unplanned ET: <span class="text-danger">${k.k11_unplanned_et}</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-warning"><i class="bi bi-bandaid"></i></div> แผลกดทับ: <span class="text-warning text-dark">${k.k15_pressure_ulcer_rate}</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-orange" style="background:#f97316;"><i class="bi bi-person-falling"></i></div> หกล้ม: <span style="color:#f97316;">${k.k16_fall_rate}</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-info"><i class="bi bi-journal-check"></i></div> บันทึกการพยาบาล: <span class="text-info text-dark">${k.k25_note_qlt}%</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-success"><i class="bi bi-clock-history"></i></div> รอ D/C เฉลี่ย: <span class="text-success">${fmt2(k.k26_avg_wait_dc_min)} นาที</span></div>
+        <div class="qa-chip"><div class="qa-icon bg-primary"><i class="bi bi-capsule"></i></div> คลาดเคลื่อนทางยา: <span class="text-primary">${k.k17_med_error}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
   function renderReportCharts(ctx) {
     Chart.helpers.each(Chart.instances, (instance) => instance.destroy());
     const elBOR = document.getElementById('chartBOR'); if (elBOR) { new Chart(elBOR, { type: 'doughnut', data: { labels: ['ครองเตียง', 'ว่าง'], datasets: [{ data:[ctx.borOcc || 0.1, 100 - (ctx.borOcc || 0)], backgroundColor:['#80cbc4', '#eceff1'], borderWidth: 0, borderRadius: 15, cutout: '80%' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, animation: { duration: 2000, easing: 'easeOutBounce' } } }); }
