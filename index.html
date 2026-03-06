@@ -386,6 +386,15 @@
     <label class="form-label">วันที่</label>
     <input type="date" id="disDate" class="form-control">
   </div>
+  <!-- ค้นหาในส่วน modal-body ของ dischargeModal -->
+<div class="mb-3">
+  <label class="form-label">วันที่</label>
+  <div class="input-group">
+    <input type="date" id="disDate" class="form-control">
+    <input type="text" id="disTime" class="form-control" placeholder="เวลา (20:25)">
+    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('disTime').value=new Date().toLocaleTimeString('th-TH',{hour12:false,hour:'2-digit',minute:'2-digit'})">NOW</button>
+  </div>
+</div>
   <div id="fuBox" style="display:none;" class="mb-3">
     <label class="form-label">F/U</label>
     <input type="text" id="disFU" class="form-control">
@@ -845,21 +854,73 @@ function toggleDisFields() {
   if (transferDeptBox) transferDeptBox.style.display = (t === "transfer") ? "block" : "none";
   if (referDestBox) referDestBox.style.display = (t === "refer") ? "block" : "none";
 }
-  async function saveDischarge() {
-    const rowId = document.getElementById("disRowId").value, type = document.getElementById("disType").value, date = document.getElementById("disDate").value, waitMin = document.getElementById("disWaitMin").value;
-    if (!type) return Swal.fire("เลือกประเภทก่อน"); if (!date) return Swal.fire("เลือกวันที่");
-    const d = formatDateForSheet(date), keepStatus = (disItem?.rawData?.[0] || disItem?.patientStatus || "").trim();
-    const formData = { rowId, patientStatus: keepStatus, dcDate: "", transferOutDate: "", transferOut: "", referOutDate: "", referDestination: "", deathDate: "", abscondDate: "", refuseDate: "", fu: "", nurseId: getNurseId(), waitTime: waitMin };
-    if (type === "dc") { formData.dcDate = d; formData.fu = document.getElementById("disFU").value; }
-    if (type === "transfer") { formData.transferOutDate = d; formData.transferOut = document.getElementById("transferDept")?.value || ""; }
-    if (type === "refer") { formData.referOutDate = d; formData.referDestination = document.getElementById("referDest")?.value || ""; }
-    if (type === "death") formData.deathDate = d; if (type === "abscond") formData.abscondDate = d; if (type === "refuse") formData.refuseDate = d;
+ async function saveDischarge() {
+    // ดึงค่าจาก Element ต่างๆ ใน Modal
+    const rowId = document.getElementById("disRowId").value;
+    const type = document.getElementById("disType").value;
+    const date = document.getElementById("disDate").value;
+    const time = document.getElementById("disTime").value; // ดึงเวลาที่เพิ่มใหม่
+    const waitMin = document.getElementById("disWaitMin").value;
+
+    // Validation เบื้องต้น
+    if (!type) return Swal.fire("เลือกประเภทก่อน", "", "warning");
+    if (!date) return Swal.fire("เลือกวันที่", "", "warning");
+    if (!time) return Swal.fire("กรุณาระบุเวลา", "เพื่อใช้คำนวณกรณี < 6 ชม.", "warning");
+
+    const d = formatDateForSheet(date);
+    const keepStatus = (disItem?.rawData?.[0] || disItem?.patientStatus || "").trim();
+
+    // เตรียมข้อมูลส่งไป Server
+    const formData = { 
+        rowId, 
+        patientStatus: keepStatus, 
+        dcDate: "", 
+        transferOutDate: "", 
+        transferOut: "", 
+        referOutDate: "", 
+        referDestination: "", 
+        deathDate: "", 
+        abscondDate: "", 
+        refuseDate: "", 
+        fu: "", 
+        nurseId: getNurseId(),    
+        outTime: time, // ส่งเวลาจำหน่าย/ย้าย ไปคำนวณ LOS
+        waitTime: waitMin 
+    };
+
+    // กำหนดค่าตามประเภทการจำหน่าย
+    if (type === "dc") { 
+        formData.dcDate = d; 
+        formData.fu = document.getElementById("disFU").value; 
+    }
+    if (type === "transfer") { 
+        formData.transferOutDate = d; 
+        formData.transferOut = document.getElementById("transferDept")?.value || ""; 
+    }
+    if (type === "refer") { 
+        formData.referOutDate = d; 
+        formData.referDestination = document.getElementById("referDest")?.value || ""; 
+    }
+    if (type === "death") formData.deathDate = d; 
+    if (type === "abscond") formData.abscondDate = d; 
+    if (type === "refuse") formData.refuseDate = d;
 
     Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
-    await callApi('processData', { targetSheet: currentSheet, formData });
-    bootstrap.Modal.getInstance(document.getElementById("dischargeModal")).hide();
-    Swal.fire("สำเร็จ", "", "success"); loadDashboard();
-  }
+    
+    try {
+        await callApi('processData', { targetSheet: currentSheet, formData });
+        
+        // ปิด Modal และ Refresh ข้อมูล
+        const modalEl = document.getElementById("dischargeModal");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+        
+        Swal.fire("สำเร็จ", "บันทึกข้อมูลการจำหน่ายเรียบร้อย", "success"); 
+        loadDashboard(); 
+    } catch (err) {
+        Swal.fire('ผิดพลาด', err.toString(), 'error');
+    }
+}
 
   document.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
@@ -1067,38 +1128,123 @@ function toggleDisFields() {
   function phlebitisByGrade(list){ const out = {1:0,2:0,3:0,4:0}; (list||[]).filter(x=>x.eventType==="PHLEBITIS").forEach(x=>{ const g = parseInt(x.grade,10); if(out[g]!==undefined) out[g] += (parseFloat(x.value)||1); }); return out; }
 
   let currentReportCtx = null;
-  async function showFullReport(btn) {
-    lastTriggerEl = btn || document.activeElement; lastTriggerEl?.blur?.();
+async function showFullReport(btn) {
+    lastTriggerEl = btn || document.activeElement; 
+    lastTriggerEl?.blur?.();
+    
     if (!currentSheet) return Swal.fire("ยังไม่ได้เลือกเดือน", "", "warning");
+    
     Swal.fire({ title: 'คำนวณรายงานสรุป...', didOpen: () => Swal.showLoading() });
+    
     try {
-      const [patients, summary, dxMapPack, incidents] = await Promise.all([ callApi('getAllData', currentSheet), callApi('getMonthlySummaryRow', currentSheet), callApi('getDxMap'), callApi('getIncidentsByMonth', currentSheet) ]);
-      const dxMap = dxMapPack?.map || {}, mapDx = (s) => String(dxMap[String(s || "").trim().replace(/\s+/g, " ")] || String(s || "").trim().replace(/\s+/g, " ")).trim() || "";
-      const waitList = patients.map(p => Number(p.waitTime)).filter(v => v > 0), avgWait = waitList.length > 0 ? waitList.reduce((a, b) => a + b, 0) / waitList.length : 0;
-      const days = daysInMonthFromSheet(currentSheet), isMonthClosed = !!(summary && summary.beds), beds = isMonthClosed ? Number(summary.beds) : 0, bedDays = beds * days;
-      const carryList = patients.filter(p => typeOf(p) === "ยอดยกมา"), inNewList = patients.filter(p => typeOf(p) === "รับใหม่"), inTransferList = patients.filter(p => typeOf(p) === "รับย้าย"), inReferList = patients.filter(p => typeOf(p) === "รับ Refer"), inAllList =[...carryList, ...inNewList, ...inTransferList, ...inReferList];
-      const outDCList = patients.filter(p => !!p?.rawData?.[20]), outDeathList = patients.filter(p => !!p?.rawData?.[30]), outTOList = patients.filter(p => !!p?.rawData?.[25]), outROList = patients.filter(p => !!p?.rawData?.[28]), outAbsList = patients.filter(p => !!p?.rawData?.[26]), outRefuseList = patients.filter(p => !!p?.rawData?.[27]), outAllList = patients.filter(p => isOutcomeClosed(p.rawData ||[])), eomList = patients.filter(p => p.status === "ยังรักษาอยู่");
-      const patientDays = sumLos(outAllList), deptRows = {};
-      inAllList.forEach(p=>{ const r = p.rawData ||[]; const dept = deptFromRow(r); if(!deptRows[dept]) deptRows[dept] = {F:0,M:0,T:0,PD:0}; const g = genderOf(p); if(g==="F") deptRows[dept].F++; if(g==="M") deptRows[dept].M++; deptRows[dept].T = deptRows[dept].F + deptRows[dept].M; deptRows[dept].PD += safeInt(p.displayLOS); });
-      const counts = {}; patients.forEach(p=>{ const r = p.rawData ||[]; [...splitDxList(r[18]).map(mapDx), ...splitDxList(r[19]).map(mapDx)].forEach(dx=>addCount(counts, dx, 1)); });
-      const topDx5 = topEntries(counts, 5), ratePer1000 = (n)=> (patientDays > 0 ? (n/patientDays*1000) : 0), ph = phlebitisByGrade(incidents), ghiList = (incidents ||[]).filter(x => x.eventType === "GHI" && String(x.level||"").trim() !== "");
-      
-      const k = {
-        k11_unplanned_et: sumInc(incidents,"UNPLANNED_ET"), k12_vent_days: sumInc(incidents,"VENT_DAYS"), k13_icd_displaced: sumInc(incidents,"ICD_DISLODGE"), k14_icd_days: sumInc(incidents,"ICD_LINE_DAYS"),
-        k15_pressure_ulcer_rate: fmt2(ratePer1000(sumInc(incidents, "PRESSURE_ULCER"))), k16_fall_rate: fmt2(ratePer1000(sumInc(incidents, "FALL"))), k17_med_error: fmt2(ratePer1000(sumInc(incidents, "MED_ERROR"))),
-        k18_ghi_level: safeText(ghiList.length ? String(ghiList[ghiList.length - 1].level).trim() : "-", "-"), k19_unplanned_cpr: sumInc(incidents,"UNPLANNED_CPR"), k20_unplanned_icu: sumInc(incidents,"UNPLANNED_ICU"),
-        k21_wrong_proc: sumInc(incidents,"WRONG_PROCEDURE"), k22_wrong_surgery: sumInc(incidents,"WRONG_SURGERY"), k23_wrong_blood: sumInc(incidents,"WRONG_TRANSFUSION"),
-        k24_phlebitis_g1: ph[1]||0, k24_phlebitis_g2: ph[2]||0, k24_phlebitis_g3: ph[3]||0, k24_phlebitis_g4: ph[4]||0, k25_note_qty: Math.round(avgInc(incidents,"NURSE_NOTE_QTY")||0), k25_note_qlt: Math.round(avgInc(incidents,"NURSE_NOTE_QLT")||0),
-        k26_avg_wait_dc_min: avgWait, k27_refer_in: sumInc(incidents,"REFER_IN"), k27_refer_out: sumInc(incidents,"REFER_OUT"), k27_refer_back: sumInc(incidents,"REFER_BACK"), k27_refer_back_to: sumInc(incidents,"REFER_BACK_TO"), k27_daycare: sumInc(incidents,"DAYCARE")
-      };
-      const under6Count = patients.filter(p => String(p.rawData?.[22] || "").trim() !== "").length, patientDaysOcc = sumLos(outAllList), patientDaysUtil = patientDaysOcc + under6Count;
-      const ctx = { sheet: currentSheet, days, beds, isMonthClosed, inAllG: countByGender(inAllList), carryG: countByGender(carryList), inNewG: countByGender(inNewList), inTransferG: countByGender(inTransferList), inReferG: countByGender(inReferList), outAllG: countByGender(outAllList), outDCG: countByGender(outDCList), outDeathG: countByGender(outDeathList), outTOG: countByGender(outTOList), outROG: countByGender(outROList), outAbsG: countByGender(outAbsList), outRefuseG: countByGender(outRefuseList), eomG: countByGender(eomList), patientDays: patientDaysOcc, patientDaysUtil, borOcc: (bedDays > 0) ? (patientDaysOcc / bedDays * 100) : 0, borUtil: (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0, deptRows, topDx5, kpi1127: k };
-      currentReportCtx = ctx;
-      document.getElementById('reportMonthTitle').innerText = currentSheet; document.getElementById('reportResult').innerHTML = buildModernReportHTML(ctx);
-      Swal.close(); bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show(); setTimeout(() => renderReportCharts(ctx), 250);
-    } catch (err) { Swal.fire('ผิดพลาด', err.toString(), 'error'); }
-  }
+        const [patients, summary, dxMapPack, incidents] = await Promise.all([ 
+            callApi('getAllData', currentSheet), 
+            callApi('getMonthlySummaryRow', currentSheet), 
+            callApi('getDxMap'), 
+            callApi('getIncidentsByMonth', currentSheet) 
+        ]);
 
+        const dxMap = dxMapPack?.map || {};
+        const mapDx = (s) => String(dxMap[String(s || "").trim().replace(/\s+/g, " ")] || String(s || "").trim().replace(/\s+/g, " ")).trim() || "";
+        
+        const waitList = patients.map(p => Number(p.waitTime)).filter(v => v > 0);
+        const avgWait = waitList.length > 0 ? waitList.reduce((a, b) => a + b, 0) / waitList.length : 0;
+        
+        const days = daysInMonthFromSheet(currentSheet);
+        const isMonthClosed = !!(summary && summary.beds);
+        const beds = isMonthClosed ? Number(summary.beds) : 0;
+        const bedDays = beds * days;
+
+        // แยกกลุ่มคนไข้
+        const carryList = patients.filter(p => typeOf(p) === "ยอดยกมา");
+        const inNewList = patients.filter(p => typeOf(p) === "รับใหม่");
+        const inTransferList = patients.filter(p => typeOf(p) === "รับย้าย");
+        const inReferList = patients.filter(p => typeOf(p) === "รับ Refer");
+        const inAllList = [...carryList, ...inNewList, ...inTransferList, ...inReferList];
+
+        const outDCList = patients.filter(p => !!p?.rawData?.[20]);
+        const outDeathList = patients.filter(p => !!p?.rawData?.[30]);
+        const outTOList = patients.filter(p => !!p?.rawData?.[25]);
+        const outROList = patients.filter(p => !!p?.rawData?.[28]);
+        const outAbsList = patients.filter(p => !!p?.rawData?.[26]);
+        const outRefuseList = patients.filter(p => !!p?.rawData?.[27]);
+        const outAllList = patients.filter(p => isOutcomeClosed(p.rawData || []));
+        const eomList = patients.filter(p => p.status === "ยังรักษาอยู่");
+
+        // --- จุดสำคัญ: คำนวณวันนอน (Occupancy) และ วันใช้เตียง (Utilization) ---
+        // 1. Occupancy (นับตาม LOS ที่เวชระเบียนคิด: เคส < 6 ชม. = 0 วัน)
+        const patientDaysOcc = sumLos(outAllList); 
+
+        // 2. หาจำนวนเคสที่ Admit < 6 ชม. (LOS เป็น 0 แต่มีการจำหน่ายจริง)
+        const under6Count = patients.filter(p => {
+            const isClosed = isOutcomeClosed(p.rawData || []);
+            const losValue = Number(p.displayLOS || 0);
+            const manualUnder6 = String(p.rawData?.[22] || "").trim() !== ""; // ดูจากช่อง Admit < 6 ชม.
+            // ถ้าเคสปิดแล้ว และ (มีเครื่องหมาย < 6 ชม. หรือ LOS คำนวณได้ 0)
+            return isClosed && (manualUnder6 || losValue === 0);
+        }).length;
+
+        // 3. Utilization (วันใช้เตียง = วันนอนรวม + เคสที่อยู่ไม่ถึง 6 ชม. นับเป็น 1 วัน)
+        const patientDaysUtil = patientDaysOcc + under6Count;
+
+        // คำนวณข้อมูลตามแผนก
+        const deptRows = {};
+        inAllList.forEach(p => { 
+            const r = p.rawData || []; 
+            const dept = deptFromRow(r); 
+            if (!deptRows[dept]) deptRows[dept] = { F: 0, M: 0, T: 0, PD: 0 }; 
+            const g = genderOf(p); 
+            if (g === "F") deptRows[dept].F++; 
+            if (g === "M") deptRows[dept].M++; 
+            deptRows[dept].T = deptRows[dept].F + deptRows[dept].M; 
+            deptRows[dept].PD += safeInt(p.displayLOS); 
+        });
+
+        const counts = {}; 
+        patients.forEach(p => { 
+            const r = p.rawData || []; 
+            [...splitDxList(r[18]).map(mapDx), ...splitDxList(r[19]).map(mapDx)].forEach(dx => addCount(counts, dx, 1)); 
+        });
+
+        const topDx5 = topEntries(counts, 5);
+        const ratePer1000 = (n) => (patientDaysOcc > 0 ? (n / patientDaysOcc * 1000) : 0);
+        const ph = phlebitisByGrade(incidents);
+        const ghiList = (incidents || []).filter(x => x.eventType === "GHI" && String(x.level || "").trim() !== "");
+
+        const k = {
+            k11_unplanned_et: sumInc(incidents, "UNPLANNED_ET"), k12_vent_days: sumInc(incidents, "VENT_DAYS"), k13_icd_displaced: sumInc(incidents, "ICD_DISLODGE"), k14_icd_days: sumInc(incidents, "ICD_LINE_DAYS"),
+            k15_pressure_ulcer_rate: fmt2(ratePer1000(sumInc(incidents, "PRESSURE_ULCER"))), k16_fall_rate: fmt2(ratePer1000(sumInc(incidents, "FALL"))), k17_med_error: fmt2(ratePer1000(sumInc(incidents, "MED_ERROR"))),
+            k18_ghi_level: safeText(ghiList.length ? String(ghiList[ghiList.length - 1].level).trim() : "-", "-"), k19_unplanned_cpr: sumInc(incidents, "UNPLANNED_CPR"), k20_unplanned_icu: sumInc(incidents, "UNPLANNED_ICU"),
+            k21_wrong_proc: sumInc(incidents, "WRONG_PROCEDURE"), k22_wrong_surgery: sumInc(incidents, "WRONG_SURGERY"), k23_wrong_blood: sumInc(incidents, "WRONG_TRANSFUSION"),
+            k24_phlebitis_g1: ph[1] || 0, k24_phlebitis_g2: ph[2] || 0, k24_phlebitis_g3: ph[3] || 0, k24_phlebitis_g4: ph[4] || 0, k25_note_qty: Math.round(avgInc(incidents, "NURSE_NOTE_QTY") || 0), k25_note_qlt: Math.round(avgInc(incidents, "NURSE_NOTE_QLT") || 0),
+            k26_avg_wait_dc_min: avgWait, k27_refer_in: sumInc(incidents, "REFER_IN"), k27_refer_out: sumInc(incidents, "REFER_OUT"), k27_refer_back: sumInc(incidents, "REFER_BACK"), k27_refer_back_to: sumInc(incidents, "REFER_BACK_TO"), k27_daycare: sumInc(incidents, "DAYCARE")
+        };
+
+        const ctx = { 
+            sheet: currentSheet, days, beds, isMonthClosed, 
+            inAllG: countByGender(inAllList), carryG: countByGender(carryList), inNewG: countByGender(inNewList), inTransferG: countByGender(inTransferList), inReferG: countByGender(inReferList), 
+            outAllG: countByGender(outAllList), outDCG: countByGender(outDCList), outDeathG: countByGender(outDeathList), outTOG: countByGender(outTOList), outROG: countByGender(outROList), outAbsG: countByGender(outAbsList), outRefuseG: countByGender(outRefuseList), 
+            eomG: countByGender(eomList), 
+            patientDays: patientDaysOcc, // วันนอนรวม (Occupancy)
+            patientDaysUtil: patientDaysUtil, // วันใช้เตียง (Utilization)
+            borOcc: (bedDays > 0) ? (patientDaysOcc / bedDays * 100) : 0, 
+            borUtil: (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0, 
+            under6Count: under6Count, // เก็บไว้แสดงในรายงานถ้าจำเป็น
+            deptRows, topDx5, kpi1127: k 
+        };
+
+        currentReportCtx = ctx;
+        document.getElementById('reportMonthTitle').innerText = currentSheet; 
+        document.getElementById('reportResult').innerHTML = buildModernReportHTML(ctx);
+        
+        Swal.close(); 
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show(); 
+        setTimeout(() => renderReportCharts(ctx), 250);
+        
+    } catch (err) { 
+        Swal.fire('ผิดพลาด', err.toString(), 'error'); 
+    }
+}
 // --------------------------------------------------------------------------------
 // 1. หน้าต่าง Dashboard ทันสมัย (แสดงใน Modal) - ✨ Premium Redesign
 // --------------------------------------------------------------------------------
