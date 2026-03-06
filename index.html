@@ -2050,21 +2050,23 @@ function buildTabularReportHTML(ctx) {
     sumPD += r.PD || 0;
   });
 
-  const deptRowsHtml = `
-${Object.keys(ctx.deptRows || {}).map(d => `
+const deptRowsHtml = `
+${Object.keys(ctx.deptRows).map(d => `
 <tr>
-  <td style="text-align:left; font-size:11px;">
-    - ${d}
-    <br>
-    <small>
-      วันนอน: หญิง ${ctx.deptRows[d].PDF || 0} | ชาย ${ctx.deptRows[d].PDM || 0} | รวม ${ctx.deptRows[d].PD || 0}
-    </small>
-  </td>
-  <td>${ctx.deptRows[d].F || 0}</td>
-  <td>${ctx.deptRows[d].M || 0}</td>
-  <td style="background:#f0f0f0;">${ctx.deptRows[d].T || 0}</td>
+<td style="text-align:left;">- ${d}</td>
+<td>${ctx.deptRows[d].F}</td>
+<td>${ctx.deptRows[d].M}</td>
+<td style="background:#f0f0f0;">${ctx.deptRows[d].T}</td>
+</tr>
+
+<tr style="background:#e3f2fd; font-weight:bold;">
+<td style="text-align:left;">วันนอน (LOS)</td>
+<td style="font-size:14px;">${ctx.deptRows[d].PDF}</td>
+<td style="font-size:14px;">${ctx.deptRows[d].PDM}</td>
+<td style="font-size:14px;">${ctx.deptRows[d].PD}</td>
 </tr>
 `).join('')}
+`;
 
 <tr style="font-weight:bold; background:#fff3cd;">
   <td style="text-align:left;">
