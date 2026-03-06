@@ -1220,158 +1220,269 @@ function toggleDisFields() {
   function phlebitisByGrade(list){ const out = {1:0,2:0,3:0,4:0}; (list||[]).filter(x=>x.eventType==="PHLEBITIS").forEach(x=>{ const g = parseInt(x.grade,10); if(out[g]!==undefined) out[g] += (parseFloat(x.value)||1); }); return out; }
 
   let currentReportCtx = null;
-async function showFullReport(btn) {
-    lastTriggerEl = btn || document.activeElement; 
-    lastTriggerEl?.blur?.();
-    
-    if (!currentSheet) return Swal.fire("ยังไม่ได้เลือกเดือน", "", "warning");
-    
-    Swal.fire({ title: 'คำนวณรายงานสรุป...', didOpen: () => Swal.showLoading() });
-    
-    try {
-        const [patients, summary, dxMapPack, incidents] = await Promise.all([ 
-            callApi('getAllData', currentSheet), 
-            callApi('getMonthlySummaryRow', currentSheet), 
-            callApi('getDxMap'), 
-            callApi('getIncidentsByMonth', currentSheet) 
-        ]);
-
-        const dxMap = dxMapPack?.map || {};
-        const mapDx = (s) => String(dxMap[String(s || "").trim().replace(/\s+/g, " ")] || String(s || "").trim().replace(/\s+/g, " ")).trim() || "";
-        
-        const waitList = patients.map(p => Number(p.waitTime)).filter(v => v > 0);
-        const avgWait = waitList.length > 0 ? waitList.reduce((a, b) => a + b, 0) / waitList.length : 0;
-        
-        const days = daysInMonthFromSheet(currentSheet);
-        const isMonthClosed = !!(summary && summary.beds);
-        const beds = isMonthClosed ? Number(summary.beds) : 0;
-        const bedDays = beds * days;
-
-        // แยกกลุ่มคนไข้
-        const carryList = patients.filter(p => typeOf(p) === "ยอดยกมา");
-        const inNewList = patients.filter(p => typeOf(p) === "รับใหม่");
-        const inTransferList = patients.filter(p => typeOf(p) === "รับย้าย");
-        const inReferList = patients.filter(p => typeOf(p) === "รับ Refer");
-        const inAllList = [...carryList, ...inNewList, ...inTransferList, ...inReferList];
-
-        const outDCList = patients.filter(p => !!p?.rawData?.[20]);
-        const outDeathList = patients.filter(p => !!p?.rawData?.[30]);
-        const outTOList = patients.filter(p => !!p?.rawData?.[25]);
-        const outROList = patients.filter(p => !!p?.rawData?.[28]);
-        const outAbsList = patients.filter(p => !!p?.rawData?.[26]);
-        const outRefuseList = patients.filter(p => !!p?.rawData?.[27]);
-        const outAllList = patients.filter(p => isOutcomeClosed(p.rawData || []));
-        const eomList = patients.filter(p => p.status === "ยังรักษาอยู่");
-
-        // --- จุดสำคัญ: คำนวณวันนอน (Occupancy) และ วันใช้เตียง (Utilization) ---
-        // 1. Occupancy (นับตาม LOS ที่เวชระเบียนคิด: เคส < 6 ชม. = 0 วัน)
-      const patientDaysOcc = sumLos(outAllList);
-
-const period = {
-  start: getMonthStartFromSheet(),
-  end: (() => {
-    const s = getMonthStartFromSheet();
-    if (!s) return null;
-    const e = new Date(s.getFullYear(), s.getMonth() + 1, 0, 23, 59, 59, 999);
-    return e;
-  })()
-};
-
-const asOfDate = new Date();
-
-const patientDaysUtil = patients.reduce((sum, p) => {
-  const r = p.rawData || [];
-  const inDateStr = r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE] || "";
-  const inTimeStr = r[COL.ADMIT_TIME] || r[COL.TRANSFER_IN_TIME] || r[COL.REFER_IN_TIME] || "";
-  const outDateStr = r[COL.DC_DATE] || r[COL.TRANSFER_OUT_DATE] || r[COL.ABSCOND_DATE] || r[COL.REFUSE_DATE] || r[COL.REFER_OUT_DATE] || r[COL.DEATH_DATE] || "";
-  const outTimeStr = r[COL.OUT_TIME] || "";
-
-  if (!inDateStr || !period.start || !period.end) return sum;
-
-  const utilDays = calculateUtilDaysClient(inDateStr, inTimeStr, outDateStr, outTimeStr, period, asOfDate);
-  return sum + utilDays;
-}, 0);
-
-        // คำนวณข้อมูลตามแผนก
-        const deptRows = {};
-        inAllList.forEach(p => { 
-            const r = p.rawData || []; 
-            const dept = deptFromRow(r); 
-            if (!deptRows[dept]) deptRows[dept] = { F: 0, M: 0, T: 0, PD: 0 }; 
-            const g = genderOf(p); 
-            if (g === "F") deptRows[dept].F++; 
-            if (g === "M") deptRows[dept].M++; 
-            deptRows[dept].T = deptRows[dept].F + deptRows[dept].M; 
-            deptRows[dept].PD += safeInt(p.displayLOS); 
-        });
-
-        const counts = {}; 
-        patients.forEach(p => { 
-            const r = p.rawData || []; 
-            [...splitDxList(r[18]).map(mapDx), ...splitDxList(r[19]).map(mapDx)].forEach(dx => addCount(counts, dx, 1)); 
-        });
-
-        const topDx5 = topEntries(counts, 5);
-        const ratePer1000 = (n) => (patientDaysOcc > 0 ? (n / patientDaysOcc * 1000) : 0);
-        const ph = phlebitisByGrade(incidents);
-        const ghiList = (incidents || []).filter(x => x.eventType === "GHI" && String(x.level || "").trim() !== "");
-
-        const k = {
-            k11_unplanned_et: sumInc(incidents, "UNPLANNED_ET"), k12_vent_days: sumInc(incidents, "VENT_DAYS"), k13_icd_displaced: sumInc(incidents, "ICD_DISLODGE"), k14_icd_days: sumInc(incidents, "ICD_LINE_DAYS"),
-            k15_pressure_ulcer_rate: fmt2(ratePer1000(sumInc(incidents, "PRESSURE_ULCER"))), k16_fall_rate: fmt2(ratePer1000(sumInc(incidents, "FALL"))), k17_med_error: fmt2(ratePer1000(sumInc(incidents, "MED_ERROR"))),
-            k18_ghi_level: safeText(ghiList.length ? String(ghiList[ghiList.length - 1].level).trim() : "-", "-"), k19_unplanned_cpr: sumInc(incidents, "UNPLANNED_CPR"), k20_unplanned_icu: sumInc(incidents, "UNPLANNED_ICU"),
-            k21_wrong_proc: sumInc(incidents, "WRONG_PROCEDURE"), k22_wrong_surgery: sumInc(incidents, "WRONG_SURGERY"), k23_wrong_blood: sumInc(incidents, "WRONG_TRANSFUSION"),
-            k24_phlebitis_g1: ph[1] || 0, k24_phlebitis_g2: ph[2] || 0, k24_phlebitis_g3: ph[3] || 0, k24_phlebitis_g4: ph[4] || 0, k25_note_qty: Math.round(avgInc(incidents, "NURSE_NOTE_QTY") || 0), k25_note_qlt: Math.round(avgInc(incidents, "NURSE_NOTE_QLT") || 0),
-            k26_avg_wait_dc_min: avgWait, k27_refer_in: sumInc(incidents, "REFER_IN"), k27_refer_out: sumInc(incidents, "REFER_OUT"), k27_refer_back: sumInc(incidents, "REFER_BACK"), k27_refer_back_to: sumInc(incidents, "REFER_BACK_TO"), k27_daycare: sumInc(incidents, "DAYCARE")
-        };
-
-        const ctx = { 
-    sheet: currentSheet,
-    days,
-    beds,
-    isMonthClosed,
-
-    inAllG: countByGender(inAllList),
-    carryG: countByGender(carryList),
-    inNewG: countByGender(inNewList),
-    inTransferG: countByGender(inTransferList),
-    inReferG: countByGender(inReferList),
-
-    outAllG: countByGender(outAllList),
-    outDCG: countByGender(outDCList),
-    outDeathG: countByGender(outDeathList),
-    outTOG: countByGender(outTOList),
-    outROG: countByGender(outROList),
-    outAbsG: countByGender(outAbsList),
-    outRefuseG: countByGender(outRefuseList),
-
-    eomG: countByGender(eomList),
-
-    patientDays: patientDaysOcc,       // ครองเตียง
-    patientDaysUtil: patientDaysUtil,  // วันใช้เตียง
-
-    borOcc: (bedDays > 0) ? (patientDaysOcc / bedDays * 100) : 0,
-    borUtil: (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0,
-
-    deptRows,
-    topDx5,
-    kpi1127: k
-};
-
-        currentReportCtx = ctx;
-        document.getElementById('reportMonthTitle').innerText = currentSheet; 
-        document.getElementById('reportResult').innerHTML = buildModernReportHTML(ctx);
-        
-        Swal.close(); 
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show(); 
-        setTimeout(() => renderReportCharts(ctx), 250);
-        
-    } catch (err) { 
-        Swal.fire('ผิดพลาด', err.toString(), 'error'); 
-    }
+  function parseThaiDateClient(dStr) {
+  if (!dStr) return null;
+  const p = String(dStr).split('/');
+  if (p.length < 3) return null;
+  const d = new Date(parseInt(p[2], 10) - 543, parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
+function parseTimeHMClient(t) {
+  const s = String(t || "").trim();
+  if (!s || !s.includes(':')) return { h: 0, m: 0 };
+  const a = s.split(':');
+  return {
+    h: parseInt(a[0], 10) || 0,
+    m: parseInt(a[1], 10) || 0
+  };
+}
 
+function getMonthEndFromSheet() {
+  const s = getMonthStartFromSheet();
+  if (!s) return null;
+  return new Date(s.getFullYear(), s.getMonth() + 1, 0, 23, 59, 59, 999);
+}
+
+function calculateUtilDaysClient(inDateStr, inTimeStr, outDateStr, outTimeStr, period, asOfDate) {
+  if (!inDateStr || !period || !period.start || !period.end) return 0;
+
+  const start = parseThaiDateClient(inDateStr);
+  if (!start) return 0;
+
+  const inHM = parseTimeHMClient(inTimeStr);
+  start.setHours(inHM.h, inHM.m, 0, 0);
+
+  let end;
+  if (outDateStr) {
+    end = parseThaiDateClient(outDateStr);
+    if (!end) return 0;
+
+    if (String(outTimeStr || "").includes(':')) {
+      const outHM = parseTimeHMClient(outTimeStr);
+      end.setHours(outHM.h, outHM.m, 0, 0);
+    } else {
+      end.setHours(23, 59, 0, 0);
+    }
+  } else {
+    end = new Date(asOfDate);
+    end.setHours(23, 59, 0, 0);
+  }
+
+  const calcStart = (start < period.start) ? new Date(period.start) : new Date(start);
+  const calcEnd = (end > period.end) ? new Date(period.end) : new Date(end);
+
+  if (calcEnd < calcStart) return 0;
+
+  const d1 = new Date(calcStart.getFullYear(), calcStart.getMonth(), calcStart.getDate());
+  const d2 = new Date(calcEnd.getFullYear(), calcEnd.getMonth(), calcEnd.getDate());
+  const diffDays = Math.round((d2 - d1) / 86400000);
+
+  return diffDays + 1;
+}
+async function showFullReport(btn) {
+  lastTriggerEl = btn || document.activeElement;
+  lastTriggerEl?.blur?.();
+
+  if (!currentSheet) return Swal.fire("ยังไม่ได้เลือกเดือน", "", "warning");
+
+  Swal.fire({ title: 'คำนวณรายงานสรุป...', didOpen: () => Swal.showLoading() });
+
+  try {
+    const [patients, summary, dxMapPack, incidents] = await Promise.all([
+      callApi('getAllData', currentSheet),
+      callApi('getMonthlySummaryRow', currentSheet),
+      callApi('getDxMap'),
+      callApi('getIncidentsByMonth', currentSheet)
+    ]);
+
+    const dxMap = dxMapPack?.map || {};
+    const mapDx = (s) =>
+      String(
+        dxMap[String(s || "").trim().replace(/\s+/g, " ")] ||
+        String(s || "").trim().replace(/\s+/g, " ")
+      ).trim() || "";
+
+    const waitList = patients.map(p => Number(p.waitTime)).filter(v => v > 0);
+    const avgWait = waitList.length > 0
+      ? waitList.reduce((a, b) => a + b, 0) / waitList.length
+      : 0;
+
+    const days = daysInMonthFromSheet(currentSheet);
+    const isMonthClosed = !!(summary && summary.beds);
+    const beds = isMonthClosed ? Number(summary.beds) : 0;
+    const bedDays = beds * days;
+
+    const carryList = patients.filter(p => typeOf(p) === "ยอดยกมา");
+    const inNewList = patients.filter(p => typeOf(p) === "รับใหม่");
+    const inTransferList = patients.filter(p => typeOf(p) === "รับย้าย");
+    const inReferList = patients.filter(p => typeOf(p) === "รับ Refer");
+    const inAllList = [...carryList, ...inNewList, ...inTransferList, ...inReferList];
+
+    const outDCList = patients.filter(p => !!p?.rawData?.[20]);
+    const outDeathList = patients.filter(p => !!p?.rawData?.[30]);
+    const outTOList = patients.filter(p => !!p?.rawData?.[25]);
+    const outROList = patients.filter(p => !!p?.rawData?.[28]);
+    const outAbsList = patients.filter(p => !!p?.rawData?.[26]);
+    const outRefuseList = patients.filter(p => !!p?.rawData?.[27]);
+    const outAllList = patients.filter(p => isOutcomeClosed(p.rawData || []));
+    const eomList = patients.filter(p => p.status === "ยังรักษาอยู่");
+
+    // 1) วันนอนรวม / ครองเตียง (เคส < 6 ชม. = 0 วัน)
+    const patientDaysOcc = sumLos(outAllList);
+
+    // 2) วันใช้เตียงรวม (เคส < 6 ชม. แต่มาใช้เตียงจริง = 1 วัน)
+    const monthStart = getMonthStartFromSheet();
+    const monthEnd = getMonthEndFromSheet();
+    const period = { start: monthStart, end: monthEnd };
+    const asOfDate = new Date();
+
+    const patientDaysUtil = patients.reduce((sum, p) => {
+      const r = p.rawData || [];
+
+      const inDateStr =
+        r[COL.ADMIT_DATE] ||
+        r[COL.TRANSFER_IN_DATE] ||
+        r[COL.REFER_IN_DATE] || "";
+
+      const inTimeStr =
+        r[COL.ADMIT_TIME] ||
+        r[COL.TRANSFER_IN_TIME] ||
+        r[COL.REFER_IN_TIME] || "";
+
+      const outDateStr =
+        r[COL.DC_DATE] ||
+        r[COL.TRANSFER_OUT_DATE] ||
+        r[COL.ABSCOND_DATE] ||
+        r[COL.REFUSE_DATE] ||
+        r[COL.REFER_OUT_DATE] ||
+        r[COL.DEATH_DATE] || "";
+
+      const outTimeStr = r[COL.OUT_TIME] || "";
+
+      if (!inDateStr || !period.start || !period.end) return sum;
+
+      const utilDays = calculateUtilDaysClient(
+        inDateStr,
+        inTimeStr,
+        outDateStr,
+        outTimeStr,
+        period,
+        asOfDate
+      );
+
+      return sum + utilDays;
+    }, 0);
+
+    const deptRows = {};
+    inAllList.forEach(p => {
+      const r = p.rawData || [];
+      const dept = deptFromRow(r);
+      if (!deptRows[dept]) deptRows[dept] = { F: 0, M: 0, T: 0, PD: 0 };
+
+      const g = genderOf(p);
+      if (g === "F") deptRows[dept].F++;
+      if (g === "M") deptRows[dept].M++;
+      deptRows[dept].T = deptRows[dept].F + deptRows[dept].M;
+
+      // ภาควิชายังใช้วันนอนแบบ official
+      deptRows[dept].PD += safeInt(p.displayLOS);
+    });
+
+    const counts = {};
+    patients.forEach(p => {
+      const r = p.rawData || [];
+      [...splitDxList(r[18]).map(mapDx), ...splitDxList(r[19]).map(mapDx)]
+        .forEach(dx => addCount(counts, dx, 1));
+    });
+
+    const topDx5 = topEntries(counts, 5);
+
+    const ratePer1000 = (n) =>
+      (patientDaysOcc > 0 ? (n / patientDaysOcc * 1000) : 0);
+
+    const ph = phlebitisByGrade(incidents);
+    const ghiList = (incidents || []).filter(
+      x => x.eventType === "GHI" && String(x.level || "").trim() !== ""
+    );
+
+    const k = {
+      k11_unplanned_et: sumInc(incidents, "UNPLANNED_ET"),
+      k12_vent_days: sumInc(incidents, "VENT_DAYS"),
+      k13_icd_displaced: sumInc(incidents, "ICD_DISLODGE"),
+      k14_icd_days: sumInc(incidents, "ICD_LINE_DAYS"),
+      k15_pressure_ulcer_rate: fmt2(ratePer1000(sumInc(incidents, "PRESSURE_ULCER"))),
+      k16_fall_rate: fmt2(ratePer1000(sumInc(incidents, "FALL"))),
+      k17_med_error: fmt2(ratePer1000(sumInc(incidents, "MED_ERROR"))),
+      k18_ghi_level: safeText(
+        ghiList.length ? String(ghiList[ghiList.length - 1].level).trim() : "-",
+        "-"
+      ),
+      k19_unplanned_cpr: sumInc(incidents, "UNPLANNED_CPR"),
+      k20_unplanned_icu: sumInc(incidents, "UNPLANNED_ICU"),
+      k21_wrong_proc: sumInc(incidents, "WRONG_PROCEDURE"),
+      k22_wrong_surgery: sumInc(incidents, "WRONG_SURGERY"),
+      k23_wrong_blood: sumInc(incidents, "WRONG_TRANSFUSION"),
+      k24_phlebitis_g1: ph[1] || 0,
+      k24_phlebitis_g2: ph[2] || 0,
+      k24_phlebitis_g3: ph[3] || 0,
+      k24_phlebitis_g4: ph[4] || 0,
+      k25_note_qty: Math.round(avgInc(incidents, "NURSE_NOTE_QTY") || 0),
+      k25_note_qlt: Math.round(avgInc(incidents, "NURSE_NOTE_QLT") || 0),
+      k26_avg_wait_dc_min: avgWait,
+      k27_refer_in: sumInc(incidents, "REFER_IN"),
+      k27_refer_out: sumInc(incidents, "REFER_OUT"),
+      k27_refer_back: sumInc(incidents, "REFER_BACK"),
+      k27_refer_back_to: sumInc(incidents, "REFER_BACK_TO"),
+      k27_daycare: sumInc(incidents, "DAYCARE")
+    };
+
+    const ctx = {
+      sheet: currentSheet,
+      days,
+      beds,
+      isMonthClosed,
+
+      inAllG: countByGender(inAllList),
+      carryG: countByGender(carryList),
+      inNewG: countByGender(inNewList),
+      inTransferG: countByGender(inTransferList),
+      inReferG: countByGender(inReferList),
+
+      outAllG: countByGender(outAllList),
+      outDCG: countByGender(outDCList),
+      outDeathG: countByGender(outDeathList),
+      outTOG: countByGender(outTOList),
+      outROG: countByGender(outROList),
+      outAbsG: countByGender(outAbsList),
+      outRefuseG: countByGender(outRefuseList),
+
+      eomG: countByGender(eomList),
+
+      patientDays: patientDaysOcc,        // ครองเตียง / official
+      patientDaysUtil: patientDaysUtil,   // วันใช้เตียง / utilization
+
+      borOcc: (bedDays > 0) ? (patientDaysOcc / bedDays * 100) : 0,
+      borUtil: (bedDays > 0) ? (patientDaysUtil / bedDays * 100) : 0,
+
+      deptRows,
+      topDx5,
+      kpi1127: k
+    };
+
+    currentReportCtx = ctx;
+    document.getElementById('reportMonthTitle').innerText = currentSheet;
+    document.getElementById('reportResult').innerHTML = buildModernReportHTML(ctx);
+
+    Swal.close();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('reportModal')).show();
+    setTimeout(() => renderReportCharts(ctx), 250);
+
+  } catch (err) {
+    Swal.fire('ผิดพลาด', err.toString(), 'error');
+  }
+}
   function parseThaiDateClient(dStr) {
   if (!dStr) return null;
   const p = String(dStr).split('/');
@@ -1652,7 +1763,7 @@ function buildModernReportHTML(ctx) {
     if (!currentReportCtx) return; const html = buildTabularReportHTML(currentReportCtx); const printWindow = window.open('', '_blank'); printWindow.document.write(html); printWindow.document.close(); printWindow.focus(); setTimeout(() => { printWindow.print(); }, 500);
   }
 
-  function buildTabularReportHTML(ctx) {
+function buildTabularReportHTML(ctx) {
   const { sheet, days, beds, isMonthClosed, kpi1127: k } = ctx;
   const isC = isMonthClosed;
   const borOccText = isC ? `${fmt2(ctx.borOcc)}%` : "-";
@@ -1747,7 +1858,7 @@ th { background: #eee; font-weight: 700; font-size: 11px; }
           ${deptRowsHtml || '<tr><td colspan="4">ไม่มีข้อมูล</td></tr>'}
 
           <tr><td class="section-title" colspan="4">5. Newborn (ทารกแรกเกิด)</td></tr>
-          ${rowG("จำนวนทารกในเดือนนี้", { F:0, M:0, T:0 })}
+          ${rowG("จำนวนทารกในเดือนนี้", { F: 0, M: 0, T: 0 })}
         </tbody>
       </table>
     </div>
@@ -1762,26 +1873,10 @@ th { background: #eee; font-weight: 700; font-size: 11px; }
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>6</td>
-            <td style="text-align:left;">อัตราครองเตียง (Official)</td>
-            <td style="font-weight:bold;">${borOccText}</td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td style="text-align:left;">อัตราการใช้เตียง (Util)</td>
-            <td style="font-weight:bold;">${borUtilText}</td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td style="text-align:left;">จำนวนวันนอนรวม (LOS)</td>
-            <td>${ctx.patientDays}</td>
-          </tr>
-          <tr>
-            <td>9</td>
-            <td style="text-align:left;">วันใช้เตียงรวม</td>
-            <td>${ctx.patientDaysUtil || 0}</td>
-          </tr>
+          <tr><td>6</td><td style="text-align:left;">อัตราครองเตียง (Official)</td><td style="font-weight:bold;">${borOccText}</td></tr>
+          <tr><td>7</td><td style="text-align:left;">อัตราการใช้เตียง (Util)</td><td style="font-weight:bold;">${borUtilText}</td></tr>
+          <tr><td>8</td><td style="text-align:left;">จำนวนวันนอนรวม (LOS)</td><td>${ctx.patientDays}</td></tr>
+          <tr><td>9</td><td style="text-align:left;">วันใช้เตียงรวม</td><td>${ctx.patientDaysUtil || 0}</td></tr>
 
           <tr><td colspan="3" class="sub-label">10. สถิติ 5 โรคแรก (Top Diagnoses)</td></tr>
           <tr>
@@ -1819,8 +1914,7 @@ th { background: #eee; font-weight: 700; font-size: 11px; }
   </div>
 </body>
 </html>`;
-}
-  window.showFullReport = showFullReport; window.printOfficialReport = printOfficialReport;
+}  window.showFullReport = showFullReport; window.printOfficialReport = printOfficialReport;
 </script>
 </body>
 </html>
