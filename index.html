@@ -2505,7 +2505,7 @@ async function showFullReport(btn) {
       return String(dxMap[raw] || raw).trim().replace(/\s+/g, " ") || "";
     };
 const waitList = patients
-  .map(p => Number(p.rawData[34])) // ระบุ index 34 ตรงๆ (คอลัมน์ที่ 35)
+  .map(p => Number(p.waitTime)) // แก้จาก p.rawData[34] เป็น p.waitTime
   .filter(v => v > 0);
 
 const avgWait = waitList.length > 0 
