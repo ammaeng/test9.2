@@ -2053,30 +2053,32 @@ function buildTabularReportHTML(ctx) {
   const deptRowsHtml = `
 ${Object.keys(ctx.deptRows || {}).map(d => `
 <tr>
-  <td style="text-align:left; font-size:11px; font-weight:bold;">- ${d}</td>
+  <td style="text-align:left; font-weight:bold;">- ${d}</td>
   <td>${ctx.deptRows[d].F || 0}</td>
   <td>${ctx.deptRows[d].M || 0}</td>
   <td style="background:#f0f0f0;">${ctx.deptRows[d].T || 0}</td>
 </tr>
-<tr style="background:#e3f2fd; font-weight:bold;">
+
+<tr style="background:#f5f5f5; font-weight:bold;">
   <td style="text-align:left; padding-left:20px;">วันนอน (LOS)</td>
-  <td style="font-size:16px; color:#0d47a1;">${ctx.deptRows[d].PDF || 0}</td>
-  <td style="font-size:16px; color:#1b5e20;">${ctx.deptRows[d].PDM || 0}</td>
-  <td style="font-size:18px; background:#bbdefb; color:#000;">${ctx.deptRows[d].PD || 0}</td>
+  <td>${ctx.deptRows[d].PDF || 0}</td>
+  <td>${ctx.deptRows[d].PDM || 0}</td>
+  <td style="background:#e0e0e0;">${ctx.deptRows[d].PD || 0}</td>
 </tr>
 `).join('')}
 
-<tr style="font-weight:bold; background:#ffe082; border-top:2px solid #000;">
+<tr style="font-weight:bold; background:#fff3cd; border-top:2px solid #000;">
   <td style="text-align:left;">รวมทุกภาควิชา</td>
   <td>${sumF}</td>
   <td>${sumM}</td>
-  <td style="background:#ffd54f;">${sumT}</td>
+  <td style="background:#ffe082;">${sumT}</td>
 </tr>
-<tr style="font-weight:bold; background:#fff8e1; border-bottom:2px solid #000;">
+
+<tr style="font-weight:bold; background:#fafafa;">
   <td style="text-align:left; padding-left:20px;">วันนอนรวมทุกภาควิชา</td>
-  <td style="font-size:16px; color:#0d47a1;">${sumPDF}</td>
-  <td style="font-size:16px; color:#1b5e20;">${sumPDM}</td>
-  <td style="font-size:18px; background:#ffe082;">${sumPD}</td>
+  <td>${sumPDF}</td>
+  <td>${sumPDM}</td>
+  <td style="background:#e0e0e0;">${sumPD}</td>
 </tr>
 `;
 
