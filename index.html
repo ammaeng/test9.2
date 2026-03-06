@@ -529,15 +529,52 @@
     dxTagState[which].tags = splitToTags(hidden.value); renderDxTags(which);
   }
 
-  function sheetNameToDate(sheetName) {
-    if (!sheetName) return null;
-    const monthMap = { "มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,"กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11, "มกรา":0,"กุมภา":1,"มีนา":2,"เมษา":3,"พฤษภา":4,"มิถุนา":5,"กรกฎา":6,"สิงหา":7,"กันยา":8,"ตุลา":9,"พฤศจิกา":10,"ธันวา":11 };
-    let mIdx = null; for (const m in monthMap) if (sheetName.includes(m)) { mIdx = monthMap[m]; break; }
-    if (mIdx === null) return null;
-    const ym = sheetName.match(/\d+/); if (!ym) return null;
-    let y = parseInt(ym[0], 10); if (y < 100) y += 2500;
-    const d = new Date(y - 543, mIdx, 1); d.setHours(0,0,0,0); return d;
+  // ปรับปรุงการดึงวันที่เริ่มต้นเดือนจากชื่อชีท (ให้เป็นเที่ยงคืน)
+function sheetNameToDate(sheetName) {
+  if (!sheetName) return null;
+  const monthMap = { "มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,"กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11, "มกรา":0,"กุมภา":1,"มีนา":2,"เมษา":3,"พฤษภา":4,"มิถุนา":5,"กรกฎา":6,"สิงหา":7,"กันยา":8,"ตุลา":9,"พฤศจิกา":10,"ธันวา":11 };
+  let mIdx = null; for (const m in monthMap) if (sheetName.includes(m)) { mIdx = monthMap[m]; break; }
+  if (mIdx === null) return null;
+  const ym = sheetName.match(/\d+/); if (!ym) return null;
+  let y = parseInt(ym[0], 10); if (y < 100) y += 2500;
+  // สร้างวันที่ 1 ของเดือนนั้นๆ เวลา 00:00:00
+  return new Date(y - 543, mIdx, 1, 0, 0, 0, 0);
+}
+
+// ปรับปรุงการ Preview LOS
+function calculateLOSPreview() {
+  const admitUnder6 = document.getElementById('admitUnder6').value.trim();
+  if (admitUnder6 !== "") { document.getElementById('los').value = "0"; return; }
+
+  const sVal = document.getElementById('inDate').value;
+  const eVal = document.getElementById('dcDate').value || document.getElementById('deathDate').value || document.getElementById('transferOutDate').value || document.getElementById('abscondDate').value || document.getElementById('refuseDate').value || document.getElementById('referOutDate').value;
+  
+  if (!sVal) { document.getElementById('los').value = ""; return; }
+  
+  const monthStart = getMonthStartFromSheet();
+  if (!monthStart) { document.getElementById('los').value = ""; return; }
+  
+  // สร้าง Date Object และล้างเวลาให้เป็น 00:00:00
+  const start = new Date(sVal); start.setHours(0,0,0,0);
+  let end = eVal ? new Date(eVal) : new Date(); end.setHours(0,0,0,0);
+  
+  // หาวันสุดท้ายของเดือนปัจจุบัน
+  const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+  monthEnd.setHours(0,0,0,0);
+
+  // ตัดยอด (Cap)
+  let calcStart = (start.getTime() < monthStart.getTime()) ? monthStart : start;
+  let calcEnd = (end.getTime() > monthEnd.getTime()) ? monthEnd : end;
+
+  if (calcEnd < calcStart) {
+    document.getElementById('los').value = "0";
+  } else {
+    // คำนวณจำนวนวัน (แบบรวมหัวและท้าย)
+    const diffDays = Math.round((calcEnd - calcStart) / 86400000);
+    document.getElementById('los').value = String(diffDays + 1);
   }
+}
+  
   function pickLatestSheet(names) {
     if (!Array.isArray(names) || names.length === 0) return "";
     return [...names].sort((a, b) => {
@@ -547,21 +584,6 @@
     })[0];
   }
   function getMonthStartFromSheet() { const d = sheetNameToDate(currentSheet); return d ? d : null; }
-  function calculateLOSPreview() {
-    const admitUnder6 = document.getElementById('admitUnder6').value.trim();
-    if (admitUnder6 !== "") { document.getElementById('los').value = "0"; return; }
-    const sVal = document.getElementById('inDate').value;
-    const eVal = document.getElementById('dcDate').value || document.getElementById('deathDate').value || document.getElementById('transferOutDate').value || document.getElementById('abscondDate').value || document.getElementById('refuseDate').value || document.getElementById('referOutDate').value;
-    if (!sVal) { document.getElementById('los').value = ""; return; }
-    const monthStart = getMonthStartFromSheet(); if (!monthStart) { document.getElementById('los').value = ""; return; }
-    const start = new Date(sVal); start.setHours(0,0,0,0);
-    let end = eVal ? new Date(eVal) : new Date(); end.setHours(0,0,0,0);
-    const me = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0); me.setHours(0,0,0,0);
-    let calcStart = (start < monthStart) ? monthStart : start;
-    if (end > me) end = me;
-    if (end < calcStart) { document.getElementById('los').value = "0"; return; }
-    document.getElementById('los').value = String(Math.floor((end - calcStart) / 86400000) + 1);
-  }
 
   function updateCharts(sMap, saMap) {
     if (sithiChart) sithiChart.destroy(); if (saiChart) saiChart.destroy();
