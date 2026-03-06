@@ -905,6 +905,235 @@ async function showFullReport(triggerEl) {
     Swal.fire("ผิดพลาด", err.toString(), "error");
   }
 }
+  function editPatient(item) {
+  const r = item.rawData || [];
+  
+  // เปลี่ยนไปแท็บฟอร์ม
+  new bootstrap.Tab(document.querySelector('button[data-bs-target="#form-pane"]')).show();
+  window.scrollTo(0, 0);
+
+  // กำหนดค่าในฟอร์ม
+  document.getElementById('rowId').value = item.rowId;
+  document.getElementById('patientStatusStored').value = (r[COL.STATUS] || r[0] || "").trim();
+  document.getElementById('seq').value = r[COL.SEQ] || r[1] || "";
+
+  // ประเภทการรับ
+  const status = (r[COL.STATUS] || r[0] || "").trim();
+  const inTypeEl = document.getElementById('inType');
+  if (inTypeEl) inTypeEl.value = status || "รับใหม่";
+
+  // วันที่/เวลา/ต้นทาง
+  let admitDate = "", admitTime = "", admitDept = "";
+  if (status === "รับใหม่") {
+    admitDate = formatDateForInput(r[COL.ADMIT_DATE]);
+    admitTime = formatTimeForInput(r[COL.ADMIT_TIME]);
+    admitDept = r[COL.ADMIT_DEPT] || "";
+  } else if (status === "รับย้าย") {
+    admitDate = formatDateForInput(r[COL.TRANSFER_IN_DATE]);
+    admitTime = formatTimeForInput(r[COL.TRANSFER_IN_TIME]);
+    admitDept = r[COL.TRANSFER_IN_DEPT] || "";
+  } else if (status === "รับ Refer") {
+    admitDate = formatDateForInput(r[COL.REFER_IN_DATE]);
+    admitTime = formatTimeForInput(r[COL.REFER_IN_TIME]);
+    admitDept = r[COL.REFER_IN_DEPT] || "";
+  } else {
+    admitDate = formatDateForInput(r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE]);
+    admitTime = formatTimeForInput(r[COL.ADMIT_TIME] || r[COL.TRANSFER_IN_TIME] || r[COL.REFER_IN_TIME]);
+    admitDept = r[COL.ADMIT_DEPT] || r[COL.TRANSFER_IN_DEPT] || r[COL.REFER_IN_DEPT] || "";
+  }
+  document.getElementById('inDate').value = admitDate;
+  document.getElementById('inTime').value = admitTime;
+  document.getElementById('inDept').value = admitDept;
+
+  // ข้อมูลส่วนตัว
+  document.getElementById('prefix').value = r[COL.PREFIX] || "ด.ช.";
+  document.getElementById('patientName').value = r[COL.NAME] || "";
+  document.getElementById('gender').value = r[COL.GENDER] || "ชาย";
+
+  // อายุ (แยก ปี/เดือน/วัน)
+  const ageParts = String(r[COL.AGE] || "").split("/");
+  document.getElementById('ageYear').value = ageParts[0] || "";
+  document.getElementById('ageMonth').value = ageParts[1] || "";
+  document.getElementById('ageDay').value = ageParts[2] || "";
+
+  document.getElementById('hn').value = r[COL.HN] || "";
+  document.getElementById('an').value = r[COL.AN] || "";
+  document.getElementById('ward').value = r[COL.WARD] || "";
+  document.getElementById('sai').value = r[COL.SAI] || "";
+  document.getElementById('sithi').value = r[COL.SITHI] || "";
+  document.getElementById('address').value = r[COL.ADDRESS] || "";
+
+  // Dx Tags
+  document.getElementById('dx1').value = r[COL.DX1] || "";
+  document.getElementById('dx2').value = r[COL.DX2] || "";
+  dxTagState.dx1.tags = splitToTags(r[COL.DX1] || "");
+  dxTagState.dx2.tags = splitToTags(r[COL.DX2] || "");
+  renderDxTags('dx1');
+  renderDxTags('dx2');
+
+  // Outcome
+  document.getElementById('dcDate').value = formatDateForInput(r[COL.DC_DATE]);
+  document.getElementById('fu').value = r[COL.FU] || "";
+  document.getElementById('admitUnder6').value = r[COL.ADMIT_UNDER6] || "";
+  document.getElementById('deathDate').value = formatDateForInput(r[COL.DEATH_DATE]);
+  document.getElementById('transferOutDate').value = formatDateForInput(r[COL.TRANSFER_OUT_DATE]);
+  document.getElementById('transferOut').value = r[COL.TRANSFER_OUT] || "";
+  document.getElementById('abscondDate').value = formatDateForInput(r[COL.ABSCOND_DATE]);
+  document.getElementById('refuseDate').value = formatDateForInput(r[COL.REFUSE_DATE]);
+  document.getElementById('referOutDate').value = formatDateForInput(r[COL.REFER_OUT_DATE]);
+  document.getElementById('referDestination').value = r[COL.REFER_DEST] || "";
+
+  calculateLOSPreview();
+}
+
+function printPDF(item) {
+  const r = item.rawData || [];
+  const name = (r[COL.PREFIX] || "") + (r[COL.NAME] || "");
+  const hn = r[COL.HN] || "-";
+  const an = r[COL.AN] || "-";
+  const admitDate = r[COL.ADMIT_DATE] || r[COL.TRANSFER_IN_DATE] || r[COL.REFER_IN_DATE] || "-";
+  const dcDate = r[COL.DC_DATE] || r[COL.DEATH_DATE] || r[COL.TRANSFER_OUT_DATE] || r[COL.REFER_OUT_DATE] || "-";
+  const dx1 = r[COL.DX1] || "-";
+  const dx2 = r[COL.DX2] || "-";
+  const ward = r[COL.WARD] || "-";
+  const sai = r[COL.SAI] || "-";
+  const sithi = r[COL.SITHI] || "-";
+  const los = item.displayLOS || "-";
+  const fu = r[COL.FU] || "-";
+  const address = r[COL.ADDRESS] || "-";
+  const status = item.status || "-";
+
+  const html = `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+  <title>ใบสรุปผู้ป่วย - ${name}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    @media print { @page { size: A5 portrait; margin: 1cm; } }
+    body { font-family: 'Sarabun', sans-serif; font-size: 13px; color: #000; padding: 20px; }
+    h2 { text-align: center; font-size: 16px; font-weight: 900; border-bottom: 2px solid #000; padding-bottom: 6px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; margin-top: 10px; }
+    .item label { font-weight: 700; color: #555; font-size: 11px; display: block; }
+    .item span { font-weight: 600; font-size: 13px; }
+    .full { grid-column: 1 / -1; }
+    .status-box { margin-top: 12px; padding: 8px 12px; border: 2px solid #000; border-radius: 8px; font-weight: 700; }
+    .footer { margin-top: 30px; text-align: right; font-size: 11px; color: #888; }
+  </style></head><body>
+  <h2>🧸 ใบสรุปข้อมูลผู้ป่วย — วอร์ดเด็ก 9/2</h2>
+  <div class="grid">
+    <div class="item"><label>ชื่อ-นามสกุล</label><span>${name}</span></div>
+    <div class="item"><label>เพศ / อายุ</label><span>${r[COL.GENDER] || "-"} / ${r[COL.AGE] || "-"}</span></div>
+    <div class="item"><label>HN</label><span>${hn}</span></div>
+    <div class="item"><label>AN</label><span>${an}</span></div>
+    <div class="item"><label>วันที่รับเข้า</label><span>${admitDate}</span></div>
+    <div class="item"><label>วันที่จำหน่าย</label><span>${dcDate}</span></div>
+    <div class="item"><label>แผนก / สายแพทย์</label><span>${ward} / ${sai}</span></div>
+    <div class="item"><label>สิทธิการรักษา</label><span>${sithi}</span></div>
+    <div class="item"><label>LOS (วัน)</label><span>${los}</span></div>
+    <div class="item"><label>F/U</label><span>${fu}</span></div>
+    <div class="item full"><label>Dx. แรก</label><span>${dx1}</span></div>
+    <div class="item full"><label>Dx. หลัง / ร่วม</label><span>${dx2}</span></div>
+    <div class="item full"><label>ที่อยู่</label><span>${address}</span></div>
+  </div>
+  <div class="status-box">สถานะ: ${status}</div>
+  <div class="footer">พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')} | ระบบทะเบียนผู้ป่วย Ward 9/2</div>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 400);
+}
+
+  document.getElementById('dataForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  if (!currentSheet) return Swal.fire("กรุณาเลือกเดือนก่อน");
+
+  const ageStr = [
+    document.getElementById('ageYear').value,
+    document.getElementById('ageMonth').value,
+    document.getElementById('ageDay').value
+  ].filter(Boolean).join("/");
+
+  const inType = document.getElementById('inType').value;
+  const storedStatus = document.getElementById('patientStatusStored').value;
+  const patientStatus = storedStatus || inType || "รับใหม่";
+
+  const formData = {
+    rowId: document.getElementById('rowId').value,
+    patientStatus,
+    inType,
+    inDate: formatDateForSheet(document.getElementById('inDate').value),
+    inTime: document.getElementById('inTime').value,
+    inDept: document.getElementById('inDept').value,
+    prefix: document.getElementById('prefix').value,
+    patientName: document.getElementById('patientName').value,
+    gender: document.getElementById('gender').value,
+    age: ageStr,
+    hn: document.getElementById('hn').value,
+    an: document.getElementById('an').value,
+    ward: document.getElementById('ward').value,
+    sai: document.getElementById('sai').value,
+    sithi: document.getElementById('sithi').value,
+    dx1: document.getElementById('dx1').value,
+    dx2: document.getElementById('dx2').value,
+    address: document.getElementById('address').value,
+    dcDate: formatDateForSheet(document.getElementById('dcDate').value),
+    fu: document.getElementById('fu').value,
+    admitUnder6: document.getElementById('admitUnder6').value,
+    los: document.getElementById('los').value,
+    transferOut: document.getElementById('transferOut').value,
+    transferOutDate: formatDateForSheet(document.getElementById('transferOutDate').value),
+    abscondDate: formatDateForSheet(document.getElementById('abscondDate').value),
+    refuseDate: formatDateForSheet(document.getElementById('refuseDate').value),
+    referOutDate: formatDateForSheet(document.getElementById('referOutDate').value),
+    referDestination: document.getElementById('referDestination').value,
+    deathDate: formatDateForSheet(document.getElementById('deathDate').value),
+    nurseId: getNurseId()
+  };
+
+  Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    await callApi('processData', { targetSheet: currentSheet, formData });
+    Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', timer: 1500, showConfirmButton: false });
+    loadDashboard();
+    new bootstrap.Tab(document.querySelector('button[data-bs-target="#list-pane"]')).show();
+  } catch (err) {
+    Swal.fire('ผิดพลาด', err.toString(), 'error');
+  }
+});
+
+  async function closeMonthUI() {
+  const { value: formValues } = await Swal.fire({
+    title: 'ปิดยอดเดือน',
+    html: `<div style="text-align:left">
+      <label style="font-weight:700">จำนวนเตียงที่เปิดจริง</label>
+      <input id="swal-beds" class="swal2-input" type="number" placeholder="เช่น 20" style="margin-top:8px">
+    </div>`,
+    showCancelButton: true,
+    confirmButtonText: 'ยืนยันปิดยอด',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      const beds = document.getElementById('swal-beds').value;
+      if (!beds || isNaN(beds) || parseInt(beds) <= 0) {
+        Swal.showValidationMessage('กรุณาระบุจำนวนเตียง');
+        return false;
+      }
+      return { beds: parseInt(beds, 10) };
+    }
+  });
+
+  if (!formValues) return;
+  Swal.fire({ title: 'กำลังปิดยอด...', didOpen: () => Swal.showLoading() });
+  try {
+    await callApi('closeMonth', { targetSheet: currentSheet, beds: formValues.beds });
+    Swal.fire('สำเร็จ', `ปิดยอดเดือน ${currentSheet} แล้ว`, 'success');
+    loadDashboard();
+  } catch (err) {
+    Swal.fire('ผิดพลาด', err.toString(), 'error');
+  }
+}
+  
+  
   
   window.showFullReport = showFullReport; 
   window.printOfficialReport = printOfficialReport;
