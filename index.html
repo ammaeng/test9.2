@@ -730,53 +730,7 @@
 </div>
 
 <datalist id="dxList"></datalist>
-  <!-- Discharge Modal -->
-<div class="modal fade" id="dischargeModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">จำหน่ายผู้ป่วย</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="disRowId">
-        <div class="mb-3">
-          <label class="form-label">ประเภทการจำหน่าย</label>
-          <select id="disType" class="form-select">
-            <option value="">-- เลือก --</option>
-            <option value="dc">กลับบ้าน (D/C)</option>
-            <option value="transfer">ย้ายแผนก</option>
-            <option value="refer">Refer Out</option>
-            <option value="death">เสียชีวิต</option>
-            <option value="abscond">หนี</option>
-            <option value="refuse">ปฏิเสธ</option>
-          </select>
-        </div>
-        
-        <!-- ช่องที่เพิ่มขึ้นมาตามที่เราตกลงกันไว้ -->
-        <div class="mb-3" id="waitBox" style="display:none;">
-          <label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label>
-          <input type="number" id="disWaitMin" class="form-control" placeholder="เช่น 60">
-        </div>
-        
-        <div class="mb-3">
-          <label class="form-label">วันที่</label>
-          <input type="date" id="disDate" class="form-control">
-        </div>
-        
-        <div id="fuBox" style="display:none;" class="mb-3">
-          <label class="form-label">F/U</label>
-          <input type="text" id="disFU" class="form-control">
-        </div>
-        <!-- (ใส่ส่วนเพิ่มอื่นตามโค้ดเดิมของคุณ เช่น transferBox, referBox) -->
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-        <button type="button" class="btn btn-primary" onclick="saveDischarge()">บันทึก</button>
-      </div>
-    </div>
-  </div>
-</div>
+ 
 
 <script>
   // ================== CONFIG ==================
@@ -1621,38 +1575,44 @@ const admitTime = formatTimeForInput(r[3] || r[6] || r[9] || "");
 }
 
   // ================== Quick Discharge ==================
-  async function dischargeUI(item) {
-    disItem = item;
+async function dischargeUI(item) {
+  disItem = item;
 
-    const modalEl = document.getElementById("dischargeModal");
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-
-    document.getElementById("disRowId").value = item.rowId;
-    document.getElementById("disNurseId").innerText = getNurseId() || "-";
-    document.getElementById("disDate").value = new Date().toISOString().split("T")[0];
-
-    document.getElementById("disType").value = "";
-    document.getElementById("disFU").value = "";
-    document.getElementById("transferDept").value = "";
-    document.getElementById("referDest").value = "";
-
-    toggleDisFields();
-    modal.show();
+  // ค้นหา Element ของ Modal ให้เจอแน่ๆ ก่อน
+  const modalEl = document.getElementById("dischargeModal");
+  if (!modalEl) {
+    console.error("หา modal ไม่เจอ!");
+    return;
   }
+  
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
-  function toggleDisFields() {
-    const typeEl = document.getElementById("disType");
-    if (!typeEl) return;
+  document.getElementById("disRowId").value = item.rowId;
+  // ลบบรรทัดที่มี disNurseId ออกถ้าใน HTML ไม่มีไอดีนี้
+  // document.getElementById("disNurseId").innerText = getNurseId() || "-"; 
+  
+  document.getElementById("disDate").value = new Date().toISOString().split("T")[0];
+  document.getElementById("disType").value = "";
+  document.getElementById("disFU").value = "";
+  
+  // รีเซ็ตช่องใหม่
+  document.getElementById("disWaitMin").value = ""; 
 
-    const t = typeEl.value;
-    const fuBox = document.getElementById("fuBox");
-    const transferBox = document.getElementById("transferBox");
-    const referBox = document.getElementById("referBox");
+  toggleDisFields();
+  modal.show();
+}
 
-    if (fuBox) fuBox.style.display = (t === "dc") ? "block" : "none";
-    if (transferBox) transferBox.style.display = (t === "transfer") ? "block" : "none";
-    if (referBox) referBox.style.display = (t === "refer") ? "block" : "none";
-  }
+function toggleDisFields() {
+  const t = document.getElementById("disType").value;
+  const waitBox = document.getElementById("waitBox"); // ไอดีช่องใหม่
+  
+  // แสดงเฉพาะถ้าเลือก dc (กลับบ้าน)
+  if (waitBox) waitBox.style.display = (t === "dc") ? "block" : "none";
+  
+  // (โค้ดเดิมของคุณที่จัดการ fuBox, transferBox...)
+  const fuBox = document.getElementById("fuBox");
+  if (fuBox) fuBox.style.display = (t === "dc") ? "block" : "none";
+}
 
   async function saveDischarge() {
     const rowId = document.getElementById("disRowId").value;
@@ -3078,4 +3038,51 @@ window.printOfficialReport = printOfficialReport;
 </script>
 
 </body>
+   <!-- Discharge Modal -->
+<div class="modal fade" id="dischargeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">จำหน่ายผู้ป่วย</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="disRowId">
+        <div class="mb-3">
+          <label class="form-label">ประเภทการจำหน่าย</label>
+          <select id="disType" class="form-select">
+            <option value="">-- เลือก --</option>
+            <option value="dc">กลับบ้าน (D/C)</option>
+            <option value="transfer">ย้ายแผนก</option>
+            <option value="refer">Refer Out</option>
+            <option value="death">เสียชีวิต</option>
+            <option value="abscond">หนี</option>
+            <option value="refuse">ปฏิเสธ</option>
+          </select>
+        </div>
+        
+        <!-- ช่องที่เพิ่มขึ้นมาตามที่เราตกลงกันไว้ -->
+        <div class="mb-3" id="waitBox" style="display:none;">
+          <label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label>
+          <input type="number" id="disWaitMin" class="form-control" placeholder="เช่น 60">
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label">วันที่</label>
+          <input type="date" id="disDate" class="form-control">
+        </div>
+        
+        <div id="fuBox" style="display:none;" class="mb-3">
+          <label class="form-label">F/U</label>
+          <input type="text" id="disFU" class="form-control">
+        </div>
+        <!-- (ใส่ส่วนเพิ่มอื่นตามโค้ดเดิมของคุณ เช่น transferBox, referBox) -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+        <button type="button" class="btn btn-primary" onclick="saveDischarge()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
 </html>
