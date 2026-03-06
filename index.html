@@ -364,24 +364,43 @@
         <h5 class="modal-title">จำหน่ายผู้ป่วย</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <input type="hidden" id="disRowId">
-        <div class="mb-3">
-          <label class="form-label">ประเภทการจำหน่าย</label>
-          <select id="disType" class="form-select">
-            <option value="">-- เลือก --</option>
-            <option value="dc">กลับบ้าน (D/C)</option>
-            <option value="transfer">ย้ายแผนก</option>
-            <option value="refer">Refer Out</option>
-            <option value="death">เสียชีวิต</option>
-            <option value="abscond">หนี</option>
-            <option value="refuse">ปฏิเสธ</option>
-          </select>
-        </div>
-        <div class="mb-3" id="waitBox" style="display:none;"><label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label><input type="number" id="disWaitMin" class="form-control"></div>
-        <div class="mb-3"><label class="form-label">วันที่</label><input type="date" id="disDate" class="form-control"></div>
-        <div id="fuBox" style="display:none;" class="mb-3"><label class="form-label">F/U</label><input type="text" id="disFU" class="form-control"></div>
-      </div>
+<div class="modal-body">
+  <input type="hidden" id="disRowId">
+  <div class="mb-3">
+    <label class="form-label">ประเภทการจำหน่าย</label>
+    <select id="disType" class="form-select">
+      <option value="">-- เลือก --</option>
+      <option value="dc">กลับบ้าน (D/C)</option>
+      <option value="transfer">ย้ายแผนก</option>
+      <option value="refer">Refer Out</option>
+      <option value="death">เสียชีวิต</option>
+      <option value="abscond">หนี</option>
+      <option value="refuse">ปฏิเสธ</option>
+    </select>
+  </div>
+  <div class="mb-3" id="waitBox" style="display:none;">
+    <label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label>
+    <input type="number" id="disWaitMin" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">วันที่</label>
+    <input type="date" id="disDate" class="form-control">
+  </div>
+  <div id="fuBox" style="display:none;" class="mb-3">
+    <label class="form-label">F/U</label>
+    <input type="text" id="disFU" class="form-control">
+  </div>
+  <!-- ✅ เพิ่มใหม่: ย้ายแผนก -->
+  <div id="transferDeptBox" style="display:none;" class="mb-3">
+    <label class="form-label">ย้ายไปแผนก</label>
+    <input type="text" id="transferDept" class="form-control" placeholder="ระบุแผนกปลายทาง">
+  </div>
+  <!-- ✅ เพิ่มใหม่: Refer Out -->
+  <div id="referDestBox" style="display:none;" class="mb-3">
+    <label class="form-label">Refer ไปที่</label>
+    <input type="text" id="referDest" class="form-control" placeholder="ระบุโรงพยาบาลปลายทาง">
+  </div>
+</div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
         <button type="button" class="btn btn-primary" onclick="saveDischarge()">บันทึก</button>
@@ -748,27 +767,62 @@
     document.getElementById('inTime').value = `${hh}:${mm}`;
   }
 
-  async function dischargeUI(item) {
-    disItem = item;
-    const modalEl = document.getElementById("dischargeModal");
-    if (!modalEl) { console.error("หา modal ไม่เจอ!"); return; }
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    document.getElementById("disRowId").value = item.rowId;
-    document.getElementById("disDate").value = new Date().toISOString().split("T")[0];
-    document.getElementById("disType").value = "";
-    document.getElementById("disFU").value = "";
-    document.getElementById("disWaitMin").value = ""; 
-    toggleDisFields();
-    modal.show();
-  }
+async function dischargeUI(item) {
+  disItem = item;
+  const modalEl = document.getElementById("dischargeModal");
+  if (!modalEl) { console.error("หา modal ไม่เจอ!"); return; }
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  const r = item.rawData || [];
 
-  function toggleDisFields() {
-    const t = document.getElementById("disType").value;
-    const waitBox = document.getElementById("waitBox"), fuBox = document.getElementById("fuBox");
-    if (waitBox) waitBox.style.display = (t === "dc") ? "block" : "none";
-    if (fuBox) fuBox.style.display = (t === "dc") ? "block" : "none";
-  }
+  document.getElementById("disRowId").value = item.rowId;
 
+  // ✅ ดึงวันที่จำหน่ายที่มีอยู่แล้ว (ถ้ามี) มาแสดง ถ้าไม่มีค่อยใช้วันนี้
+  const existingDate =
+    formatDateForInput(r[COL.DC_DATE]) ||           // D/C
+    formatDateForInput(r[COL.TRANSFER_OUT_DATE]) ||  // Transfer
+    formatDateForInput(r[COL.REFER_OUT_DATE]) ||     // Refer Out
+    formatDateForInput(r[COL.DEATH_DATE]) ||         // ตาย
+    formatDateForInput(r[COL.ABSCOND_DATE]) ||       // หนี
+    formatDateForInput(r[COL.REFUSE_DATE]) ||        // ปฏิเสธ
+    new Date().toISOString().split("T")[0];          // fallback = วันนี้
+
+  document.getElementById("disDate").value = existingDate;
+
+  // ✅ ตั้งค่า type ตามสถานะเดิม (ถ้ามี)
+  let existingType = "";
+  if (r[COL.DC_DATE])           existingType = "dc";
+  else if (r[COL.TRANSFER_OUT_DATE]) existingType = "transfer";
+  else if (r[COL.REFER_OUT_DATE])    existingType = "refer";
+  else if (r[COL.DEATH_DATE])        existingType = "death";
+  else if (r[COL.ABSCOND_DATE])      existingType = "abscond";
+  else if (r[COL.REFUSE_DATE])       existingType = "refuse";
+
+  document.getElementById("disType").value = existingType;
+
+  // ✅ ดึงค่า field เสริมที่มีอยู่แล้ว
+  document.getElementById("disFU").value = r[COL.FU] || "";
+  document.getElementById("disWaitMin").value = r[COL.WAIT_TIME] || "";
+  if (document.getElementById("transferDept"))
+    document.getElementById("transferDept").value = r[COL.TRANSFER_OUT] || "";
+  if (document.getElementById("referDest"))
+    document.getElementById("referDest").value = r[COL.REFER_DEST] || "";
+
+  toggleDisFields();
+  modal.show();
+}
+  
+function toggleDisFields() {
+  const t = document.getElementById("disType").value;
+  const waitBox = document.getElementById("waitBox");
+  const fuBox = document.getElementById("fuBox");
+  const transferDeptBox = document.getElementById("transferDeptBox");
+  const referDestBox = document.getElementById("referDestBox");
+
+  if (waitBox) waitBox.style.display = (t === "dc") ? "block" : "none";
+  if (fuBox) fuBox.style.display = (t === "dc") ? "block" : "none";
+  if (transferDeptBox) transferDeptBox.style.display = (t === "transfer") ? "block" : "none";
+  if (referDestBox) referDestBox.style.display = (t === "refer") ? "block" : "none";
+}
   async function saveDischarge() {
     const rowId = document.getElementById("disRowId").value, type = document.getElementById("disType").value, date = document.getElementById("disDate").value, waitMin = document.getElementById("disWaitMin").value;
     if (!type) return Swal.fire("เลือกประเภทก่อน"); if (!date) return Swal.fire("เลือกวันที่");
