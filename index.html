@@ -45,41 +45,23 @@
     }
 
     .btn-modern {
-      width: 38px;
-      height: 38px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      border-radius: 12px;
-      border: none;
-      background: #f1f5f9;
-      color: #64748b;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      font-size: 16px;
+      width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+      padding: 0; border-radius: 12px; border: none; background: #f1f5f9; color: #64748b;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-size: 16px;
     }
     .btn-modern:hover { transform: translateY(-2px); background: #e2e8f0; }
     .btn-modern.edit:hover { background: #dbeafe; color: #2563eb; }
     .btn-modern.dis:hover { background: #fef3c7; color: #d97706; }
 
     /* ===== Dx Tag Input ===== */
-    .dx-tagbox{
-      min-height: 42px; display:flex; flex-wrap:wrap; align-items:center; gap:6px;
-      padding:6px 10px; border:1px solid rgba(0,0,0,.12); border-radius:12px; background:#fff;
-    }
+    .dx-tagbox{ min-height: 42px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:6px 10px; border:1px solid rgba(0,0,0,.12); border-radius:12px; background:#fff; }
     .dx-tagbox:focus-within{ border-color:#0d6efd; box-shadow:0 0 0 .2rem rgba(13,110,253,.15); }
-    .dx-tag{
-      display:inline-flex; align-items:center; gap:8px; padding:6px 10px;
-      border-radius:999px; border:1px solid rgba(0,0,0,.10); background:#f8f9fa; font-size:12px; font-weight:800; color:#263238;
-    }
+    .dx-tag{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid rgba(0,0,0,.10); background:#f8f9fa; font-size:12px; font-weight:800; color:#263238; }
     .dx-tag.primary{ background: rgba(13,110,253,.10); border-color: rgba(13,110,253,.35); }
     .dx-tag .x{ cursor:pointer; font-weight:900; opacity:.65; }
     .dx-tag .x:hover{ opacity:1; }
     .dx-taginput{ border:0; outline:none; min-width:180px; flex:1; padding:6px 4px; font-size:14px; background:transparent; }
-    .dx-suggest{
-      position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:10; background:#fff;
-      border:1px solid rgba(0,0,0,.12); border-radius:12px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,.10);
-    }
+    .dx-suggest{ position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:10; background:#fff; border:1px solid rgba(0,0,0,.12); border-radius:12px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,.10); }
     .dx-suggest .item{ padding:10px 12px; cursor:pointer; font-size:13px; }
     .dx-suggest .item:hover, .dx-suggest .item.active{ background:#f1f5ff; }
     .dx-suggest .muted{ color:#6c757d; font-size:12px; }
@@ -109,10 +91,7 @@
     .pill{ display:inline-flex; gap:6px; align-items:center; padding:4px 10px; border-radius:999px; border:1px solid rgba(0,0,0,.10); font-size:12px; color:#37474f; background:#fff; }
 
     /* Nurse ID chip */
-    .nurse-chip{
-      display:flex; gap:8px; align-items:center; background: rgba(255,255,255,.16);
-      border: 1px solid rgba(255,255,255,.22); padding: 6px 10px; border-radius: 999px; color:#fff; font-size:12px; font-weight:800;
-    }
+    .nurse-chip{ display:flex; gap:8px; align-items:center; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); padding: 6px 10px; border-radius: 999px; color:#fff; font-size:12px; font-weight:800; }
     .nurse-chip .muted{ opacity:.85; font-weight:700; }
   </style>
 </head>
@@ -127,7 +106,6 @@
         <div class="top-title h4 m-0">ทะเบียนผู้ป่วย 9/2</div>
         <div id="currentTime" class="subtle text-white-50"></div>
       </div>
-
       <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
         <div class="nurse-chip" role="button" tabindex="0" onclick="setNurseIdUI()">
           <span>👩‍⚕️ Nurse ID:</span>
@@ -159,7 +137,6 @@
         <div class="subtle mt-2">* LOS แบบเวชระเบียน: เดือนเปิดคิดถึง “วันนี้”; เดือนปิดคิดถึง “สิ้นเดือน”</div>
       </div>
     </div>
-
     <div class="col-12 col-lg-4">
       <div class="card p-3 h-100">
         <div class="d-flex justify-content-between align-items-center">
@@ -196,8 +173,6 @@
             <button class="btn btn-sm btn-outline-dark" onclick="exportCSV('CARRY')">Export CSV</button>
           </div>
         </div>
-        <div class="subtle mb-2">หมายเหตุ: ผู้ป่วยค้างจากเดือนก่อน (ยังไม่จำหน่าย ณ สิ้นเดือน)</div>
-
         <div class="filters-bar">
           <div class="filters-left">
             <button class="seg-btn active" id="carryFilterAll" onclick="setTableFilter('carry','ALL')">ทั้งหมด</button>
@@ -209,14 +184,9 @@
             <input class="form-control form-control-sm" style="width:240px" id="carryQuickSearch" placeholder="ค้นหา HN / AN / ชื่อ" oninput="quickSearch('carry', this.value)">
           </div>
         </div>
-
         <div class="table-wrap">
           <table id="carryTable" class="table table-hover w-100 dt-responsive nowrap align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>ประเภท</th><th>ลำดับ</th><th>HN</th><th>AN</th><th>ชื่อ-นามสกุล</th><th>Admit</th><th>แผนก</th><th>LOS</th><th>สถานะ</th><th>จัดการ</th>
-              </tr>
-            </thead>
+            <thead class="table-light"><tr><th>ประเภท</th><th>ลำดับ</th><th>HN</th><th>AN</th><th>ชื่อ-นามสกุล</th><th>Admit</th><th>แผนก</th><th>LOS</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
             <tbody id="carryBody"></tbody>
           </table>
         </div>
@@ -231,8 +201,6 @@
             <button class="btn btn-sm btn-outline-dark" onclick="exportCSV('NEW')">Export CSV</button>
           </div>
         </div>
-        <div class="subtle mb-2">หมายเหตุ: ผู้ป่วยที่รับเข้าในเดือนนี้</div>
-
         <div class="filters-bar">
           <div class="filters-left">
             <button class="seg-btn active" id="newFilterAll" onclick="setTableFilter('new','ALL')">ทั้งหมด</button>
@@ -244,18 +212,12 @@
             <input class="form-control form-control-sm" style="width:240px" id="newQuickSearch" placeholder="ค้นหา HN / AN / ชื่อ" oninput="quickSearch('new', this.value)">
           </div>
         </div>
-
         <div class="table-wrap">
           <table id="newTable" class="table table-hover w-100 dt-responsive nowrap align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>ประเภท</th><th>ลำดับ</th><th>HN</th><th>AN</th><th>ชื่อ-นามสกุล</th><th>Admit</th><th>แผนก</th><th>LOS</th><th>สถานะ</th><th>จัดการ</th>
-              </tr>
-            </thead>
+            <thead class="table-light"><tr><th>ประเภท</th><th>ลำดับ</th><th>HN</th><th>AN</th><th>ชื่อ-นามสกุล</th><th>Admit</th><th>แผนก</th><th>LOS</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
             <tbody id="newBody"></tbody>
           </table>
         </div>
-        <div class="subtle mt-2">✅ Tips: คลิกที่ “แถวผู้ป่วย” เพื่อดูรายละเอียด (ไม่ต้องเปิดฟอร์ม) | ปุ่ม ⚡ D/C ใช้แบบเลือกวันที่ (B)</div>
       </div>
     </div>
 
@@ -266,109 +228,59 @@
         <input type="hidden" id="patientStatusStored">
 
         <div class="card mb-3">
-          <div class="p-3 border-bottom">
-            <div class="section-title">1) การรับเข้า</div>
-            <div class="subtle">บันทึกวันที่รับเข้า/ประเภทการรับ เพื่อคำนวณ LOS และรายงานได้ถูกต้อง</div>
-          </div>
+          <div class="p-3 border-bottom"><div class="section-title">1) การรับเข้า</div></div>
           <div class="p-3 row g-2">
-            <div class="col-4 col-md-2">
-              <label class="form-label">ลำดับ</label>
-              <input type="text" class="form-control bg-light" id="seq" readonly>
-            </div>
+            <div class="col-4 col-md-2"><label class="form-label">ลำดับ</label><input type="text" class="form-control bg-light" id="seq" readonly></div>
             <div class="col-8 col-md-3">
               <label class="form-label">ประเภท</label>
-              <select class="form-select" id="inType">
-                <option value="รับใหม่">รับใหม่</option><option value="รับย้าย">รับย้าย</option><option value="รับ Refer">รับ Refer</option>
-              </select>
+              <select class="form-select" id="inType"><option value="รับใหม่">รับใหม่</option><option value="รับย้าย">รับย้าย</option><option value="รับ Refer">รับ Refer</option></select>
             </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label">วันที่รับ *</label>
-              <input type="date" class="form-control" id="inDate" required onchange="calculateLOSPreview()">
-            </div>
+            <div class="col-6 col-md-3"><label class="form-label">วันที่รับ *</label><input type="date" class="form-control" id="inDate" required onchange="calculateLOSPreview()"></div>
             <div class="col-6 col-md-2">
               <label class="form-label">เวลา (24 ชม.) *</label>
-              <div class="input-group">
-                <input type="text" class="form-control" id="inTime">
-                <button class="btn btn-outline-secondary" type="button" onclick="setCurrentTime()">NOW</button>
-              </div>
-              <div class="subtle mt-1">พิมพ์ 2110 → 21:10</div>
+              <div class="input-group"><input type="text" class="form-control" id="inTime"><button class="btn btn-outline-secondary" type="button" onclick="setCurrentTime()">NOW</button></div>
             </div>
-            <div class="col-12 col-md-2">
-              <label class="form-label">ต้นทาง</label>
-              <input type="text" class="form-control" id="inDept">
-            </div>
+            <div class="col-12 col-md-2"><label class="form-label">ต้นทาง</label><input type="text" class="form-control" id="inDept"></div>
           </div>
         </div>
 
         <div class="card mb-3">
-          <div class="p-3 border-bottom">
-            <div class="section-title">2) ข้อมูลผู้ป่วย</div>
-            <div class="subtle">กรอกข้อมูลพื้นฐานให้ครบเพื่อค้นหา/พิมพ์ PDF</div>
-          </div>
+          <div class="p-3 border-bottom"><div class="section-title">2) ข้อมูลผู้ป่วย</div></div>
           <div class="p-3 row g-2">
             <div class="col-12 col-md-6">
               <label class="form-label">ชื่อ-นามสกุล *</label>
               <div class="input-group">
-                <select id="prefix" class="form-select" style="max-width: 90px;">
-                  <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="น.ส.">น.ส.</option><option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option>
-                </select>
+                <select id="prefix" class="form-select" style="max-width: 90px;"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="น.ส.">น.ส.</option><option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option></select>
                 <input type="text" class="form-control" id="patientName" required>
               </div>
             </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label">เพศ *</label>
-              <select id="gender" class="form-select" required><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option></select>
-            </div>
+            <div class="col-6 col-md-3"><label class="form-label">เพศ *</label><select id="gender" class="form-select" required><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option></select></div>
             <div class="col-6 col-md-3">
               <label class="form-label">อายุ (ป/ด/ว)</label>
-              <div class="input-group">
-                <input type="number" id="ageYear" class="form-control" value="0"><input type="number" id="ageMonth" class="form-control" value="0"><input type="number" id="ageDay" class="form-control" value="0">
-              </div>
+              <div class="input-group"><input type="number" id="ageYear" class="form-control" value="0"><input type="number" id="ageMonth" class="form-control" value="0"><input type="number" id="ageDay" class="form-control" value="0"></div>
             </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label">HN *</label><input type="text" class="form-control" id="hn" required onblur="formatHNAN('hn')">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label">AN *</label><input type="text" class="form-control" id="an" required onblur="checkAN()">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label">แผนก</label><select id="ward" class="form-select"></select>
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label">สาย</label><select id="sai" class="form-select"></select>
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">สิทธิการรักษา</label><select id="sithi" class="form-select"></select>
-            </div>
-            <!-- Dx. แรก -->
+            <div class="col-6 col-md-3"><label class="form-label">HN *</label><input type="text" class="form-control" id="hn" required onblur="formatHNAN('hn')"></div>
+            <div class="col-6 col-md-3"><label class="form-label">AN *</label><input type="text" class="form-control" id="an" required onblur="checkAN()"></div>
+            <div class="col-6 col-md-3"><label class="form-label">แผนก</label><select id="ward" class="form-select"></select></div>
+            <div class="col-6 col-md-3"><label class="form-label">สาย</label><select id="sai" class="form-select"></select></div>
+            <div class="col-12 col-md-4"><label class="form-label">สิทธิการรักษา</label><select id="sithi" class="form-select"></select></div>
+            
             <div class="col-6 col-md-4">
               <label class="form-label">Dx. แรก *</label>
-              <div class="position-relative">
-                <div class="dx-tagbox" id="dx1Box" onclick="document.getElementById('dx1Input').focus()"><input type="text" id="dx1Input" class="dx-taginput" placeholder="พิมพ์แล้วกด Enter หรือ ; เพื่อเพิ่มโรค" autocomplete="off"></div>
-                <div class="dx-suggest" id="dx1Suggest" style="display:none;"></div>
-              </div>
+              <div class="position-relative"><div class="dx-tagbox" id="dx1Box" onclick="document.getElementById('dx1Input').focus()"><input type="text" id="dx1Input" class="dx-taginput" placeholder="พิมพ์แล้วกด Enter" autocomplete="off"></div><div class="dx-suggest" id="dx1Suggest" style="display:none;"></div></div>
               <input type="hidden" id="dx1">
             </div>
-            <!-- Dx. หลัง -->
             <div class="col-6 col-md-4">
               <label class="form-label">Dx. หลัง</label>
-              <div class="position-relative">
-                <div class="dx-tagbox" id="dx2Box" onclick="document.getElementById('dx2Input').focus()"><input type="text" id="dx2Input" class="dx-taginput" placeholder="พิมพ์แล้วกด Enter หรือ ; เพื่อเพิ่มโรค" autocomplete="off"></div>
-                <div class="dx-suggest" id="dx2Suggest" style="display:none;"></div>
-              </div>
+              <div class="position-relative"><div class="dx-tagbox" id="dx2Box" onclick="document.getElementById('dx2Input').focus()"><input type="text" id="dx2Input" class="dx-taginput" placeholder="พิมพ์แล้วกด Enter" autocomplete="off"></div><div class="dx-suggest" id="dx2Suggest" style="display:none;"></div></div>
               <input type="hidden" id="dx2">
             </div>
-            <div class="col-12">
-              <label class="form-label">ที่อยู่</label><input type="text" class="form-control" id="address">
-            </div>
+            <div class="col-12"><label class="form-label">ที่อยู่</label><input type="text" class="form-control" id="address"></div>
           </div>
         </div>
 
         <div class="card mb-3">
-          <div class="p-3 border-bottom">
-            <div class="section-title">3) จำหน่าย / Outcome</div>
-            <div class="subtle">กรอกวันที่เหตุการณ์ (D/C / ย้าย / หนี / ปฏิเสธ / Refer / ตาย) เพื่อปิดเคส</div>
-          </div>
+          <div class="p-3 border-bottom"><div class="section-title">3) จำหน่าย / Outcome</div></div>
           <div class="p-3 row g-2">
             <div class="col-6 col-md-3"><label class="form-label">D/C วันที่</label><input type="date" class="form-control" id="dcDate" onchange="calculateLOSPreview()"></div>
             <div class="col-6 col-md-3"><label class="form-label">F/U</label><input type="text" class="form-control" id="fu" placeholder="เช่น นัด 7 วัน / OPD"></div>
@@ -396,20 +308,16 @@
         <div class="section-title">Incident/QA (11–27)</div>
         <div class="subtle mb-2">เลือกคนไข้ → เลือกประเภทเหตุการณ์ → บันทึก (ผูกกับเดือนและ HN/AN)</div>
         <div class="row g-2">
-          <div class="col-12 col-md-4"><label class="form-label">เลือกคนไข้ (จากตารางเดือนนี้)</label><select id="incPatientPick" class="form-select" onchange="onIncPickPatient()"></select><div class="subtle mt-1" id="incPatientMeta">-</div></div>
+          <div class="col-12 col-md-4"><label class="form-label">เลือกคนไข้</label><select id="incPatientPick" class="form-select" onchange="onIncPickPatient()"></select><div class="subtle mt-1" id="incPatientMeta">-</div></div>
           <div class="col-6 col-md-3"><label class="form-label">วันที่เกิดเหตุ</label><input type="date" id="incDate" class="form-control"></div>
-          <div class="col-6 col-md-5"><label class="form-label">ประเภทเหตุการณ์ (ล็อกตามข้อรายงาน)</label><select id="incType" class="form-select" onchange="toggleIncFields()"></select></div>
-          <div class="col-6 col-md-3"><label class="form-label">จำนวน/นาที/วัน (value)</label><input type="number" id="incValue" class="form-control" placeholder="เช่น 1 หรือ 30"></div>
-          <div class="col-6 col-md-3"><label class="form-label">Grade (ใช้กับ Phlebitis)</label><select id="incGrade" class="form-select"><option value="">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
-          <div class="col-6 col-md-3"><label class="form-label">Level (ใช้กับ GHI)</label><input type="text" id="incLevel" class="form-control" placeholder="เช่น A/B หรือ 1-5"></div>
+          <div class="col-6 col-md-5"><label class="form-label">ประเภทเหตุการณ์</label><select id="incType" class="form-select" onchange="toggleIncFields()"></select></div>
+          <div class="col-6 col-md-3"><label class="form-label">จำนวน/นาที/วัน</label><input type="number" id="incValue" class="form-control"></div>
+          <div class="col-6 col-md-3"><label class="form-label">Grade</label><select id="incGrade" class="form-select"><option value="">-</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+          <div class="col-6 col-md-3"><label class="form-label">Level</label><input type="text" id="incLevel" class="form-control"></div>
           <div class="col-12 col-md-9"><label class="form-label">หมายเหตุ</label><input type="text" id="incNote" class="form-control"></div>
           <div class="col-12"><button class="btn btn-primary rounded-pill w-100" onclick="saveIncident()">บันทึกเหตุการณ์</button></div>
         </div>
         <hr class="my-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="section-title">รายการเหตุการณ์ของเดือนนี้</div>
-          <button class="btn btn-outline-dark btn-sm" onclick="loadIncidents()">รีเฟรช</button>
-        </div>
         <div class="table-wrap mt-2">
           <table class="table table-sm table-bordered mb-0">
             <thead class="table-light"><tr><th>วันที่</th><th>HN</th><th>AN</th><th>Type</th><th>value</th><th>grade</th><th>level</th><th>note</th><th>จัดการ</th></tr></thead>
@@ -421,7 +329,7 @@
   </div>
 </div>
 
-<!-- Patient Detail Modal -->
+<!-- Modal รายละเอียดผู้ป่วย -->
 <div class="modal fade" id="patientModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content border-0 shadow">
@@ -435,12 +343,12 @@
   </div>
 </div>
 
-<!-- Report Modal -->
+<!-- Modal รายงานเดือน -->
 <div class="modal fade" id="reportModal" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 shadow">
       <div class="modal-header bg-success text-white">
-        <h5 class="modal-title fw-bold">รายงานสรุปเดือน (Professional): <span id="reportMonthTitle"></span></h5>
+        <h5 class="modal-title fw-bold">รายงานสรุปเดือน: <span id="reportMonthTitle"></span></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body bg-light"><div id="reportResult">กำลังโหลด...</div></div>
@@ -448,7 +356,7 @@
   </div>
 </div>
 
-<!-- Discharge Modal -->
+<!-- Modal จำหน่าย -->
 <div class="modal fade" id="dischargeModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -470,10 +378,7 @@
             <option value="refuse">ปฏิเสธ</option>
           </select>
         </div>
-        <div class="mb-3" id="waitBox" style="display:none;">
-          <label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label>
-          <input type="number" id="disWaitMin" class="form-control" placeholder="เช่น 60">
-        </div>
+        <div class="mb-3" id="waitBox" style="display:none;"><label class="form-label">ระยะเวลารอคอยกลับบ้าน (นาที)</label><input type="number" id="disWaitMin" class="form-control"></div>
         <div class="mb-3"><label class="form-label">วันที่</label><input type="date" id="disDate" class="form-control"></div>
         <div id="fuBox" style="display:none;" class="mb-3"><label class="form-label">F/U</label><input type="text" id="disFU" class="form-control"></div>
       </div>
@@ -501,45 +406,29 @@
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOhRzpTanfG_ghmkeYPPO0_yhTRqkw2dt2idnaQ8FPQSuZJTRneWH2KyBw5h3T8g0/exec";
 
-  let currentSheet = "";
-  let carryDT, newDT, sithiChart, saiChart;
-  let lastData =[];
-  let lastDataByRowId = new Map();
-
+  let currentSheet = "", carryDT, newDT, sithiChart, saiChart;
+  let lastData =[], lastDataByRowId = new Map();
   const tableState = { carry: { filter: 'ALL', search: '' }, new: { filter: 'ALL', search: '' } };
-  let lastTriggerEl = null;
+  let lastTriggerEl = null, disItem = null, DX_OPTIONS =[];
   const NURSE_KEY = "cloudWard.nurseId";
-  let disItem = null;
-  let DX_OPTIONS =[];
 
   const dxTagState = {
-    dx1: { tags: [], activeIdx: -1, suggest:[], selected: -1 },
+    dx1: { tags:[], activeIdx: -1, suggest:[], selected: -1 },
     dx2: { tags: [], activeIdx: -1, suggest:[], selected: -1 }
   };
 
-  // API Call
   async function callApi(action, data = null) {
-    const r = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action, data, meta: { nurseId: getNurseId() || "" } })
-    });
-    const res = await r.json();
-    if (res.status === 'success') return res.data;
-    throw new Error(res.message);
+    const r = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action, data, meta: { nurseId: getNurseId() || "" } }) });
+    const res = await r.json(); if (res.status === 'success') return res.data; throw new Error(res.message);
   }
 
-  // Nurse ID
   function getNurseId() { return (localStorage.getItem(NURSE_KEY) || "").trim(); }
   function renderNurseId() { document.getElementById('nurseIdText').innerText = getNurseId() ? getNurseId() : "ยังไม่ตั้งค่า"; }
   async function setNurseIdUI() {
-    const { value } = await Swal.fire({
-      title: 'ตั้งค่า Nurse ID', input: 'text', inputLabel: 'กรอกรหัสพยาบาล/ชื่อย่อ',
-      inputValue: getNurseId(), showCancelButton: true, confirmButtonText: 'บันทึก'
-    });
+    const { value } = await Swal.fire({ title: 'ตั้งค่า Nurse ID', input: 'text', inputLabel: 'กรอกรหัสพยาบาล', inputValue: getNurseId(), showCancelButton: true, confirmButtonText: 'บันทึก' });
     if (value !== undefined) { localStorage.setItem(NURSE_KEY, String(value || "").trim()); renderNurseId(); }
   }
 
-  // Helpers
   function escapeHtml(s) { return String(s ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
   function fillSelect(id, items) { const el = document.getElementById(id); if (el) el.innerHTML = '<option value="">-- เลือก --</option>' + (items ||[]).map(i => `<option value="${escapeHtml(i)}">${escapeHtml(i)}</option>`).join(''); }
   function splitDxList(s) { return String(s || "").split(/[;,\n\/|]+/g).map(x => x.trim()).filter(Boolean); }
@@ -552,7 +441,6 @@
   function formatHNAN(id) { let el = document.getElementById(id); let v = (el.value || "").replace(/-/g, ''); if (v.length > 2) el.value = v.slice(0, -2) + '-' + v.slice(-2); }
   function shortThaiDate(dmyBE) { if (!dmyBE) return ""; const s = String(dmyBE); const p = s.split('/'); if (p.length < 3) return s; return `${p[0].padStart(2, '0')}/${p[1].padStart(2, '0')}`; }
 
-  // Dx Tag
   function normalizeDxToken(s){ return String(s || "").trim().replace(/\s+/g, " "); }
   function splitToTags(v){ return String(v || "").split(";").map(normalizeDxToken).filter(x => x && x.length >= 2); }
   function tagsToString(tags){ return tags.map(t => t.trim()).filter(Boolean).join("; "); }
@@ -560,8 +448,7 @@
     const box = document.getElementById(which + "Box"), input = document.getElementById(which + "Input"), hidden = document.getElementById(which);
     if (!box || !input || !hidden) return;[...box.querySelectorAll(".dx-tag")].forEach(el => el.remove());
     dxTagState[which].tags.forEach((t, i) => {
-      const tag = document.createElement("span");
-      tag.className = "dx-tag" + (i === 0 ? " primary" : "");
+      const tag = document.createElement("span"); tag.className = "dx-tag" + (i === 0 ? " primary" : "");
       tag.innerHTML = `<span>${escapeHtml(t)}</span><span class="x" title="ลบ">×</span>`;
       tag.querySelector(".x").onclick = (e) => { e.stopPropagation(); removeDxTag(which, i); };
       box.insertBefore(tag, input);
@@ -586,8 +473,7 @@
   }
   function chooseSuggest(which, index){
     const hit = (dxTagState[which].suggest || [])[index]; if (!hit) return;
-    addDxTag(which, hit); document.getElementById(which + "Input").value = "";
-    setSuggest(which,[]); document.getElementById(which + "Suggest").style.display = "none";
+    addDxTag(which, hit); document.getElementById(which + "Input").value = ""; setSuggest(which,[]); document.getElementById(which + "Suggest").style.display = "none";
   }
   function computeSuggest(q){
     const key = q.toLowerCase(), a = DX_OPTIONS.filter(x => x.toLowerCase().startsWith(key)), b = DX_OPTIONS.filter(x => !a.includes(x) && x.toLowerCase().includes(key));
@@ -595,7 +481,7 @@
   }
   function commitCurrentToken(which){
     const input = document.getElementById(which + "Input"); if (!input) return;
-    const raw = input.value, sugList = dxTagState[which].suggest || [], sel = dxTagState[which].selected ?? 0;
+    const raw = input.value, sugList = dxTagState[which].suggest ||[], sel = dxTagState[which].selected ?? 0;
     if (sugList.length > 0 && normalizeDxToken(raw) && sel >= 0) { chooseSuggest(which, sel); return; }
     splitDxList(raw).map(normalizeDxToken).filter(Boolean).forEach(p => addDxTag(which, p));
     input.value = ""; setSuggest(which,[]); document.getElementById(which + "Suggest").style.display = "none";
@@ -611,8 +497,7 @@
       const hasSug = (dxTagState[which].suggest ||[]).length > 0;
       if (e.key === "Enter" || e.key === ";") { e.preventDefault(); commitCurrentToken(which); return; }
       if (hasSug && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
-        e.preventDefault();
-        const n = dxTagState[which].suggest.length;
+        e.preventDefault(); const n = dxTagState[which].suggest.length;
         dxTagState[which].selected = (e.key === "ArrowDown") ? ((dxTagState[which].selected ?? 0) + 1) % n : ((dxTagState[which].selected ?? 0) - 1 + n) % n;
         renderSuggest(which); return;
       }
@@ -625,11 +510,9 @@
     dxTagState[which].tags = splitToTags(hidden.value); renderDxTags(which);
   }
 
-  // Sheet Logic
   function sheetNameToDate(sheetName) {
     if (!sheetName) return null;
-    const monthMap = { "มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,"กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11,
-                       "มกรา":0,"กุมภา":1,"มีนา":2,"เมษา":3,"พฤษภา":4,"มิถุนา":5,"กรกฎา":6,"สิงหา":7,"กันยา":8,"ตุลา":9,"พฤศจิกา":10,"ธันวา":11 };
+    const monthMap = { "มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,"กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11, "มกรา":0,"กุมภา":1,"มีนา":2,"เมษา":3,"พฤษภา":4,"มิถุนา":5,"กรกฎา":6,"สิงหา":7,"กันยา":8,"ตุลา":9,"พฤศจิกา":10,"ธันวา":11 };
     let mIdx = null; for (const m in monthMap) if (sheetName.includes(m)) { mIdx = monthMap[m]; break; }
     if (mIdx === null) return null;
     const ym = sheetName.match(/\d+/); if (!ym) return null;
@@ -644,9 +527,7 @@
       if (!da) return 1; if (!db) return -1; return db - da;
     })[0];
   }
-  function getMonthStartFromSheet() {
-    const d = sheetNameToDate(currentSheet); return d ? d : null;
-  }
+  function getMonthStartFromSheet() { const d = sheetNameToDate(currentSheet); return d ? d : null; }
   function calculateLOSPreview() {
     const admitUnder6 = document.getElementById('admitUnder6').value.trim();
     if (admitUnder6 !== "") { document.getElementById('los').value = "0"; return; }
@@ -663,7 +544,6 @@
     document.getElementById('los').value = String(Math.floor((end - calcStart) / 86400000) + 1);
   }
 
-  // Dashboard & Table Rendering
   function updateCharts(sMap, saMap) {
     if (sithiChart) sithiChart.destroy(); if (saiChart) saiChart.destroy();
     const cfg = (t, m, color) => ({ type: 'bar', data: { labels: Object.keys(m), datasets:[{ data: Object.values(m), backgroundColor: color, borderRadius: 8 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: t, align: 'start' }, legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } } });
@@ -707,7 +587,6 @@
     return true;
   });
 
-  // 1. ตารางหลัก (Hybrid Strategy)
   function buildRowHtml(item) {
     const r = item.rawData || [];
     const type = (item.patientStatus || r[0] || '').trim();
@@ -740,7 +619,6 @@
     </tr>`;
   }
 
-  // 2. Modal รายละเอียด (Hybrid Strategy)
   function openPatientModal(item) {
     const r = item.rawData ||[];
     const empty = "-";
@@ -749,14 +627,10 @@
     document.getElementById('patientModalBody').innerHTML = `
       <div class="report-block">
         <div class="d-flex justify-content-between align-items-start mb-3">
-          <div>
-            <div class="fw-black" style="font-size:20px;">${escapeHtml((r[COL.PREFIX] || "") + (r[COL.NAME] || ""))}</div>
-            <div class="subtle">HN: <b>${escapeHtml(r[COL.HN] || empty)}</b> | AN: <b>${escapeHtml(r[COL.AN] || empty)}</b></div>
-          </div>
-          <div class="text-end">
-            <span class="badge bg-info text-dark">LOS: ${item.displayLOS} วัน</span>
-            <div class="mt-1">${item.status === 'จำหน่ายแล้ว' ? '<span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i> จำหน่ายแล้ว</span>' : '<span class="badge bg-warning text-dark rounded-pill"><i class="bi bi-activity"></i> ยังรักษาอยู่</span>'}</div>
-          </div>
+          <div><div class="fw-black" style="font-size:20px;">${escapeHtml((r[COL.PREFIX] || "") + (r[COL.NAME] || ""))}</div>
+          <div class="subtle">HN: <b>${escapeHtml(r[COL.HN] || empty)}</b> | AN: <b>${escapeHtml(r[COL.AN] || empty)}</b></div></div>
+          <div class="text-end"><span class="badge bg-info text-dark">LOS: ${item.displayLOS} วัน</span>
+          <div class="mt-1">${item.status === 'จำหน่ายแล้ว' ? '<span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i> จำหน่ายแล้ว</span>' : '<span class="badge bg-warning text-dark rounded-pill"><i class="bi bi-activity"></i> ยังรักษาอยู่</span>'}</div></div>
         </div>
         <div class="row g-2">
             <div class="col-12 col-md-4"><div class="mini"><div class="label">เพศ / อายุ</div><div>${escapeHtml(r[COL.GENDER] || empty)} / ${escapeHtml(r[COL.AGE] || empty)}</div></div></div>
@@ -791,31 +665,28 @@
     }
     document.getElementById('btnModalEdit').onclick = () => { modalInstance.hide(); editPatient(item); };
     document.getElementById('btnModalPDF').onclick = () => printPDF(item);
-
     modalInstance.show();
   }
 
-  function getItemByRowId(rowId) {
-    return lastDataByRowId.get(String(rowId)) || null;
-  }
+  function getItemByRowId(rowId) { return lastDataByRowId.get(String(rowId)) || null; }
 
-  function bindTableEvents() {
-    ['carryBody', 'newBody'].forEach(id => {
+  function bindTableEvents() {['carryBody', 'newBody'].forEach(id => {
       const el = document.getElementById(id);
-      if (!el) return;
-      el.onclick = async (e) => {
-        const btn = e.target.closest('button[data-action]');
-        const tr = e.target.closest('tr[data-rowid]');
-        if (!tr) return;
-        const item = getItemByRowId(tr.getAttribute('data-rowid'));
-        if (!item) return;
-        if (btn) {
-          e.stopPropagation();
-          if (btn.dataset.action === 'dis') await dischargeUI(item);
-          return;
-        }
-        openPatientModal(item);
-      };
+      if (el) {
+        el.onclick = async (e) => {
+          const btn = e.target.closest('button[data-action]');
+          const tr = e.target.closest('tr[data-rowid]');
+          if (!tr) return;
+          const item = getItemByRowId(tr.getAttribute('data-rowid'));
+          if (!item) return;
+          if (btn) {
+            e.stopPropagation();
+            if (btn.dataset.action === 'dis') await dischargeUI(item);
+            return;
+          }
+          openPatientModal(item);
+        };
+      }
     });
   }
 
@@ -827,7 +698,6 @@
   function renderTables() {
     const carry = lastData.filter(isCarryRow);
     const nnew = lastData.filter(isNewThisMonthRow);
-
     document.getElementById('carryCount').innerText = carry.length;
     document.getElementById('newCount').innerText = nnew.length;
 
@@ -858,7 +728,6 @@
     carryDT.search(tableState.carry.search || "").draw(); newDT.search(tableState.new.search || "").draw();
   }
 
-  // Cancel Discharge
   async function confirmCancelDischarge(item) {
     const result = await Swal.fire({
       title: 'ยืนยันยกเลิกจำหน่าย?', text: `ต้องการดึงเคสคุณ ${item.patientName} กลับมาเป็นผู้ป่วย Active ใช่หรือไม่?`,
@@ -879,7 +748,6 @@
     document.getElementById('inTime').value = `${hh}:${mm}`;
   }
 
-  // Discharge UI
   async function dischargeUI(item) {
     disItem = item;
     const modalEl = document.getElementById("dischargeModal");
@@ -903,8 +771,7 @@
 
   async function saveDischarge() {
     const rowId = document.getElementById("disRowId").value, type = document.getElementById("disType").value, date = document.getElementById("disDate").value, waitMin = document.getElementById("disWaitMin").value;
-    if (!type) return Swal.fire("เลือกประเภทก่อน");
-    if (!date) return Swal.fire("เลือกวันที่");
+    if (!type) return Swal.fire("เลือกประเภทก่อน"); if (!date) return Swal.fire("เลือกวันที่");
     const d = formatDateForSheet(date), keepStatus = (disItem?.rawData?.[0] || disItem?.patientStatus || "").trim();
     const formData = { rowId, patientStatus: keepStatus, dcDate: "", transferOutDate: "", transferOut: "", referOutDate: "", referDestination: "", deathDate: "", abscondDate: "", refuseDate: "", fu: "", nurseId: getNurseId(), waitTime: waitMin };
     if (type === "dc") { formData.dcDate = d; formData.fu = document.getElementById("disFU").value; }
@@ -1004,6 +871,16 @@
     }).catch(err => { Swal.fire('ผิดพลาด', err.toString(), 'error'); });
   }
 
+  async function checkAN() {
+    formatHNAN('an'); const anValue = document.getElementById('an').value, rowId = document.getElementById('rowId').value;
+    if (!rowId && anValue) {
+      try {
+        const isDup = await callApi('checkDuplicateAN', { targetSheet: currentSheet, an: anValue });
+        if (isDup) Swal.fire({ title: 'พบข้อมูล AN ซ้ำ!', text: `หมายเลข AN ${anValue} มีอยู่ในทะเบียนของเดือนนี้แล้ว กรุณาตรวจสอบอีกครั้ง`, icon: 'warning', confirmButtonColor: '#f89406' });
+      } catch (err) { console.error("Error checking duplicate AN:", err); }
+    }
+  }
+
   function editPatient(item) {
     const r = item.rawData ||[];
     document.getElementById('rowId').value = item.rowId; document.getElementById('seq').value = r[1] || ""; document.getElementById('patientStatusStored').value = r[0] || "รับใหม่";
@@ -1022,7 +899,7 @@
   }
 
   function printPDF(item) {
-    const win = window.open("", "_blank"); const r = item.rawData || [];
+    const win = window.open("", "_blank"); const r = item.rawData ||[];
     const p = { prefix:r[32], patientName:r[11], hn:r[13], an:r[14], gender:r[33], age:r[12], address:r[31], sithi:r[17], ward:r[15], sai:r[16], dx1:r[18], dx2:r[19], inType:r[2]?'รับใหม่':(r[5]?'รับย้าย':'Refer'), inDate:r[2]||r[5]||r[8], inTime:r[3]||r[6]||r[9], inDept:r[4]||r[7]||r[10], status:item.status, los:item.displayLOS, dcDate:r[20], deathDate:r[30], transferOut:r[24], admitUnder6:r[22], patientStatus:r[0] };
     callApi('createPatientPDF', p).then(b => { win.document.write(`<iframe src="data:application/pdf;base64,${b}" style="width:100%;height:100vh;border:none;"></iframe>`); }).catch(err => win.document.write(`<pre>${err.toString()}</pre>`));
   }
@@ -1040,7 +917,7 @@
 
   function openIncidentTab(){
     const sel = document.getElementById("incPatientPick"); if(!sel) return;
-    sel.innerHTML = `<option value="">-- เลือกคนไข้ --</option>` + lastData.map(p=>{ const r = p.rawData || []; return `<option value="${p.rowId}">${escapeHtml(r[14]||"")} | ${escapeHtml(r[13]||"")} | ${escapeHtml((r[32]||"")+(r[11]||""))}</option>`; }).join("");
+    sel.innerHTML = `<option value="">-- เลือกคนไข้ --</option>` + lastData.map(p=>{ const r = p.rawData ||[]; return `<option value="${p.rowId}">${escapeHtml(r[14]||"")} | ${escapeHtml(r[13]||"")} | ${escapeHtml((r[32]||"")+(r[11]||""))}</option>`; }).join("");
     document.getElementById("incType").innerHTML = INCIDENT_TYPES.map(x=>`<option value="${x.k}">${escapeHtml(x.t)}</option>`).join("");
     document.getElementById("incDate").value = new Date().toISOString().split("T")[0]; toggleIncFields(); loadIncidents();
   }
